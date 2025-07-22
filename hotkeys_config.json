@@ -1,9 +1,0 @@
-{
-    "hk_counter_increase": "+",
-    "hk_counter_decrease": "-",
-    "hk_counter_reset": "/",
-    "hk_timer_start": "Key.f10",
-    "hk_timer_pause": "Key.f11",
-    "hk_timer_end": "Key.f12",
-    "hk_timer_reset": "*"
-}
