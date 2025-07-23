@@ -16,5 +16,5 @@ class Counter:
         self.__counter = 0
         
     
-    def get_counter(self) -> int:
+    def get_count(self) -> int:
         return self.__counter
