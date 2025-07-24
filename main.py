@@ -1,25 +1,100 @@
-import customtkinter as ctk
-from key_listener import KeyListener
-from save_file import SaveFile
-from counter import Counter
-from timer import Timer
+from tkinter import Tk, Frame, Label, Entry
+from tkinter.font import Font
+from tkinter.scrolledtext import ScrolledText
+from command_manager import CommandManager
 
-counter: Counter = Counter()
-timer: Timer = Timer()
-#key_listener: KeyListener = KeyListener(counter, timer)
-save_file: SaveFile = SaveFile()
+initial_height: int = 350
+initial_width: int = 600
 
-root: ctk.CTk = ctk.CTk()
-root.geometry("300x400")
+padding: int = 5
+
+color_bg: str = "#292c30"
+color_txt: str = "#ffffff"
+color_command: str = "#25b354"
+color_warning: str = "#d4a61e"
+color_error: str = "#b3253d"
+
+prefix: chr = ">"
+meta: str = f"Death Blight v1.0\nBy Project Bloodline\n----------------------------\n{prefix} Use 'help' to get started"
+
+last_inputs: list[str] = []
+
+
+root: Tk = Tk()
+root.geometry(str(initial_width) +"x" +str(initial_height))
 root.title("Death Blight")
-root.configure(fg_color="#ffffff")
+root.config(bg=color_bg)
 
-label_counter: ctk.CTkLabel = ctk.CTkLabel(root, text=str(counter.get_count()), font=("Poppins bold", 48))
-label_counter.place(relx=0.5, rely=0.4, anchor="center")
+custom_font: Font = Font(family="DM Mono", size=10, weight="normal")
 
-key_listener: KeyListener = KeyListener(counter, timer, label_counter)
+input_section: Frame = Frame(root, bg=color_bg)
+input_section.pack(side="bottom", fill="x", padx=padding, pady=padding)
 
-start_tracking_button: ctk.CTkButton = ctk.CTkButton(root, text="Start tracking", corner_radius=20, command=key_listener.start_keyboard_listener)
-start_tracking_button.place(relx=0.5, rely=0.6, anchor="center")
+input_prefix: Label = Label(input_section,
+                                       text=prefix,
+                                       font=custom_font,
+                                       fg=color_command,
+                                       bg=color_bg
+                                       )
+input_prefix.pack(side="left")
+
+input_entry: Entry = Entry(input_section,
+                           font=custom_font,
+                           fg=color_command,
+                           bg=color_bg,
+                           insertbackground=color_command,
+                           relief="flat"
+                           )
+input_entry.pack(side="left", fill="x", expand=True)
+input_entry.focus()
+
+console: ScrolledText = ScrolledText(root,
+                                     font=custom_font,
+                                     padx=padding,
+                                     pady=padding,
+                                     wrap="word",
+                                     state="disabled",
+                                     fg=color_txt,
+                                     bg=color_bg,
+                                     relief="flat",
+                                     )
+console.pack(fill="both", expand=True)
+
+console.tag_config("normal", foreground=color_txt)
+console.tag_config("command", foreground=color_command)
+console.tag_config("warning", foreground=color_warning)
+console.tag_config("error", foreground=color_error)
+
+
+def print_output(text: str, text_type: str) -> None:
+    last_inputs.append(input_entry.get())
+    input_entry.delete(0, "end")
+    
+    console.config(state="normal")
+    
+    if text_type == "command":
+        console.insert("end", prefix +" ", "normal")
+        console.insert("end", text +"\n", "command")
+    elif text_type == "warning":
+        console.insert("end", text +"\n", "warning")
+    elif text_type == "error":
+        console.insert("end", text +"\n", "error")
+    else:
+        console.insert("end", text +"\n", "normal")
+        
+    console.see("end")
+    console.config(state="disabled")
+    
+print_output(meta, None)
+
+
+def close_app() -> None:
+    root.destroy()
+
+cmd_manager: CommandManager = CommandManager(input_entry, print_output, close_app)
+
+input_entry.bind("<Return>", cmd_manager.execute_command)
+#input_entry.bind("<Up>", __get_next_input)
+#input_entry.bind("<Down>", __get_prev_input)
 
 root.mainloop()
