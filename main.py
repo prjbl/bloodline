@@ -1,6 +1,7 @@
 from tkinter import Tk, Frame, Label, Entry
 from tkinter.font import Font, families
 from tkinter.scrolledtext import ScrolledText
+from datetime import datetime
 from command_manager import CommandManager
 
 class Application:
@@ -33,7 +34,7 @@ class Application:
     _TITLE: str = "Death Blight"
     _AUTHOR: str = "Project Bloodline"
     _VERSION: str = "v1.0"
-    _META: str = f"{_TITLE} {_VERSION}\nBy {_AUTHOR}\n----------------------------\n{_PREFIX} Use 'help' to get started"
+    _META: str = f"{_TITLE} {_VERSION}\nBy {_AUTHOR}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
     
     
     def _setup_window(self) -> None:
@@ -92,7 +93,7 @@ class Application:
     
     
     def _setup_bindings(self) -> None:
-        self._input_entry.bind("<Return>", lambda event: self.cmd_manager.execute_input(event, self._input_entry.get().lower().strip()))
+        self._input_entry.bind("<Return>", lambda event: self.cmd_manager.execute_input(event, self._input_entry.get().lower()))
         #input_entry.bind("<Up>", _get_next_input)
         #input_entry.bind("<Down>", _get_prev_input)
     
@@ -103,7 +104,7 @@ class Application:
         self._console.config(state="normal")
         
         if text_type == "command":
-            self._console.insert("end", f"{self._PREFIX} ", "normal")
+            self._console.insert("end", f"{datetime.now().time().strftime("%H:%M:%S")}{self._PREFIX} ", "normal")
             self._console.insert("end", f"{text}\n", "command")
         elif text_type == "warning":
             self._console.insert("end", f"{text}\n", "warning")

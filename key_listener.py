@@ -4,7 +4,7 @@ from hotkey_manager import HotkeyManager
 
 class KeyListener:
     
-    _hotkey: HotkeyManager = HotkeyManager()
+    _hk_manager: HotkeyManager = HotkeyManager()
     _key_listener: kb.Listener = None
     _listener_thread: th.Thread = None 
     
@@ -14,7 +14,7 @@ class KeyListener:
         self._stop_event: th.Event = th.Event()
     
     
-    def _equals_hotkey(self, key: any, hk_index: int, hotkey=_hotkey) -> bool:
+    def _equals_hotkey(self, key: any, hk_index: int, hotkey=_hk_manager) -> bool:
         return str(key) == hotkey.get_current_hotkeys()[hk_index]
     
     
@@ -36,7 +36,7 @@ class KeyListener:
                 self._timer.end()
             elif self._equals_hotkey(key, 6):
                 self._timer.reset()
-            elif key == kb.Key.f1: #kb.Key.esc
+            elif self._equals_hotkey(key, 7):
                 self._stop_keyboard_listener()
                 return False
         except AttributeError:
@@ -76,14 +76,15 @@ class KeyListener:
     # methods to change hotkeys via input detection below
     
     def _on_next_keyboard_input(self, key: any) -> None:
-        cache_list: list[str] = self._hotkey.get_current_hotkeys()
+        cache_dict: dict = self._hk_manager.get_current_hotkeys()
+        cleaned_key_input: str = str(key).strip().replace("'", "")
         
-        for item in cache_list:
-            if str(key).strip().replace("'", '') == item:
+        for item in cache_dict.values():
+            if cleaned_key_input == item:
                 self._print_output_func(f"Error: hotkey {key} already in use. Please start config again and try another key", "error")
                 self._stop_keyboard_listener()
                 return False
-        self._hotkey.set_hk_counter_increase(key)
+        self._hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)
         self._print_output_func(f"Hotkey was successfully changed to: {key}", None)
         self._stop_keyboard_listener()
         return True
@@ -107,3 +108,7 @@ class KeyListener:
                                     +"Press key to change hotkey...", None)
         else:
             self._print_output_func("Warning: keyboard listener already running", "warning")
+    
+    
+    def set_new_hk(self, hotkey: str) -> None:
+        self._hotkey: str = hotkey
