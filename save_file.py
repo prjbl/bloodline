@@ -3,10 +3,10 @@ from directory import Directory
 
 class SaveFile:
     
-    __file_name: str = "save_file.db"
-    __dir: Directory = Directory()
+    _FILE_NAME: str = "save_file.db"
+    _dir: Directory = Directory()
     
-    __conn: sqlite3.Connection = sqlite3.connect(__dir.get_persistent_data_path().joinpath(__file_name))
+    __conn: sqlite3.Connection = sqlite3.connect(_dir.get_persistent_data_path().joinpath(_FILE_NAME))
     __cursor: sqlite3.Cursor = __conn.cursor()
     
     

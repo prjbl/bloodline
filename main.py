@@ -1,100 +1,129 @@
 from tkinter import Tk, Frame, Label, Entry
-from tkinter.font import Font
+from tkinter.font import Font, families
 from tkinter.scrolledtext import ScrolledText
 from command_manager import CommandManager
 
-initial_height: int = 350
-initial_width: int = 600
-
-padding: int = 5
-
-color_bg: str = "#292c30"
-color_txt: str = "#ffffff"
-color_command: str = "#25b354"
-color_warning: str = "#d4a61e"
-color_error: str = "#b3253d"
-
-prefix: chr = ">"
-meta: str = f"Death Blight v1.0\nBy Project Bloodline\n----------------------------\n{prefix} Use 'help' to get started"
-
-last_inputs: list[str] = []
-
-
-root: Tk = Tk()
-root.geometry(str(initial_width) +"x" +str(initial_height))
-root.title("Death Blight")
-root.config(bg=color_bg)
-
-custom_font: Font = Font(family="DM Mono", size=10, weight="normal")
-
-input_section: Frame = Frame(root, bg=color_bg)
-input_section.pack(side="bottom", fill="x", padx=padding, pady=padding)
-
-input_prefix: Label = Label(input_section,
-                                       text=prefix,
-                                       font=custom_font,
-                                       fg=color_command,
-                                       bg=color_bg
-                                       )
-input_prefix.pack(side="left")
-
-input_entry: Entry = Entry(input_section,
-                           font=custom_font,
-                           fg=color_command,
-                           bg=color_bg,
-                           insertbackground=color_command,
-                           relief="flat"
-                           )
-input_entry.pack(side="left", fill="x", expand=True)
-input_entry.focus()
-
-console: ScrolledText = ScrolledText(root,
-                                     font=custom_font,
-                                     padx=padding,
-                                     pady=padding,
-                                     wrap="word",
-                                     state="disabled",
-                                     fg=color_txt,
-                                     bg=color_bg,
-                                     relief="flat",
-                                     )
-console.pack(fill="both", expand=True)
-
-console.tag_config("normal", foreground=color_txt)
-console.tag_config("command", foreground=color_command)
-console.tag_config("warning", foreground=color_warning)
-console.tag_config("error", foreground=color_error)
-
-
-def print_output(text: str, text_type: str) -> None:
-    last_inputs.append(input_entry.get())
-    input_entry.delete(0, "end")
+class Application:
     
-    console.config(state="normal")
-    
-    if text_type == "command":
-        console.insert("end", prefix +" ", "normal")
-        console.insert("end", text +"\n", "command")
-    elif text_type == "warning":
-        console.insert("end", text +"\n", "warning")
-    elif text_type == "error":
-        console.insert("end", text +"\n", "error")
-    else:
-        console.insert("end", text +"\n", "normal")
+    def __init__(self):
+        self._root: Tk = Tk()
+        self._setup_window()
+        self._setup_ui_elements()
+        self._setup_console_tags()
+        self.cmd_manager: CommandManager = CommandManager(self.print_output, self.quit)
+        self._setup_bindings()
         
-    console.see("end")
-    console.config(state="disabled")
+        self.print_output(self._META, None)
+        self._setup_font()
     
-print_output(meta, None)
+    
+    _INITIAL_HEIGHT: int = 350
+    _INITIAL_WIDTH: int = 600
+
+    _PADDING: int = 5
+
+    _COLOR_BG: str = "#292c30"
+    _COLOR_NORMAL: str = "#ffffff"
+    _COLOR_COMMAND: str = "#25b354"
+    _COLOR_WARNING: str = "#d4a61e"
+    _COLOR_ERROR: str = "#cf213e"
+
+    _PREFIX: chr = ">"
+    
+    _TITLE: str = "Death Blight"
+    _AUTHOR: str = "Project Bloodline"
+    _VERSION: str = "v1.0"
+    _META: str = f"{_TITLE} {_VERSION}\nBy {_AUTHOR}\n----------------------------\n{_PREFIX} Use 'help' to get started"
+    
+    
+    def _setup_window(self) -> None:
+        self._root.geometry(f"{self._INITIAL_WIDTH}x{self._INITIAL_HEIGHT}")
+        self._root.title(self._TITLE)
+        self._root.config(bg=self._COLOR_BG)
+    
+    
+    def _setup_ui_elements(self) -> None:
+        self._input_section: Frame = Frame(self._root,
+                                           bg=self._COLOR_BG)
+        self._input_section.pack(side="bottom", fill="x", padx=self._PADDING, pady=self._PADDING)
+        
+        self._input_prefix: Label = Label(self._input_section,
+                                          text=self._PREFIX,
+                                          fg=self._COLOR_COMMAND,
+                                          bg=self._COLOR_BG)
+        self._input_prefix.pack(side="left")
+        
+        self._input_entry: Entry = Entry(self._input_section,
+                                         fg=self._COLOR_COMMAND,
+                                         bg=self._COLOR_BG,
+                                         insertbackground=self._COLOR_COMMAND,
+                                         relief="flat")
+        self._input_entry.pack(side="left", fill="x", expand=True)
+        self._input_entry.focus()
+        
+        self._console: ScrolledText = ScrolledText(self._root,
+                                                   padx=self._PADDING,
+                                                   pady=self._PADDING,
+                                                   wrap="word",
+                                                   state="disabled",
+                                                   fg=self._COLOR_NORMAL,
+                                                   bg=self._COLOR_BG,
+                                                   relief="flat")
+        self._console.pack(fill="both", expand=True)
+    
+    
+    def _setup_console_tags(self) -> None:
+        self._console.tag_config("normal", foreground=self._COLOR_NORMAL)
+        self._console.tag_config("command", foreground=self._COLOR_COMMAND)
+        self._console.tag_config("warning", foreground=self._COLOR_WARNING)
+        self._console.tag_config("error", foreground=self._COLOR_ERROR)
+    
+    
+    def _setup_font(self) -> None:
+        desired_font_family: str = "DM Mono"
+        custom_font: Font = Font(family=desired_font_family, size=10, weight="normal")
+        
+        if desired_font_family in families():
+            self._input_prefix.config(font=custom_font)
+            self._input_entry.config(font=custom_font)
+            self._console.config(font=custom_font)
+        else:
+            self.print_output(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
+    
+    
+    def _setup_bindings(self) -> None:
+        self._input_entry.bind("<Return>", lambda event: self.cmd_manager.execute_input(event, self._input_entry.get().lower().strip()))
+        #input_entry.bind("<Up>", _get_next_input)
+        #input_entry.bind("<Down>", _get_prev_input)
+    
+    
+    def print_output(self, text: str, text_type: str) -> None:
+        self._input_entry.delete(0, "end")
+        
+        self._console.config(state="normal")
+        
+        if text_type == "command":
+            self._console.insert("end", f"{self._PREFIX} ", "normal")
+            self._console.insert("end", f"{text}\n", "command")
+        elif text_type == "warning":
+            self._console.insert("end", f"{text}\n", "warning")
+        elif text_type == "error":
+            self._console.insert("end", f"{text}\n", "error")
+        else:
+            self._console.insert("end", f"{text}\n", "normal")
+        
+        self._console.config(state="disabled")
+        self._console.see("end")
+    
+    
+    def run(self) -> None:
+        self._root.mainloop()
+    
+    
+    def quit(self) -> None:
+        self._root.destroy()
 
 
-def close_app() -> None:
-    root.destroy()
-
-cmd_manager: CommandManager = CommandManager(input_entry, print_output, close_app)
-
-input_entry.bind("<Return>", cmd_manager.execute_command)
-#input_entry.bind("<Up>", __get_next_input)
-#input_entry.bind("<Down>", __get_prev_input)
-
-root.mainloop()
+if __name__ == "__main__":
+    app: Application = Application()
+    app.run()

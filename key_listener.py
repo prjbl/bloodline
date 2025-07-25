@@ -4,78 +4,106 @@ from hotkey_manager import HotkeyManager
 
 class KeyListener:
     
-    __hotkey: HotkeyManager = HotkeyManager()
-    __key_listener: kb.Listener = None
-    __listener_thread: th.Thread = None 
+    _hotkey: HotkeyManager = HotkeyManager()
+    _key_listener: kb.Listener = None
+    _listener_thread: th.Thread = None 
     
     
-    def __init__(self, counter, timer, label_counter):
-        self.__counter = counter
-        self.__timer = timer
-        self.__label_counter = label_counter
-        self.__stop_event: th.Event = th.Event()
+    def __init__(self, print_output_func):
+        self._print_output_func = print_output_func
+        self._stop_event: th.Event = th.Event()
     
     
-    def __equals_hotkey(self, key: any, hk_index: int, hotkey=__hotkey) -> bool:
-        if hasattr(key, "char"):
-            return key.char == hotkey.get_current_hotkeys()[hk_index]
-        else:
-            return str(key) == hotkey.get_current_hotkeys()[hk_index]
+    def _equals_hotkey(self, key: any, hk_index: int, hotkey=_hotkey) -> bool:
+        return str(key) == hotkey.get_current_hotkeys()[hk_index]
     
     
-    def __on_press(self, key: any):
+    def _on_press(self, key: any):
         print(f"Key pressed: {key}") #debug only
         
         try:
-            if self.__equals_hotkey(key, 0):
-                self.__counter.count()
-                self.__label_counter.configure(text=str(self.__counter.get_count()))
-            elif self.__equals_hotkey(key, 1):
-                self.__counter.decount()
-                self.__label_counter.configure(text=str(self.__counter.get_count()))
-            elif self.__equals_hotkey(key, 2):
-                self.__counter.reset()
-                self.__label_counter.configure(text=str(self.__counter.get_count()))
-            elif self.__equals_hotkey(key, 3):
-                self.__timer.start()
-            elif self.__equals_hotkey(key, 4):
-                self.__timer.toggle_pause()
-            elif self.__equals_hotkey(key, 5):
-                self.__timer.end()
-            elif self.__equals_hotkey(key, 6):
-                self.__timer.reset()
+            if self._equals_hotkey(key, 0):
+                self._counter.count()
+            elif self._equals_hotkey(key, 1):
+                self._counter.decount()
+            elif self._equals_hotkey(key, 2):
+                self._counter.reset()
+            elif self._equals_hotkey(key, 3):
+                self._timer.start()
+            elif self._equals_hotkey(key, 4):
+                self._timer.toggle_pause()
+            elif self._equals_hotkey(key, 5):
+                self._timer.end()
+            elif self._equals_hotkey(key, 6):
+                self._timer.reset()
             elif key == kb.Key.f1: #kb.Key.esc
-                self.__stop_keyboard_listener()
+                self._stop_keyboard_listener()
                 return False
         except AttributeError:
-            print(f"An error occured while pressing a button")
+            self._print_output_func(f"Error: an error occured while pressing the button {key}", "error")
 
 
-    def __run_listener(self) -> None:
+    def _run_listener(self) -> None:
         with kb.Listener(
-            on_press=self.__on_press) as self.__key_listener:
-                self.__key_listener.join()
-        print("Keyboard listener has stopped")
+            on_press=self._on_press) as self._key_listener:
+                self._key_listener.join()
+        self._print_output_func("Keyboard listener stopped", None)
     
     
     def start_keyboard_listener(self) -> None:
-        if self.__stop_event and self.__stop_event.is_set():
-            self.__stop_event.clear()
+        if self._stop_event and self._stop_event.is_set():
+            self._stop_event.clear()
         
-        if self.__listener_thread is None or not self.__listener_thread.is_alive():
-            self.__listener_thread = th.Thread(target=self.__run_listener, daemon=True)
-            self.__listener_thread.start()
-            print("Keyboard listener started in seperat thread")
+        if self._listener_thread is None or not self._listener_thread.is_alive():
+            self._listener_thread = th.Thread(target=self._run_listener, daemon=True)
+            self._listener_thread.start()
+            self._print_output_func("Keyboard listener started in seperat thread", None)
         else:
-            print("Warning: keyboard listener is already running")
+            self._print_output_func("Warning: keyboard listener already running", "warning")
     
     
-    def __stop_keyboard_listener(self) -> None:
-        self.__key_listener.stop()
-        self.__stop_event.set() # sets thread event to indicate completion true
-        self.__listener_thread.join(timeout=1)
+    def _stop_keyboard_listener(self) -> None:
+        self._key_listener.stop()
+        self._stop_event.set() # sets thread event to indicate completion true
+        self._listener_thread.join(timeout=1)
         
-        if self.__listener_thread.is_alive():
-            print("Warning: Thread is still alive")
+        if self._listener_thread.is_alive():
+            self._print_output_func("Warning: Thread still alive", "warning")
         else:
-            print("Thread has been stopped/terminated")
+            self._print_output_func("Thread stopped/terminated")
+    
+    
+    # methods to change hotkeys via input detection below
+    
+    def _on_next_keyboard_input(self, key: any) -> None:
+        cache_list: list[str] = self._hotkey.get_current_hotkeys()
+        
+        for item in cache_list:
+            if str(key).strip().replace("'", '') == item:
+                self._print_output_func(f"Error: hotkey {key} already in use. Please start config again and try another key", "error")
+                self._stop_keyboard_listener()
+                return False
+        self._hotkey.set_hk_counter_increase(key)
+        self._print_output_func(f"Hotkey was successfully changed to: {key}", None)
+        self._stop_keyboard_listener()
+        return True
+    
+    
+    def _run_listener_for_one_input(self) -> None:
+        with kb.Listener(
+            on_press=self._on_next_keyboard_input) as self._key_listener:
+                self._key_listener.join()
+        self._print_output_func("Keyboard listener stopped", None)
+    
+    
+    def start_keyboard_listener_for_one_input(self) -> None:
+        if self._stop_event and self._stop_event.is_set():
+            self._stop_event.clear()
+        
+        if self._listener_thread is None or not self._listener_thread.is_alive():
+            self._listener_thread = th.Thread(target=self._run_listener_for_one_input, daemon=True)
+            self._listener_thread.start()
+            self._print_output_func("Keyboard listener started in seperat thread\n"
+                                    +"Press key to change hotkey...", None)
+        else:
+            self._print_output_func("Warning: keyboard listener already running", "warning")
