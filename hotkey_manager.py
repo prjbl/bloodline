@@ -1,16 +1,25 @@
 from pynput import keyboard
-from json import load, dump
-from directory import Directory
+from json import load, dump, JSONDecodeError
+from os import remove
+from directory import dir
 
-class HotkeyManager:
+class _HotkeyManager:
     
     def __init__(self):
-        self._create_file()
-        self._load_hotkeys()
+        self._hotkeys: dict = {
+            self._HK_NAMES[0] : self._DEFAULT_HOTKEYS[0],
+            self._HK_NAMES[1] : self._DEFAULT_HOTKEYS[1],
+            self._HK_NAMES[2] : self._DEFAULT_HOTKEYS[2],
+            self._HK_NAMES[3] : self._DEFAULT_HOTKEYS[3],
+            self._HK_NAMES[4] : self._DEFAULT_HOTKEYS[4],
+            self._HK_NAMES[5] : self._DEFAULT_HOTKEYS[5],
+            self._HK_NAMES[6] : self._DEFAULT_HOTKEYS[6],
+            self._HK_NAMES[7] : self._DEFAULT_HOTKEYS[7]
+        }
+        self._observer: any = None
     
     
     _FILE_NAME: str = "hotkeys_config.json"
-    _dir: Directory = Directory()
     
     # increase, decrease, c_reset, start, pause, end, t_reset
     _DEFAULT_HOTKEYS: list[str] = ["+", "-", "/", str(keyboard.Key.f10), str(keyboard.Key.f11), str(keyboard.Key.f12), "*", str(keyboard.Key.f1)]
@@ -24,44 +33,62 @@ class HotkeyManager:
                             "hk_timer_reset",
                             "hk_listener_end"]
     
-    _hotkeys: dict = {
-        _HK_NAMES[0] : _DEFAULT_HOTKEYS[0],
-        _HK_NAMES[1] : _DEFAULT_HOTKEYS[1],
-        _HK_NAMES[2] : _DEFAULT_HOTKEYS[2],
-        _HK_NAMES[3] : _DEFAULT_HOTKEYS[3],
-        _HK_NAMES[4] : _DEFAULT_HOTKEYS[4],
-        _HK_NAMES[5] : _DEFAULT_HOTKEYS[5],
-        _HK_NAMES[6] : _DEFAULT_HOTKEYS[6],
-        _HK_NAMES[7] : _DEFAULT_HOTKEYS[7]
-    }
+    
+    def setup_keybinds_and_observer(self, observer: any) -> None:
+        self._observer = observer
+        
+        # setup had to be outsourced to after the observer has been set, as its required for the setup process
+        self._create_file()
+        self._load_hotkeys()
+    
+    
+    def _notify_observer(self, text: str, text_type: str) -> None:
+        self._observer(text, text_type)
     
     
     def _load_hotkeys(self) -> None:
         try:
-            with open(self._dir.get_persistent_data_path().joinpath(self._FILE_NAME), "r") as input:
-                HotkeyManager._hotkeys = load(input)
+            self._perform_load()
         except FileNotFoundError:
-            print("An error occured: The file could not be found. Last known settings will be retained")
+            self._notify_observer(f"Error: The file '{self._FILE_NAME}' could not be found. Default keybinds will be restored", "error")
+        except JSONDecodeError:
+            self._notify_observer(f"Error: An error occured while loading the file '{self._FILE_NAME}'. An attempt is made to re-initialize file", "error")
+            
+            try:
+                remove(dir.get_persistent_data_path().joinpath(self._FILE_NAME))
+                self._create_file()
+                self._perform_load()
+                self._notify_observer("Re-initializing file was successful. Default keybinds were restored", None)
+            except Exception as e:
+                self._notify_observer(f"Error: Failed to re-initialize file. Exception: {e}", "error")
+    
+    
+    def _perform_load(self) -> None:
+        with open(dir.get_persistent_data_path().joinpath(self._FILE_NAME), "r") as input:
+            self._hotkeys = load(input)
     
     
     def _save_hotkeys(self) -> None:
-        with open(self._dir.get_persistent_data_path().joinpath(self._FILE_NAME), "w") as output:
-            dump(HotkeyManager._hotkeys, output, indent=4)
+        with open(dir.get_persistent_data_path().joinpath(self._FILE_NAME), "w") as output:
+            dump(self._hotkeys, output, indent=4)
     
     
     def _create_file(self) -> None:
-        if not self._dir.get_persistent_data_path().joinpath(self._FILE_NAME).exists():
+        if not dir.get_persistent_data_path().joinpath(self._FILE_NAME).exists():
             self._save_hotkeys()
     
     
     def set_new_keybind(self, hotkey: str, new_keybind: str) -> None:
-        HotkeyManager._hotkeys[hotkey] = new_keybind
+        self._hotkeys[hotkey] = new_keybind
         self._save_hotkeys()
 
 
     def get_current_hotkeys(self) -> dict:
-        return HotkeyManager._hotkeys
+        return self._hotkeys
     
     
     def get_hotkey_names(self) -> list[str]:
         return self._HK_NAMES
+
+
+hk_manager: _HotkeyManager = _HotkeyManager()
