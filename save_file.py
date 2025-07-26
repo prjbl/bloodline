@@ -1,37 +1,46 @@
 import sqlite3
-from directory import Directory
+from directory import dir
 
 class SaveFile:
     
-    _FILE_NAME: str = "save_file.db"
-    _dir: Directory = Directory()
-    
-    __conn: sqlite3.Connection = sqlite3.connect(_dir.get_persistent_data_path().joinpath(_FILE_NAME))
-    __cursor: sqlite3.Cursor = __conn.cursor()
-    
-    
     def __init__(self):
-        self.__create_tables(self.__cursor, self.__conn)
-
+        self._conn: sqlite3.Connection = sqlite3.connect(dir.get_persistent_data_path().joinpath(self._FILE_NAME))
+        self._cursor: sqlite3.Cursor = self._conn.cursor()
+        self._observer: any = None
     
-    def __create_tables(self, cursor=__cursor, conn=__conn) -> None:
+    
+    _FILE_NAME: str = "save_file.db"
+    
+    
+    def setup_db_and_observer(self, observer: any) -> None:
+        self._observer = observer
+        
+        # setup had to be outsourced to after the observer has been set, as its required for the setup process
+        self._create_tables()
+    
+    
+    def _notify_observer(self, text: str, text_type: str) -> None:
+        self._observer(text, text_type)
+    
+    
+    def _create_tables(self) -> None:
         try:
-            cursor.execute("""CREATE TABLE IF NOT EXISTS Game (
-                                title TEXT NOT NULL,
-                                PRIMARY KEY (title)
-                            )""")
+            self._cursor.execute("""CREATE TABLE IF NOT EXISTS Game (
+                                        title TEXT NOT NULL,
+                                        PRIMARY KEY (title)
+                                )""")
             
-            cursor.execute("""CREATE TABLE IF NOT EXISTS Boss (
-                                name TEXT NOT NULL,
-                                deaths INTEGER,
-                                requiredTime TEXT,
-                                gameTitle TEXT NOT NULL,
-                                PRIMARY KEY (name),
-                                FOREIGN KEY (gameTitle) REFERENCES Game (title)
-                            )""")
-            conn.commit()
+            self._cursor.execute("""CREATE TABLE IF NOT EXISTS Boss (
+                                        name TEXT NOT NULL,
+                                        deaths INTEGER,
+                                        requiredTime TEXT,
+                                        gameTitle TEXT NOT NULL,
+                                        PRIMARY KEY (name),
+                                        FOREIGN KEY (gameTitle) REFERENCES Game (title)
+                                )""")
+            self._conn.commit()
         except sqlite3.OperationalError as e:
-            print(f"An error occured: {e}")
+            self._notify_observer("Error: A syntax error occured while creating database tables", "error")
     
     
     def add_game_title(self, title: str) -> None:
@@ -106,4 +115,4 @@ class SaveFile:
     
     
     def close_connection(self) -> None:
-        self.__conn.close()
+        self._conn.close()
