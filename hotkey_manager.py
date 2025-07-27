@@ -7,14 +7,14 @@ class _HotkeyManager:
     
     def __init__(self):
         self._hotkeys: dict = {
-            self._HK_NAMES[0] : self._DEFAULT_HOTKEYS[0],
-            self._HK_NAMES[1] : self._DEFAULT_HOTKEYS[1],
-            self._HK_NAMES[2] : self._DEFAULT_HOTKEYS[2],
-            self._HK_NAMES[3] : self._DEFAULT_HOTKEYS[3],
-            self._HK_NAMES[4] : self._DEFAULT_HOTKEYS[4],
-            self._HK_NAMES[5] : self._DEFAULT_HOTKEYS[5],
-            self._HK_NAMES[6] : self._DEFAULT_HOTKEYS[6],
-            self._HK_NAMES[7] : self._DEFAULT_HOTKEYS[7]
+            self._HK_NAMES[0]: self._DEFAULT_HOTKEYS[0],
+            self._HK_NAMES[1]: self._DEFAULT_HOTKEYS[1],
+            self._HK_NAMES[2]: self._DEFAULT_HOTKEYS[2],
+            self._HK_NAMES[3]: self._DEFAULT_HOTKEYS[3],
+            self._HK_NAMES[4]: self._DEFAULT_HOTKEYS[4],
+            self._HK_NAMES[5]: self._DEFAULT_HOTKEYS[5],
+            self._HK_NAMES[6]: self._DEFAULT_HOTKEYS[6],
+            self._HK_NAMES[7]: self._DEFAULT_HOTKEYS[7]
         }
         self._observer: any = None
     
