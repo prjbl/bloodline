@@ -8,25 +8,26 @@ class CommandManager:
         self._print_output_func = print_output_func
         self._quit_app_func = quit_app_func
         self._setup_instances()
+        self._setup_multi_input_vars()
         
         self._COMMANDS: dict = {
-            "help" : self._help,
-            "quit" : self._quit,
-            "keybinds" : self._keybinds,
-            "keybinds --list".replace(" ", "") : self._keybinds_list,
-            ("keybinds --config "+hk_manager.get_hotkey_names()[0]).replace(" ", "") : lambda: self._keybinds_config(hk_manager.get_hotkey_names()[0]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[1]).replace(" ", "") : lambda: self._keybinds_config(hk_manager.get_hotkey_names()[1]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[2]).replace(" ", "") : lambda: self._keybinds_config(hk_manager.get_hotkey_names()[2]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[3]).replace(" ", "") : lambda: self._keybinds_config(hk_manager.get_hotkey_names()[3]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[4]).replace(" ", "") : lambda: self._keybinds_config(hk_manager.get_hotkey_names()[4]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[5]).replace(" ", "") : lambda: self._keybinds_config(hk_manager.get_hotkey_names()[5]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[6]).replace(" ", "") : lambda: self._keybinds_config(hk_manager.get_hotkey_names()[6]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[7]).replace(" ", "") : lambda: self._keybinds_config(hk_manager.get_hotkey_names()[7]),
+            "help": self._help,
+            "quit": self._quit,
+            "keybinds": self._keybinds,
+            "keybinds --list".replace(" ", ""): self._keybinds_list,
+            ("keybinds --config "+hk_manager.get_hotkey_names()[0]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[0]),
+            ("keybinds --config "+hk_manager.get_hotkey_names()[1]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[1]),
+            ("keybinds --config "+hk_manager.get_hotkey_names()[2]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[2]),
+            ("keybinds --config "+hk_manager.get_hotkey_names()[3]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[3]),
+            ("keybinds --config "+hk_manager.get_hotkey_names()[4]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[4]),
+            ("keybinds --config "+hk_manager.get_hotkey_names()[5]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[5]),
+            ("keybinds --config "+hk_manager.get_hotkey_names()[6]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[6]),
+            ("keybinds --config "+hk_manager.get_hotkey_names()[7]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[7]),
             "setup": self._setup,
-            "setup --add game".replace(" ", "") : lambda: self._setup_add("game"),
-            "setup --add boss".replace(" ", "") : lambda: self._setup_add("boss")
+            "setup --list".replace(" ", ""): self._setup_list,
+            "setup --add game".replace(" ", ""): lambda: self._setup_add("game"),
+            "setup --add boss".replace(" ", ""): lambda: self._setup_add("boss")
         }
-        self._ignore_next_input: bool = False
     
     
     def _setup_instances(self) -> None:
@@ -37,18 +38,26 @@ class CommandManager:
         self._save_file.setup_db_and_observer(self._print_output_func)
     
     
+    def _setup_multi_input_vars(self) -> None:
+        self._console_input: str = ""
+        self._cleaned_console_input: str = ""
+        self._ignore_input: bool = False
+        self._inputs_to_ignore: int = 0
+        self._iteration_count: int = 0
+    
+    
     def execute_input(self, event, console_input: str) -> None:
         if console_input != "":
-            cleaned_console_input: str = console_input.replace(" ", "")
-            
-            if self._ignore_next_input:
-                # counter here???
-                self._print_output_func(f"Added '{cleaned_console_input}' to database", None)
+            if self._ignore_input:
+                self._console_input = console_input
+                self._COMMANDS.get(self._cleaned_console_input)()
             else:
                 self._print_output_func(console_input, "command")
                 
-                if cleaned_console_input in self._COMMANDS:
-                    self._COMMANDS.get(cleaned_console_input)()
+                self._cleaned_console_input = console_input.replace(" ", "")
+                
+                if self._cleaned_console_input in self._COMMANDS:
+                    self._COMMANDS.get(self._cleaned_console_input)()
                 else:
                     self._print_output_func("Error: Unknown input. Please use 'help' to get a list of all working commands", "error")
     
@@ -92,25 +101,37 @@ class CommandManager:
                                 +"• setup --add boss: Adds the boss to the save file", None)
     
     
-    # edit next
+    def _setup_list(self) -> None:
+        tmp_list_of_games: list = self._save_file.get_all_games()
+        
+        for item in tmp_list_of_games:
+            self._print_output_func(f"• {item}", None)
+    
+    
     def _setup_add(self, type: str) -> None:
-        self._ignore_next_input = True
-        inputs_to_ignore: int = None
-        counter: int = None
+        self._ignore_input = True
         
         if type == "game":
-            inputs_to_ignore = 1
-            self._print_output_func("Please enter the game you want to add...", None)
-            counter +=1
-        elif type == "boss":
-            inputs_to_ignore = 2
-            counter +=1
+            self._inputs_to_ignore = 1
             
-            if counter == 1:
-                self._print_output_func("Please enter the boss you want to add...", None)
+            if self._iteration_count == 0:
+                self._print_output_func("Please enter the game you want to add...", None)
             else:
-                self._print_output_func("Please enter the game you want the boss to be connected")
+                self._save_file.add_game_title(self._console_input)
+        elif type == "boss":
+            self._inputs_to_ignore = 2
+            
+            if self._iteration_count == 0:
+                self._print_output_func("Please enter the boss you want to add...", None)
+            elif self._iteration_count == 1:
+                self._print_output_func("Please enter the game you want the boss to be connected to", None)
+            else:
+                # problems!!!!
+                self._save_file.add_boss_name("", "")
         
-        if counter >= inputs_to_ignore:
-            self._ignore_next_input = False
-            counter = 0
+        if self._iteration_count == self._inputs_to_ignore:
+            self._ignore_input = False
+            self._iteration_count = 0
+            return
+        
+        self._iteration_count += 1
