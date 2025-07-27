@@ -25,8 +25,8 @@ class CommandManager:
             ("keybinds --config "+hk_manager.get_hotkey_names()[7]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[7]),
             "setup": self._setup,
             "setup --list".replace(" ", ""): self._setup_list,
-            "setup --add game".replace(" ", ""): lambda: self._setup_add("game"),
-            "setup --add boss".replace(" ", ""): lambda: self._setup_add("boss")
+            "setup --select".replace(" ", ""): self._setup_select,
+            "setup --add boss".replace(" ", ""): self._setup_add
         }
     
     
@@ -44,6 +44,9 @@ class CommandManager:
         self._ignore_input: bool = False
         self._inputs_to_ignore: int = 0
         self._iteration_count: int = 0
+        
+        self._boss_name: str = ""
+        self._game_title: str = ""
     
     
     def execute_input(self, event, console_input: str) -> None:
@@ -97,37 +100,51 @@ class CommandManager:
     
     def _setup(self) -> None:
         self._print_output_func("This is a list of all setup commands:\n"
-                                +"• setup --add game: Adds the game to the save file\n"
-                                +"• setup --add boss: Adds the boss to the save file", None)
+                                +"• setup --list: Lists all added games\n"
+                                +"• setup --select: .......\n"
+                                +"• setup --add boss: Adds a boss with the corresponding game to the save file", None)
     
     
     def _setup_list(self) -> None:
-        tmp_list_of_games: list = self._save_file.get_all_games()
+        tmp_list_of_games: list[str] = self._save_file.get_all_games()
         
         for item in tmp_list_of_games:
             self._print_output_func(f"• {item}", None)
     
     
-    def _setup_add(self, type: str) -> None:
-        self._ignore_input = True
+    def _setup_select(self) -> None:
+        self._ignore_input = True # outsource in extra def
+        self._inputs_to_ignore = 1 # - " -
         
-        if type == "game":
-            self._inputs_to_ignore = 1
+        if self._iteration_count == 0:
+            self._print_output_func("Please enter a game you want all bosses listed from...", None)
+        else:
+            self._game_title = self._console_input
+            tmp_list_of_bosses: list[str] = self._save_file.get_all_bosses(self._game_title)
             
-            if self._iteration_count == 0:
-                self._print_output_func("Please enter the game you want to add...", None)
-            else:
-                self._save_file.add_game_title(self._console_input)
-        elif type == "boss":
-            self._inputs_to_ignore = 2
-            
-            if self._iteration_count == 0:
-                self._print_output_func("Please enter the boss you want to add...", None)
-            elif self._iteration_count == 1:
-                self._print_output_func("Please enter the game you want the boss to be connected to", None)
-            else:
-                # problems!!!!
-                self._save_file.add_boss_name("", "")
+            for item in tmp_list_of_bosses:
+                self._print_output_func(f"• {item}", None)
+        
+        if self._iteration_count == self._inputs_to_ignore: #outsource in extra def
+            self._ignore_input = False
+            self._iteration_count = 0
+            return
+        
+        self._iteration_count += 1 # - " -
+    
+    
+    def _setup_add(self) -> None:
+        self._ignore_input = True
+        self._inputs_to_ignore = 2
+        
+        if self._iteration_count == 0:
+            self._print_output_func("Please enter the boss you want to add...", None)
+        elif self._iteration_count == 1:
+            self._boss_name = self._console_input
+            self._print_output_func("Please enter the game you want the boss to be connected to...", None)
+        else:
+            self._game_title = self._console_input
+            self._save_file.add_boss(self._boss_name, self._game_title)
         
         if self._iteration_count == self._inputs_to_ignore:
             self._ignore_input = False
