@@ -36,7 +36,7 @@ class SaveFile:
                                         deaths INTEGER,
                                         requiredTime TEXT,
                                         gameTitle TEXT NOT NULL,
-                                        PRIMARY KEY (name),
+                                        PRIMARY KEY (name, gameTitle),
                                         FOREIGN KEY (gameTitle) REFERENCES Game (title)
                                 )""")
             self._conn.commit()
@@ -44,7 +44,7 @@ class SaveFile:
             self._notify_observer("Error: A syntax error occured while creating database tables", "error")
     
     
-    def add_game_title(self, title: str) -> None:
+    def _add_game(self, title: str) -> None:
         try:
             self._cursor.execute("""INSERT INTO Game (title)
                                         VALUES (?)""", (title,))
@@ -57,41 +57,36 @@ class SaveFile:
             self._notify_observer(f"Error: A syntax error occured while adding '{title}' to save file", "error")
     
     
-    def add_boss_name(self, boss: str, game: str) -> None:
-        boss = "Hund"
-        game = "Hund Game"
-        game_exists: bool = self._get_specific_game(game)
+    def add_boss(self, boss_name: str, game_title: str) -> None:
+        game_exists: bool = self._get_specific_game(game_title)
         
         if not game_exists:
-            self.add_game_title(game)
+            self._add_game(game_title)
         
         try:
             self._cursor.execute("""INSERT INTO Boss (name, gameTitle)
-                                        VALUES (?, ?)""", (boss, game))
+                                        VALUES (?, ?)""", (boss_name, game_title))
             self._conn.commit()
             
-            self._notify_observer(f"The boss '{boss}' of game '{game}' has been added to the save file", None)
+            self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' has been added to the save file", None)
         except sqlite3.IntegrityError:
             if not game_exists:
-                self._notify_observer(f"Error: The game '{game}' is not added yet", "error")
+                self._notify_observer(f"Error: The game '{game_title}' is not added yet", "error")
             else:
-                self._notify_observer(f"Error: The boss '{boss}' already exists in the save file", "error")
+                self._notify_observer(f"Error: The boss '{boss_name}' already exists in the save file", "error")
         except sqlite3.OperationalError:
-            self._notify_observer(f"Error: A syntax error occured while adding '{game}' and '{boss}' to save file", "error")
+            self._notify_observer(f"Error: A syntax error occured while adding '{game_title}' and '{boss_name}' to save file", "error")
     
-#    def add_boss_name(self, name: str) -> None:
-#        try:
-#            game_title: str = "Schwanz"
-#            
-#            self._cursor.execute("""INSERT INTO Boss (name, gameTitle)
-#                                        VALUES (?, ?)""", (name, game_title))
-#            self._conn.commit()
-#            
-#            self._notify_observer(f"The boss '{name}' has been added to the save file", None)
-#        except sqlite3.IntegrityError:
-#            self._notify_observer(f"Error: The boss '{name}' already exists in the save file", "error") #or game title is not in db
-#        except sqlite3.OperationalError:
-#            self._notify_observer(f"Error: A syntax error occured while adding '{name}' to save file", "error")
+    
+    def _get_specific_game(self, game_title: str) -> bool:
+        self._cursor.execute("""SELECT title FROM Game
+                                    WHERE title = (?)""", (game_title,))
+        selection: list[str] = self._cursor.fetchone()
+        
+        if selection is None:
+            return False
+        else:
+            return True
     
     
     def get_all_games(self) -> list[str]:
@@ -106,20 +101,22 @@ class SaveFile:
             cleaned_selection: list[str] = []
             
             for item_tuple in selection:
-                    cleaned_selection.extend(item_tuple)
+                cleaned_selection.extend(item_tuple)
             
             return cleaned_selection
     
     
-    def _get_specific_game(self, game: str) -> bool:
-        self._cursor.execute("""SELECT title FROM Game
-                                    WHERE title = (?)""", (game,))
-        selection: str = self._cursor.fetchone()
+    def get_all_bosses(self, game_title: str) -> list[str]:
+        self._cursor.execute("""SELECT b.name, b.deaths, b.requiredTime FROM Boss b
+                                    JOIN Game g ON b.gameTitle = g.title
+                                    WHERE g.title = (?)""", (game_title,))
+        selection: list[str] = self._cursor.fetchall()
         
-        if game == selection:
-            return True
+        if not selection:
+            self._notify_observer(f"Error: There are no games in the save file so far", "error")
+            return []
         else:
-            return False
+            return selection
     
     
 #    def update_specific_statistics(self, boss_name: str, deaths: int, requiredTime: str) -> None:
