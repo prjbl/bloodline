@@ -73,7 +73,7 @@ class SaveFile:
             if not game_exists:
                 self._notify_observer(f"Error: The game '{game_title}' is not added yet", "error")
             else:
-                self._notify_observer(f"Error: The boss '{boss_name}' already exists in the save file", "error")
+                self._notify_observer(f"Error: The boss '{boss_name}' is already added to the game '{game_title}'", "error")
         except sqlite3.OperationalError:
             self._notify_observer(f"Error: A syntax error occured while adding '{game_title}' and '{boss_name}' to save file", "error")
     
@@ -95,7 +95,7 @@ class SaveFile:
         selection: list[str] = self._cursor.fetchall()
         
         if not selection:
-            self._notify_observer(f"Error: There are no games in the save file so far", "error")
+            self._notify_observer("Error: There are no games in the save file so far", "error")
             return []
         else:
             cleaned_selection: list[str] = []
@@ -106,14 +106,14 @@ class SaveFile:
             return cleaned_selection
     
     
-    def get_all_bosses(self, game_title: str) -> list[str]:
+    def get_all_bosses_from_game(self, game_title: str) -> list[str]:
         self._cursor.execute("""SELECT b.name, b.deaths, b.requiredTime FROM Boss b
                                     JOIN Game g ON b.gameTitle = g.title
                                     WHERE g.title = (?)""", (game_title,))
         selection: list[str] = self._cursor.fetchall()
         
         if not selection:
-            self._notify_observer(f"Error: There are no games in the save file so far", "error")
+            self._notify_observer(f"Error: There are no bosses linked to the game {game_title} so far", "error")
             return []
         else:
             return selection
