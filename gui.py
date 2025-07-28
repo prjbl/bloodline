@@ -1,4 +1,4 @@
-from tkinter import Tk, Frame, Label, Entry
+from tkinter import Tk, Frame, Label, Entry, StringVar
 from tkinter.font import Font, families
 from tkinter.scrolledtext import ScrolledText
 from datetime import datetime
@@ -10,14 +10,15 @@ class Application:
     def __init__(self):
         self._root: Tk = Tk()
         self._setup_window()
+        self._setup_entry_callback()
         self._setup_ui_elements()
         self._setup_console_tags()
-        self._setup_bindings()
         
         self.print_output(self._META, None)
-        self._setup_font()
+        self._setup_font() # initialising after first console input so a possible error will be displayed after the meta data
         
-        self.cmd_manager: CommandManager = CommandManager(self.print_output, self.quit)
+        self._cmd_manager: CommandManager = CommandManager(self.print_output, self.quit)
+        self._setup_bindings()
     
     
     _INITIAL_HEIGHT: int = 350
@@ -41,6 +42,11 @@ class Application:
         self._root.config(bg=self._COLOR_BG)
     
     
+    def _setup_entry_callback(self) -> None:
+        self._entry_var: StringVar = StringVar()
+        self._entry_var.trace_add("write", self._on_entry_change)
+    
+    
     def _setup_ui_elements(self) -> None:
         self._input_section: Frame = Frame(self._root,
                                            bg=self._COLOR_BG)
@@ -56,7 +62,10 @@ class Application:
                                          fg=self._COLOR_COMMAND,
                                          bg=self._COLOR_BG,
                                          insertbackground=self._COLOR_COMMAND,
-                                         relief="flat")
+                                         relief="flat",
+                                         selectbackground=self._COLOR_COMMAND,
+                                         selectforeground=self._COLOR_NORMAL,
+                                         textvariable=self._entry_var)
         self._input_entry.pack(side="left", fill="x", expand=True)
         self._input_entry.focus()
         
@@ -91,9 +100,13 @@ class Application:
     
     
     def _setup_bindings(self) -> None:
-        self._input_entry.bind("<Return>", lambda event: self.cmd_manager.execute_input(event, self._input_entry.get().lower()))
-        #input_entry.bind("<Up>", _get_next_input)
-        #input_entry.bind("<Down>", _get_prev_input)
+        self._input_entry.bind("<FocusIn>", self._on_focus_in)
+        self._input_entry.bind("<FocusOut>", self._on_focus_out)
+        
+        self._input_entry.bind("<Return>", lambda event: self._cmd_manager.execute_input(event, self._input_entry.get().lower()))
+        self._input_entry.bind("<Tab>", lambda event: self._cmd_manager.auto_complete(event, self._input_entry))
+        self._input_entry.bind("<Up>", lambda event: self._cmd_manager.get_last_input(event, self._input_entry))
+        self._input_entry.bind("<Down>", lambda event: self._cmd_manager.get_prev_input(event, self._input_entry))
     
     
     def print_output(self, text: str, text_type: str) -> None:
@@ -113,6 +126,18 @@ class Application:
         
         self._console.config(state="disabled")
         self._console.see("end")
+    
+    
+    def _on_focus_in(self, event) -> None:
+        self._entry_var.set("")
+    
+    
+    def _on_focus_out(self, event) -> None:
+        self._entry_var.set("_")
+    
+    
+    def _on_entry_change(self, *args) -> None:
+        self._cmd_manager.set_entry_var(self._entry_var.get())
     
     
     def run(self) -> None:

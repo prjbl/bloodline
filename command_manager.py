@@ -1,6 +1,7 @@
 from hotkey_manager import hk_manager
 from key_listener import KeyListener
 from save_file import SaveFile
+from counter import Counter
 
 class CommandManager:
     
@@ -9,30 +10,36 @@ class CommandManager:
         self._quit_app_func = quit_app_func
         self._setup_instances()
         self._setup_multi_input_vars()
+        self._setup_input_history_vars()
+        self._setup_auto_complete_vars()
         
         self._COMMANDS: dict = {
             "help": self._help,
             "quit": self._quit,
+            "start": self._start,
             "keybinds": self._keybinds,
-            "keybinds --list".replace(" ", ""): self._keybinds_list,
-            ("keybinds --config "+hk_manager.get_hotkey_names()[0]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[0]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[1]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[1]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[2]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[2]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[3]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[3]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[4]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[4]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[5]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[5]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[6]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[6]),
-            ("keybinds --config "+hk_manager.get_hotkey_names()[7]).replace(" ", ""): lambda: self._keybinds_config(hk_manager.get_hotkey_names()[7]),
+            "keybinds --list": self._keybinds_list,
+            "keybinds --config "+hk_manager.get_hotkey_names()[0]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[0]),
+            "keybinds --config "+hk_manager.get_hotkey_names()[1]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[1]),
+            "keybinds --config "+hk_manager.get_hotkey_names()[2]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[2]),
+            "keybinds --config "+hk_manager.get_hotkey_names()[3]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[3]),
+            "keybinds --config "+hk_manager.get_hotkey_names()[4]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[4]),
+            "keybinds --config "+hk_manager.get_hotkey_names()[5]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[5]),
+            "keybinds --config "+hk_manager.get_hotkey_names()[6]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[6]),
+            "keybinds --config "+hk_manager.get_hotkey_names()[7]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[7]),
             "setup": self._setup,
-            "setup --list".replace(" ", ""): self._setup_list,
-            "setup --select".replace(" ", ""): self._setup_select,
-            "setup --add boss".replace(" ", ""): self._setup_add
+            "setup --list": self._setup_list,
+            "setup --select": self._setup_select,
+            "setup --add boss": self._setup_add
         }
+        self._COMMANDS_LIST: list[str] = list(self._COMMANDS.keys())
+        self._COMMANDS = {key.replace(" ", ""): value for key, value in self._COMMANDS.items()} # dictionary comprehension
     
     
     def _setup_instances(self) -> None:
         hk_manager.setup_keybinds_and_observer(self._print_output_func)
-        self._key_listner: KeyListener = KeyListener()
+        self._counter: Counter = Counter()
+        self._key_listner: KeyListener = KeyListener(self._counter)
         self._key_listner.set_observer(self._print_output_func)
         self._save_file: SaveFile = SaveFile()
         self._save_file.setup_db_and_observer(self._print_output_func)
@@ -49,8 +56,23 @@ class CommandManager:
         self._game_title: str = ""
     
     
+    def _setup_input_history_vars(self) -> None:
+        self._input_history: list[str] = []
+        self._input_history_index: int = 0
+    
+    
+    def _setup_auto_complete_vars(self) -> None:
+        self._commands_match: list[str] = []
+        self._commands_match_index: int = 0
+        self._entry_var: str = ""
+        self._entry_has_changed: bool = False
+        self._programmatic_update: bool = False
+    
+    
     def execute_input(self, event, console_input: str) -> None:
         if console_input != "":
+            self._add_input_to_history(console_input)
+            
             if self._ignore_input:
                 self._console_input = console_input
                 self._COMMANDS.get(self._cleaned_console_input)()
@@ -65,6 +87,67 @@ class CommandManager:
                     self._print_output_func("Error: Unknown input. Please use 'help' to get a list of all working commands", "error")
     
     
+    def set_entry_var(self, entry_var: str) -> None:
+        if not self._programmatic_update:
+            self._entry_var = entry_var
+            self._entry_has_changed = True
+    
+    
+    def auto_complete(self, event, input_entry) -> None:
+        self._programmatic_update = True
+        
+        if self._entry_has_changed:
+            self._entry_has_changed = False
+            self._commands_match.clear()
+            self._commands_match_index = 0
+            
+            for item in self._COMMANDS_LIST:
+                if self._entry_var in item:
+                    self._commands_match.append(item)
+            
+            if self._commands_match:
+                input_entry.delete(0, "end")
+                input_entry.insert(0, self._commands_match[self._commands_match_index])
+                self._commands_match_index += 1
+        elif self._commands_match_index < len(self._commands_match):
+            input_entry.delete(0, "end")
+            input_entry.insert(0, self._commands_match[self._commands_match_index])
+            self._commands_match_index += 1
+        else:
+            self._commands_match_index = 0
+            input_entry.delete(0, "end")
+            input_entry.insert(0, self._commands_match[self._commands_match_index])
+            self._commands_match_index += 1
+        
+        self._programmatic_update = False
+    
+    
+    def _add_input_to_history(self, console_input: str) -> None:
+        if not self._input_history:
+            self._input_history.append(console_input)
+            self._input_history_index = len(self._input_history)
+        elif console_input != self._input_history[len(self._input_history) - 1]:
+            self._input_history.append(console_input)
+            self._input_history_index = len(self._input_history)
+    
+    
+    def get_last_input(self, event, input_entry) -> None:
+        if self._input_history and self._input_history_index > 0:
+            self._input_history_index -= 1
+            input_entry.delete(0, "end")
+            input_entry.insert(0, self._input_history[self._input_history_index])
+    
+    
+    def get_prev_input(self, event, input_entry) -> None:
+        if self._input_history and self._input_history_index < len(self._input_history) - 1:
+            self._input_history_index += 1
+            input_entry.delete(0, "end")
+            input_entry.insert(0, self._input_history[self._input_history_index])
+        elif self._input_history_index == len(self._input_history) - 1:
+            self._input_history_index += 1
+            input_entry.delete(0, "end")
+    
+    
     def _help(self) -> None:
         self._print_output_func("This is a list of all working commands:\n"
                                 +"• quit: Quits the application\n"
@@ -75,6 +158,10 @@ class CommandManager:
     def _quit(self) -> None:
         self._save_file.close_connection()
         self._quit_app_func()
+    
+    
+    def _start(self) -> None:
+        self._key_listner.start_keyboard_listener()
     
     
     def _keybinds(self) -> None:
@@ -120,7 +207,7 @@ class CommandManager:
             self._print_output_func("Please enter a game you want all bosses listed from...", None)
         else:
             self._game_title = self._console_input
-            tmp_list_of_bosses: list[str] = self._save_file.get_all_bosses(self._game_title)
+            tmp_list_of_bosses: list[str] = self._save_file.get_all_bosses_from_game(self._game_title)
             
             for item in tmp_list_of_bosses:
                 self._print_output_func(f"• {item}", None)

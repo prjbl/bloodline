@@ -4,7 +4,8 @@ from hotkey_manager import hk_manager
 
 class KeyListener:
     
-    def __init__(self):
+    def __init__(self, counter):
+        self._counter = counter
         self._key_listener: kb.Listener = None
         self._listener_thread: th.Thread = None
         self._stop_event: th.Event = th.Event()
@@ -20,13 +21,17 @@ class KeyListener:
     
     
     def _equals_hotkey(self, key: any, hk_index: int) -> bool:
-        return str(key) == hk_manager.get_current_hotkeys()[hk_index]
+        tmp_list_hotkeys: list[str] = list(hk_manager.get_current_hotkeys().values())
+        cleaned_key_input: str = str(key).replace("'", "")
+        
+        return cleaned_key_input == tmp_list_hotkeys[hk_index]
     
     
     def _on_press(self, key: any):
         try:
             if self._equals_hotkey(key, 0):
                 self._counter.count()
+                self._notify_observer(f"Counter increase: {self._counter.get_count()}", None)
             elif self._equals_hotkey(key, 1):
                 self._counter.decount()
             elif self._equals_hotkey(key, 2):
@@ -43,7 +48,7 @@ class KeyListener:
                 self._stop_keyboard_listener()
                 return False
         except AttributeError:
-            self._notify_observer(f"Error: An error occured while pressing the button {key}", "error")
+            self._notify_observer(f"Error: An error occured while pressing the key '{key}'", "error")
 
 
     def _run_listener(self) -> None:
