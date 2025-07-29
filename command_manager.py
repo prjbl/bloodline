@@ -2,6 +2,7 @@ from hotkey_manager import hk_manager
 from key_listener import KeyListener
 from save_file import SaveFile
 from counter import Counter
+from timer import Timer
 
 class CommandManager:
     
@@ -17,6 +18,11 @@ class CommandManager:
             "help": self._help,
             "quit": self._quit,
             "start": self._start,
+            "setup": self._setup,
+            "setup --add boss": self._setup_add,
+            "stats": None,
+            "stats --list games": self._stats_list_games,
+            "stats --list bosses": self._stats_list_bosses,
             "keybinds": self._keybinds,
             "keybinds --list": self._keybinds_list,
             "keybinds --config "+hk_manager.get_hotkey_names()[0]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[0]),
@@ -27,10 +33,6 @@ class CommandManager:
             "keybinds --config "+hk_manager.get_hotkey_names()[5]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[5]),
             "keybinds --config "+hk_manager.get_hotkey_names()[6]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[6]),
             "keybinds --config "+hk_manager.get_hotkey_names()[7]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[7]),
-            "setup": self._setup,
-            "setup --list": self._setup_list,
-            "setup --select": self._setup_select,
-            "setup --add boss": self._setup_add
         }
         self._COMMANDS_LIST: list[str] = list(self._COMMANDS.keys())
         self._COMMANDS = {key.replace(" ", ""): value for key, value in self._COMMANDS.items()} # dictionary comprehension
@@ -39,7 +41,10 @@ class CommandManager:
     def _setup_instances(self) -> None:
         hk_manager.setup_keybinds_and_observer(self._print_output_func)
         self._counter: Counter = Counter()
-        self._key_listner: KeyListener = KeyListener(self._counter)
+        self._counter.set_observer(self._print_output_func)
+        self._timer: Timer = Timer()
+        self._timer.set_observer(self._print_output_func)
+        self._key_listner: KeyListener = KeyListener(self._counter, self._timer)
         self._key_listner.set_observer(self._print_output_func)
         self._save_file: SaveFile = SaveFile()
         self._save_file.setup_db_and_observer(self._print_output_func)
@@ -104,20 +109,14 @@ class CommandManager:
             for item in self._COMMANDS_LIST:
                 if self._entry_var in item:
                     self._commands_match.append(item)
-            
-            if self._commands_match:
-                input_entry.delete(0, "end")
-                input_entry.insert(0, self._commands_match[self._commands_match_index])
-                self._commands_match_index += 1
-        elif self._commands_match_index < len(self._commands_match):
-            input_entry.delete(0, "end")
-            input_entry.insert(0, self._commands_match[self._commands_match_index])
+        elif self._commands_match_index < len(self._commands_match) - 1:
             self._commands_match_index += 1
         else:
             self._commands_match_index = 0
+        
+        if self._commands_match:
             input_entry.delete(0, "end")
             input_entry.insert(0, self._commands_match[self._commands_match_index])
-            self._commands_match_index += 1
         
         self._programmatic_update = False
     
@@ -136,6 +135,9 @@ class CommandManager:
             self._input_history_index -= 1
             input_entry.delete(0, "end")
             input_entry.insert(0, self._input_history[self._input_history_index])
+        elif self._input_history and self._input_history_index == 0:
+            input_entry.delete(0, "end")
+            input_entry.insert(0, self._input_history[self._input_history_index])
     
     
     def get_prev_input(self, event, input_entry) -> None:
@@ -151,8 +153,9 @@ class CommandManager:
     def _help(self) -> None:
         self._print_output_func("This is a list of all working commands:\n"
                                 +"• quit: Quits the application\n"
-                                +"• keybinds: Lists all keybinding commands\n"
-                                +"• setup: List all setup commands", None)
+                                +"• start: Starts the key listener\n"
+                                +"• setup: List all setup commands\n"
+                                +"• keybinds: Lists all keybinding commands", None)
     
     
     def _quit(self) -> None:
@@ -187,19 +190,19 @@ class CommandManager:
     
     def _setup(self) -> None:
         self._print_output_func("This is a list of all setup commands:\n"
-                                +"• setup --list: Lists all added games\n"
-                                +"• setup --select: .......\n"
+                                +"• setup --list games: Lists all added games\n"
+                                +"• setup --list bosses: Lists all bosses from a specific game\n"
                                 +"• setup --add boss: Adds a boss with the corresponding game to the save file", None)
     
     
-    def _setup_list(self) -> None:
+    def _stats_list_games(self) -> None:
         tmp_list_of_games: list[str] = self._save_file.get_all_games()
         
         for item in tmp_list_of_games:
             self._print_output_func(f"• {item}", None)
     
     
-    def _setup_select(self) -> None:
+    def _stats_list_bosses(self) -> None:
         self._ignore_input = True # outsource in extra def
         self._inputs_to_ignore = 1 # - " -
         
@@ -211,6 +214,8 @@ class CommandManager:
             
             for item in tmp_list_of_bosses:
                 self._print_output_func(f"• {item}", None)
+                
+            self._print_output_func(">", None)
         
         if self._iteration_count == self._inputs_to_ignore: #outsource in extra def
             self._ignore_input = False

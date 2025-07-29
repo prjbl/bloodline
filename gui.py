@@ -115,6 +115,11 @@ class Application:
         self._console.config(state="normal")
         
         if text_type == "command":
+            current_content: str = self._console.get("0.0", "end-2c")
+            
+            if current_content.endswith(self._PREFIX):
+                self._console.delete("end-3c", "end-1c")
+                
             self._console.insert("end", f"{datetime.now().time().strftime("%H:%M:%S")}{self._PREFIX} ", "normal")
             self._console.insert("end", f"{text}\n", "command")
         elif text_type == "warning":
@@ -123,7 +128,7 @@ class Application:
             self._console.insert("end", f"{text}\n", "error")
         else:
             self._console.insert("end", f"{text}\n", "normal")
-        
+            
         self._console.config(state="disabled")
         self._console.see("end")
     

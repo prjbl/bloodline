@@ -4,8 +4,9 @@ from hotkey_manager import hk_manager
 
 class KeyListener:
     
-    def __init__(self, counter):
+    def __init__(self, counter, timer):
         self._counter = counter
+        self._timer = timer
         self._key_listener: kb.Listener = None
         self._listener_thread: th.Thread = None
         self._stop_event: th.Event = th.Event()
@@ -31,7 +32,6 @@ class KeyListener:
         try:
             if self._equals_hotkey(key, 0):
                 self._counter.count()
-                self._notify_observer(f"Counter increase: {self._counter.get_count()}", None)
             elif self._equals_hotkey(key, 1):
                 self._counter.decount()
             elif self._equals_hotkey(key, 2):
@@ -87,15 +87,16 @@ class KeyListener:
         tmp_dict: dict = hk_manager.get_current_hotkeys()
         cleaned_key_input: str = str(key).strip().replace("'", "")
         
-        for item in tmp_dict.values():
-            if cleaned_key_input == item:
-                self._notify_observer(f"Error: Hotkey {key} already in use. Please start config again and try another key", "error")
-                self._stop_keyboard_listener()
-                return False
-        hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)
-        self._notify_observer(f"Hotkey was successfully changed to: {key}", None)
-        self._stop_keyboard_listener()
-        return True
+        if not self._check_combine_keys:
+            for item in tmp_dict.values():
+                if cleaned_key_input == item:
+                    self._notify_observer(f"Error: Hotkey {key} already in use. Please start config again and try another key", "error")
+                    self._stop_keyboard_listener()
+                    return False
+            hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)
+            self._notify_observer(f"Hotkey was successfully changed to: {key}", None)
+            self._stop_keyboard_listener()
+            return True
     
     
     def _run_listener_for_one_input(self) -> None:
@@ -116,6 +117,15 @@ class KeyListener:
                                   +"Press key to change hotkey...", None)
         else:
             self._notify_observer("Warning: Keyboard listener already running", "warning")
+    
+    
+    def _check_combine_keys(self, cleaned_key_input) -> bool:
+        if cleaned_key_input == str(kb.Key.shift_l):
+            return True
+        elif cleaned_key_input == str(kb.Key.shift_r):
+            return True
+        else:
+            return False
     
     
     def set_new_hk(self, hotkey: str) -> None:
