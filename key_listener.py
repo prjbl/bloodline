@@ -45,7 +45,6 @@ class KeyListener:
             elif self._equals_hotkey(key, 6):
                 self._timer.reset()
             elif self._equals_hotkey(key, 7):
-                self._stop_keyboard_listener()
                 return False
         except AttributeError:
             self._notify_observer(f"Error: An error occured while pressing the key '{key}'", "error")
@@ -70,10 +69,10 @@ class KeyListener:
             self._notify_observer("Warning: Keyboard listener already running", "warning")
     
     
-    def _stop_keyboard_listener(self) -> None:
-        self._key_listener.stop()
+    def stop_keyboard_listener(self) -> None:
         self._stop_event.set() # sets thread event to indicate completion true
-        self._listener_thread.join(timeout=1)
+        self._notify_observer("Thread will be tried to stop", None)
+        self._listener_thread.join(timeout=3) # timeout as a safety mechanism to prevent deadlock and informs user that its still alive
         
         if self._listener_thread.is_alive():
             self._notify_observer("Warning: Thread still alive", "warning")
@@ -87,16 +86,14 @@ class KeyListener:
         tmp_dict: dict = hk_manager.get_current_hotkeys()
         cleaned_key_input: str = str(key).strip().replace("'", "")
         
-        if not self._check_combine_keys:
+        if not self._check_helper_keys(cleaned_key_input):
             for item in tmp_dict.values():
                 if cleaned_key_input == item:
                     self._notify_observer(f"Error: Hotkey {key} already in use. Please start config again and try another key", "error")
-                    self._stop_keyboard_listener()
                     return False
             hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)
             self._notify_observer(f"Hotkey was successfully changed to: {key}", None)
-            self._stop_keyboard_listener()
-            return True
+            return False
     
     
     def _run_listener_for_one_input(self) -> None:
@@ -119,7 +116,7 @@ class KeyListener:
             self._notify_observer("Warning: Keyboard listener already running", "warning")
     
     
-    def _check_combine_keys(self, cleaned_key_input) -> bool:
+    def _check_helper_keys(self, cleaned_key_input) -> bool:
         if cleaned_key_input == str(kb.Key.shift_l):
             return True
         elif cleaned_key_input == str(kb.Key.shift_r):
