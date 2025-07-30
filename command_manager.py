@@ -213,9 +213,7 @@ class CommandManager:
             tmp_list_of_bosses: list[str] = self._save_file.get_all_bosses_from_game(self._game_title)
             
             for item in tmp_list_of_bosses:
-                self._print_output_func(f"• {item}", None)
-                
-            self._print_output_func(">", None)
+                self._print_output_func(f"• {item[0]}: {self._check_deaths(item[1])}, {self._calc_int_to_time(item[2])}", None)
         
         if self._iteration_count == self._inputs_to_ignore: #outsource in extra def
             self._ignore_input = False
@@ -223,6 +221,24 @@ class CommandManager:
             return
         
         self._iteration_count += 1 # - " -
+    
+    
+    def _calc_int_to_time(self, required_time: int) -> str:
+        if required_time is None:
+            return "N/A"
+        else:
+            seconds: int = required_time % 60
+            minutes: int = int(required_time / 60) % 60
+            hours: int = int(required_time / 3600)
+            
+            return f"{hours:02}:{minutes:02}:{seconds:02}"
+    
+    
+    def _check_deaths(self, deaths: int) -> str:
+        if deaths is None:
+            return "N/A"
+        else:
+            return deaths
     
     
     def _setup_add(self) -> None:

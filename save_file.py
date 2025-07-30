@@ -34,7 +34,7 @@ class SaveFile:
             self._cursor.execute("""CREATE TABLE IF NOT EXISTS Boss (
                                         name TEXT NOT NULL,
                                         deaths INTEGER,
-                                        requiredTime TEXT,
+                                        requiredTime INTEGER,
                                         gameTitle TEXT NOT NULL,
                                         PRIMARY KEY (name, gameTitle),
                                         FOREIGN KEY (gameTitle) REFERENCES Game (title)
@@ -119,14 +119,17 @@ class SaveFile:
             return selection
     
     
-#    def update_specific_statistics(self, boss_name: str, deaths: int, requiredTime: str) -> None:
-#        self.__cursor.execute("""UPDATE Boss
-#                                    SET deaths = (?), requiredTime = (?)
-#                                    WHERE name = (?)""", (deaths, requiredTime, boss_name))
-#        self.__conn.commit()
-#        
-#        if self.__cursor.rowcount == 0:
-#            print("Nothing was updates because the given value isn't a data set in the database")
+    def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> None:
+        try:
+            self._cursor.execute("""UPDATE Boss
+                                        SET deaths = (?), requiredTime = (?)
+                                        WHERE name = (?) and gameTitle = (?)""", (deaths, required_time, boss_name, game_title))
+            self._conn.commit()
+            
+            if self._cursor.rowcount == 0:
+                self._notify_observer("Nothing was updated because the given value isn't a valid data set in the save file")
+        except Exception as e:
+            print(f"Error: {e}")
 #    
 #    
 #    def get_specific_statistics(self, boss_name: str) -> list:
