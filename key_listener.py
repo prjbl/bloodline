@@ -9,7 +9,6 @@ class KeyListener:
         self._timer = timer
         self._key_listener: kb.Listener = None
         self._listener_thread: th.Thread = None
-        self._stop_event: th.Event = th.Event()
         self._observer: any = None
     
     
@@ -58,26 +57,12 @@ class KeyListener:
     
     
     def start_keyboard_listener(self) -> None:
-        if self._stop_event and self._stop_event.is_set():
-            self._stop_event.clear()
-        
         if self._listener_thread is None or not self._listener_thread.is_alive():
             self._listener_thread = th.Thread(target=self._run_listener, daemon=True)
             self._listener_thread.start()
             self._notify_observer("Keyboard Keyboard listener started in seperat thread", None)
         else:
             self._notify_observer("Warning: Keyboard listener already running", "warning")
-    
-    
-    def stop_keyboard_listener(self) -> None:
-        self._stop_event.set() # sets thread event to indicate completion true
-        self._notify_observer("Thread will be tried to stop", None)
-        self._listener_thread.join(timeout=3) # timeout as a safety mechanism to prevent deadlock and informs user that its still alive
-        
-        if self._listener_thread.is_alive():
-            self._notify_observer("Warning: Thread still alive", "warning")
-        else:
-            self._notify_observer("Thread stopped/terminated", None)
     
     
     # methods to change hotkeys via input detection below
@@ -104,9 +89,6 @@ class KeyListener:
     
     
     def start_keyboard_listener_for_one_input(self) -> None:
-        if self._stop_event and self._stop_event.is_set():
-            self._stop_event.clear()
-        
         if self._listener_thread is None or not self._listener_thread.is_alive():
             self._listener_thread = th.Thread(target=self._run_listener_for_one_input, daemon=True)
             self._listener_thread.start()
