@@ -23,6 +23,7 @@ class CommandManager:
             "stats": None,
             "stats --list games": self._stats_list_games,
             "stats --list bosses": self._stats_list_bosses,
+            "stats --save": self._stats_save,
             "keybinds": self._keybinds,
             "keybinds --list": self._keybinds_list,
             "keybinds --config "+hk_manager.get_hotkey_names()[0]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[0]),
@@ -44,8 +45,8 @@ class CommandManager:
         self._counter.set_observer(self._print_output_func)
         self._timer: Timer = Timer()
         self._timer.set_observer(self._print_output_func)
-        self._key_listner: KeyListener = KeyListener(self._counter, self._timer)
-        self._key_listner.set_observer(self._print_output_func)
+        self._key_listener: KeyListener = KeyListener(self._counter, self._timer)
+        self._key_listener.set_observer(self._print_output_func)
         self._save_file: SaveFile = SaveFile()
         self._save_file.setup_db_and_observer(self._print_output_func)
     
@@ -164,7 +165,20 @@ class CommandManager:
     
     
     def _start(self) -> None:
-        self._key_listner.start_keyboard_listener()
+        self._set_ignore_inputs(2)
+        
+        if self._iteration_count == 0:
+            self._print_output_func("Please enter the boss you want to track...", None)
+        elif self._iteration_count == 1:
+            self._boss_name = self._console_input
+            self._print_output_func("Pleas enter the game the boss is connected to...", None)
+        else:
+            self._game_title = self._console_input
+            self._counter.set_count_already_required(self._save_file.get_specific_deaths(self._boss_name, self._game_title))
+            self._timer.set_time_already_required(self._save_file.get_specific_required_time(self._boss_name, self._game_title))
+            self._key_listener.start_keyboard_listener()
+        
+        self._check_ignore_inputs_end()
     
     
     def _keybinds(self) -> None:
@@ -184,8 +198,8 @@ class CommandManager:
     
     
     def _keybinds_config(self, hotkey: str) -> None:
-        self._key_listner.set_new_hk(hotkey)
-        self._key_listner.start_keyboard_listener_for_one_input()
+        self._key_listener.set_new_hk(hotkey)
+        self._key_listener.start_keyboard_listener_for_one_input()
     
     
     def _setup(self) -> None:
@@ -221,6 +235,39 @@ class CommandManager:
             return
         
         self._iteration_count += 1 # - " -
+    
+    
+    def _stats_save(self) -> None:
+        if self._counter.get_counter_none() or self._timer.get_start_time_none():
+            self._print_output_func("You first have to start tracking before updating the stats", None)
+            return
+        
+        self._set_ignore_inputs(2)
+        
+        if self._iteration_count == 0:
+            self._print_output_func("Please enter the boss you want the stats saved to...", None)
+        elif self._iteration_count == 1:
+            self._boss_name = self._console_input
+            self._print_output_func("Pleas enter the game you want the boss to be connected to...", None)
+        else:
+            self._game_title = self._console_input
+            self._save_file.update_boss(self._boss_name, self._game_title, self._counter.get_count(), self._timer.get_end_time())
+        
+        self._check_ignore_inputs_end()
+    
+    
+    def _set_ignore_inputs(self, number_of_inputs: int) -> None:
+        self._ignore_input = True
+        self._inputs_to_ignore = number_of_inputs
+    
+    
+    def _check_ignore_inputs_end(self) -> None:
+        if self._iteration_count == self._inputs_to_ignore:
+            self._ignore_input = False
+            self._iteration_count = 0
+            return
+        
+        self._iteration_count += 1
     
     
     def _calc_int_to_time(self, required_time: int) -> str:

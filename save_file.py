@@ -120,16 +120,45 @@ class SaveFile:
     
     
     def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> None:
-        try:
-            self._cursor.execute("""UPDATE Boss
-                                        SET deaths = (?), requiredTime = (?)
-                                        WHERE name = (?) and gameTitle = (?)""", (deaths, required_time, boss_name, game_title))
-            self._conn.commit()
-            
-            if self._cursor.rowcount == 0:
-                self._notify_observer("Nothing was updated because the given value isn't a valid data set in the save file")
-        except Exception as e:
-            print(f"Error: {e}")
+        self._cursor.execute("""UPDATE Boss
+                                    SET deaths = (?), requiredTime = (?)
+                                    WHERE name = (?) and gameTitle = (?)""", (deaths, required_time, boss_name, game_title))
+        self._conn.commit()
+        
+        if self._cursor.rowcount == 0:
+            self._notify_observer("Nothing was updated because the given value isn't a valid data set in the save file", "error")
+        else:
+            self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", None)
+    
+    
+    def get_specific_deaths(self, boss_name: str, game_title: str) -> int:
+        self._cursor.execute("""SELECT deaths FROM Boss
+                                    WHERE name = (?) and gameTitle = (?)""", (boss_name, game_title))
+        tmp_selection: list[int] = self._cursor.fetchall()
+        
+        for item in tmp_selection:
+            selection: int = item[0]
+        
+        if not tmp_selection:
+            self._notify_observer(f"Error: There are no deaths linked to the boss {boss_name} from {game_title} so far", "error")
+            return
+        else:
+            return selection
+    
+    
+    def get_specific_required_time(self, boss_name: str, game_title: str) -> int:
+        self._cursor.execute("""SELECT requiredTime FROM Boss
+                                    WHERE name = (?) and gameTitle = (?)""", (boss_name, game_title))
+        tmp_selection: list[int] = self._cursor.fetchall()
+        
+        for item in tmp_selection:
+            selection: int = item[0]
+        
+        if not tmp_selection:
+            self._notify_observer(f"Error: There is no time linked to the boss {boss_name} from {game_title} so far", "error")
+            return
+        else:
+            return selection
 #    
 #    
 #    def get_specific_statistics(self, boss_name: str) -> list:

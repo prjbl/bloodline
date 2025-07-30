@@ -3,9 +3,10 @@ from time import time
 class Timer:
     
     def __init__(self):
-        self._start_time: float = 0.0
-        self._end_time: float = 0.0
-        self._paused_time: float = 0.0
+        self._start_time: float = None
+        self._end_time: float = None
+        self._paused_time: float = None
+        self._time_already_required: int = 0
         self._timer_active = False
         self._timer_paused = False
         self._observer: any = None
@@ -59,7 +60,7 @@ class Timer:
     
     
     def get_end_time(self) -> int:
-        return int(self._end_time - self._start_time)
+        return int(self._end_time - self._start_time) + self._time_already_required
     
     
     def reset(self) -> None:
@@ -68,3 +69,14 @@ class Timer:
             self._notify_observer("Timer resetted", None)
         elif self._timer_active:
             self._notify_observer("Timer must be stopped for the reset to work", "error")
+    
+    
+    def get_start_time_none(self) -> bool:
+        if self._start_time is None:
+            return True
+        else:
+            return False
+    
+    
+    def set_time_already_required(self, time: int) -> None:
+        self._time_already_required = time

@@ -8,7 +8,7 @@ class _Directory:
         self._data_path.mkdir(parents=True, exist_ok=True)
     
     
-    _APP_NAME: str = "Death Blight"
+    _APP_NAME: str = "Bloodline"
     _APP_AUTHOR: str = "Project Bloodline"
     _VERSION: str = "v1.0"
     

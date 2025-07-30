@@ -1,7 +1,7 @@
 class Counter:
     
     def __init__(self):
-        self._counter: int = 0
+        self._counter: int = None
         self._observer: any = None
     
     
@@ -32,3 +32,14 @@ class Counter:
     
     def get_count(self) -> int:
         return self._counter
+    
+    
+    def get_counter_none(self) -> bool:
+        if self._counter is None:
+            return True
+        else:
+            return False
+    
+    
+    def set_count_already_required(self, count: int) -> None:
+        self._counter = count
