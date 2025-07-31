@@ -5,10 +5,10 @@ class Timer:
     def __init__(self):
         self._start_time: float = None
         self._end_time: float = None
-        self._paused_time: float = None
+        self._paused_time: float = 0.0
         self._time_already_required: int = 0
-        self._timer_active = False
-        self._timer_paused = False
+        self._timer_active: bool = False
+        self._timer_paused: bool = False
         self._observer: any = None
     
     
@@ -24,7 +24,7 @@ class Timer:
         if not self._timer_active:
             self._start_time = time()
             self._timer_active = True
-            self._notify_observer("Timer has started", None)
+            self._notify_observer("Timer started", "normal")
     
     
     def toggle_pause(self) -> None:
@@ -36,42 +36,46 @@ class Timer:
             else:
                 self._resume()
         else:
-            self._notify_observer("Timer has not started yet", "error")
+            self._notify_observer("Indication: Timer has not started yet", "indication")
     
     
     def _pause(self) -> None:
         elapsed_time_before_pause: float = time() - self._start_time
         self._paused_time += elapsed_time_before_pause
-        self._notify_observer("Timer has been paused", None)
+        self._notify_observer("Timer paused", "normal")
     
     
     def _resume(self) -> None:
         self._start_time, self._end_time = 0, 0
         self._start_time = time()
         self._start_time -= self._paused_time
-        self._notify_observer("Timer has been resumed", None)
+        self._notify_observer("Timer resumed", "normal")
     
     
     def end(self) -> None:
         if self._timer_active:
             self._end_time = time()
             self._timer_active = False
-            self._notify_observer(f"Timer has ended: {self.get_end_time()}", None)
+            self._notify_observer(f"Timer ended", "normal")
+    
+    
+    def reset(self) -> None:
+        if not self._timer_active and self._start_time is not None:
+            self._start_time, self._end_time, self._paused_time = None, None, 0
+            self._notify_observer("Timer has been reset", "normal")
+        elif self._timer_active:
+            self._notify_observer("Timer must be stopped for the reset to work", "indication")
     
     
     def get_end_time(self) -> int:
         return int(self._end_time - self._start_time) + self._time_already_required
     
     
-    def reset(self) -> None:
-        if not self._timer_active and self._start_time != 0:
-            self._start_time, self._end_time, self._paused_time = 0, 0, 0
-            self._notify_observer("Timer resetted", None)
-        elif self._timer_active:
-            self._notify_observer("Timer must be stopped for the reset to work", "error")
+    def set_none(self) -> None:
+        self._start_time, self._end_time, self._paused_time = None, None, 0
     
     
-    def get_start_time_none(self) -> bool:
+    def get_is_none(self) -> bool:
         if self._start_time is None:
             return True
         else:

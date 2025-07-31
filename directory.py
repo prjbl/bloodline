@@ -1,7 +1,7 @@
 from appdirs import user_data_dir
 from pathlib import Path
 
-class _Directory:
+class Directory:
     
     def __init__(self):
         self._data_path: Path = Path(user_data_dir(self._APP_NAME, self._APP_AUTHOR, self._VERSION))
@@ -17,4 +17,4 @@ class _Directory:
         return self._data_path
 
 
-dir: _Directory = _Directory()
+dir: Directory = Directory()
