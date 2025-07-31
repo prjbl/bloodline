@@ -143,7 +143,10 @@ class SaveFile:
             self._notify_observer(f"Error: There are no deaths linked to the boss {boss_name} from {game_title} so far", "error")
             return
         else:
-            return selection
+            if selection is None:
+                return 0
+            else:
+                return selection
     
     
     def get_specific_required_time(self, boss_name: str, game_title: str) -> int:
@@ -158,7 +161,10 @@ class SaveFile:
             self._notify_observer(f"Error: There is no time linked to the boss {boss_name} from {game_title} so far", "error")
             return
         else:
-            return selection
+            if selection is None:
+                return 0
+            else:
+                return selection
 #    
 #    
 #    def get_specific_statistics(self, boss_name: str) -> list:

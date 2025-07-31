@@ -13,28 +13,32 @@ class Counter:
         self._observer(text, text_type)
     
     
-    def count(self) -> None:
+    def increase(self) -> None:
         self._counter += 1
-        self._notify_observer(f"Counter increased: {self.get_count()}", None)
+        self._notify_observer(f"Counter increased: {self.get_count()}", "normal")
     
     
-    def decount(self) -> None:
+    def decrease(self) -> None:
         if self._counter > 0:
             self._counter -= 1
-            self._notify_observer(f"Counter decreased: {self.get_count()}", None)
+            self._notify_observer(f"Counter decreased: {self.get_count()}", "normal")
     
     
     def reset(self) -> None:
         if self._counter > 0:
             self._counter = 0
-            self._notify_observer("Counter resetted", None)
+            self._notify_observer("Counter has been reset", "normal")
         
     
     def get_count(self) -> int:
         return self._counter
     
     
-    def get_counter_none(self) -> bool:
+    def set_none(self) -> None:
+        self._counter = None
+    
+    
+    def get_is_none(self) -> bool:
         if self._counter is None:
             return True
         else:

@@ -21,7 +21,7 @@ class _HotkeyManager:
     
     _FILE_NAME: str = "hotkeys_config.json"
     
-    # increase, decrease, c_reset, start, pause, end, t_reset
+    # count_increase, count_decrease, count_reset, timer_start, timer_pause, timer_end, timer_reset, listener_end
     _DEFAULT_HOTKEYS: list[str] = ["+", "-", "/", str(keyboard.Key.f10), str(keyboard.Key.f11), str(keyboard.Key.f12), "*", str(keyboard.Key.f1)]
     
     _HK_NAMES: list[str] = ["hk_counter_increase",
@@ -58,7 +58,7 @@ class _HotkeyManager:
                 remove(dir.get_persistent_data_path().joinpath(self._FILE_NAME))
                 self._create_file()
                 self._perform_load()
-                self._notify_observer("Re-initializing file was successful. Default keybinds were restored", None)
+                self._notify_observer("Re-initializing file was successful. Default keybinds were restored", "success")
             except Exception as e:
                 self._notify_observer(f"Error: Failed to re-initialize file. Exception: {e}", "error")
     

@@ -176,7 +176,7 @@ class CommandManager:
             self._game_title = self._console_input
             self._counter.set_count_already_required(self._save_file.get_specific_deaths(self._boss_name, self._game_title))
             self._timer.set_time_already_required(self._save_file.get_specific_required_time(self._boss_name, self._game_title))
-            self._key_listener.start_keyboard_listener()
+            self._key_listener.start_key_listener()
         
         self._check_ignore_inputs_end()
     
@@ -198,8 +198,8 @@ class CommandManager:
     
     
     def _keybinds_config(self, hotkey: str) -> None:
-        self._key_listener.set_new_hk(hotkey)
-        self._key_listener.start_keyboard_listener_for_one_input()
+        self._key_listener.set_new_keybind(hotkey)
+        self._key_listener.start_key_listener_for_one_input()
     
     
     def _setup(self) -> None:
@@ -217,28 +217,62 @@ class CommandManager:
     
     
     def _stats_list_bosses(self) -> None:
-        self._ignore_input = True # outsource in extra def
-        self._inputs_to_ignore = 1 # - " -
+        self._set_ignore_inputs(1)
         
         if self._iteration_count == 0:
             self._print_output_func("Please enter a game you want all bosses listed from...", None)
         else:
             self._game_title = self._console_input
-            tmp_list_of_bosses: list[str] = self._save_file.get_all_bosses_from_game(self._game_title)
+            tmp_list_of_bosses: list = self._save_file.get_all_bosses_from_game(self._game_title)
+            deaths: int = 0
+            amount_bosses_with_deaths: int = 0
+            required_time: int = 0
+            amount_bosses_w_required_time: int = 0
             
             for item in tmp_list_of_bosses:
                 self._print_output_func(f"• {item[0]}: {self._check_deaths(item[1])}, {self._calc_int_to_time(item[2])}", None)
+                deaths += self._set_deaths(item[1])
+                amount_bosses_with_deaths += self._set_amount_deaths(item[1])
+                required_time += self._set_time(item[2])
+                amount_bosses_w_required_time += self._set_amount_time(item[2])
+                
+            self._print_output_func(f"{self._get_average(deaths, amount_bosses_with_deaths, required_time, amount_bosses_w_required_time)}", None)
         
-        if self._iteration_count == self._inputs_to_ignore: #outsource in extra def
-            self._ignore_input = False
-            self._iteration_count = 0
-            return
+        self._check_ignore_inputs_end()
+    
+    
+    def _set_deaths(self, deaths_at_boss: int) -> int:
+        if deaths_at_boss is not None:
+            return deaths_at_boss
+        return 0
+    
+    def _set_amount_deaths(self, deaths_at_boss: int) -> int:
+        if deaths_at_boss is not None:
+            return 1
+        return 0
+    
+    
+    def _set_time(self, required_time_at_boss: int) -> int:
+        if required_time_at_boss is not None:
+            return required_time_at_boss
+        return 0
+    
+    
+    def _set_amount_time(self, required_time_at_boss: int) -> None:
+        if required_time_at_boss is not None:
+            return 1
+        return 0
+    
+    
+    def _get_average(self, deaths: int, amount_bosses_w_deaths: int, required_time: int, amount_bosses_w_required_time: int) -> str:
+        average_deaths: float = round(deaths / amount_bosses_w_deaths, 1)
+        average_time: str = (self._calc_int_to_time(int(required_time / amount_bosses_w_required_time)))
         
-        self._iteration_count += 1 # - " -
+        return f"Average: D {average_deaths}, {average_time}"
     
     
     def _stats_save(self) -> None:
-        if self._counter.get_counter_none() or self._timer.get_start_time_none():
+        if self._counter.get_is_none() or self._timer.get_is_none():
             self._print_output_func("You first have to start tracking before updating the stats", None)
             return
         
@@ -252,6 +286,7 @@ class CommandManager:
         else:
             self._game_title = self._console_input
             self._save_file.update_boss(self._boss_name, self._game_title, self._counter.get_count(), self._timer.get_end_time())
+            self._counter.set_none()
         
         self._check_ignore_inputs_end()
     
@@ -285,7 +320,7 @@ class CommandManager:
         if deaths is None:
             return "N/A"
         else:
-            return deaths
+            return f"D {deaths}"
     
     
     def _setup_add(self) -> None:
