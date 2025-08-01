@@ -2,8 +2,9 @@ from tkinter import Tk, Frame, Label, Entry, StringVar
 from tkinter.font import Font, families
 from tkinter.scrolledtext import ScrolledText
 from datetime import datetime
-from directory import dir
+
 from command_manager import CommandManager
+from directory import Directory
 
 class Application:
     
@@ -21,6 +22,8 @@ class Application:
         self._setup_bindings()
     
     
+    _dir: Directory = Directory()
+    
     _INITIAL_HEIGHT: int = 350
     _INITIAL_WIDTH: int = 600
 
@@ -36,12 +39,12 @@ class Application:
     _COLOR_ERROR: str = "#cf213e"
 
     _PREFIX: chr = ">"
-    _META: str = f"{dir._APP_NAME} {dir._VERSION}\nBy {dir._APP_AUTHOR}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
+    _META: str = f"{_dir._APP_NAME} {_dir._VERSION}\nBy {_dir._APP_AUTHOR}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
     
     
     def _setup_window(self) -> None:
         self._root.geometry(f"{self._INITIAL_WIDTH}x{self._INITIAL_HEIGHT}")
-        self._root.title(dir._APP_NAME)
+        self._root.title(self._dir._APP_NAME)
         self._root.config(bg=self._COLOR_BG)
     
     
@@ -101,7 +104,7 @@ class Application:
             self._input_entry.config(font=custom_font)
             self._console.config(font=custom_font)
         else:
-            self.print_output(f"Warning: The font '{desired_font_family}' could not be found. The default has been restored", "warning")
+            self.print_output(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
     
     
     def _setup_bindings(self) -> None:
@@ -143,11 +146,11 @@ class Application:
         elif text_type == "success":
             self._console.insert("end", f"{text}\n", "success")
         elif text_type == "indication":
-            self._console.insert("end", f"{text}\n", "indication")
+            self._console.insert("end", f"Indication: {text}\n", "indication")
         elif text_type == "warning":
-            self._console.insert("end", f"{text}\n", "warning")
+            self._console.insert("end", f"Warning: {text}\n", "warning")
         elif text_type == "error":
-            self._console.insert("end", f"{text}\n", "error")
+            self._console.insert("end", f"Error: {text}\n", "error")
         else:
             self._console.insert("end", f"{text}\n", "normal")
             

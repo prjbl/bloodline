@@ -1,14 +1,14 @@
-from hotkey_manager import hk_manager
+from counter import Counter
+from hotkey_manager import HotkeyManager
 from key_listener import KeyListener
 from save_file import SaveFile
-from counter import Counter
 from timer import Timer
 
 class CommandManager:
     
-    def __init__(self, print_output_func, quit_app_func):
-        self._print_output_func = print_output_func
-        self._quit_app_func = quit_app_func
+    def __init__(self, print_output_func: any, quit_app_func: any):
+        self._print_output_func: any = print_output_func
+        self._quit_app_func: any = quit_app_func
         self._setup_instances()
         self._setup_multi_input_vars()
         self._setup_input_history_vars()
@@ -16,36 +16,44 @@ class CommandManager:
         
         self._COMMANDS: dict = {
             "help": self._help,
-            "quit": self._quit,
             "start": self._start,
             "setup": self._setup,
-            "setup --add boss": self._setup_add,
+            "setup --add": self._setup_add,
+            "setup --delete boss": self._setup_delete_boss,
+            "setup --delete game": self._setup_delete_game,
             "stats": None,
             "stats --list games": self._stats_list_games,
             "stats --list bosses": self._stats_list_bosses,
+            "stats --list bosses -deaths -desc": lambda: self._stats_list_bosses_deaths("desc"),
+            "stats --list bosses -deaths -asc": lambda: self._stats_list_bosses_deaths("asc"),
+            "stats --list bosses -time -desc": lambda: self._stats_list_bosses_time("desc"),
+            "stats --list bosses -time -asc": lambda: self._stats_list_bosses_time("asc"),
             "stats --save": self._stats_save,
             "keybinds": self._keybinds,
             "keybinds --list": self._keybinds_list,
-            "keybinds --config "+hk_manager.get_hotkey_names()[0]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[0]),
-            "keybinds --config "+hk_manager.get_hotkey_names()[1]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[1]),
-            "keybinds --config "+hk_manager.get_hotkey_names()[2]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[2]),
-            "keybinds --config "+hk_manager.get_hotkey_names()[3]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[3]),
-            "keybinds --config "+hk_manager.get_hotkey_names()[4]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[4]),
-            "keybinds --config "+hk_manager.get_hotkey_names()[5]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[5]),
-            "keybinds --config "+hk_manager.get_hotkey_names()[6]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[6]),
-            "keybinds --config "+hk_manager.get_hotkey_names()[7]: lambda: self._keybinds_config(hk_manager.get_hotkey_names()[7]),
+            "keybinds --config "+self._hk_manager.get_hotkey_names()[0]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[0]),
+            "keybinds --config "+self._hk_manager.get_hotkey_names()[1]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[1]),
+            "keybinds --config "+self._hk_manager.get_hotkey_names()[2]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[2]),
+            "keybinds --config "+self._hk_manager.get_hotkey_names()[3]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[3]),
+            "keybinds --config "+self._hk_manager.get_hotkey_names()[4]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[4]),
+            "keybinds --config "+self._hk_manager.get_hotkey_names()[5]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[5]),
+            "keybinds --config "+self._hk_manager.get_hotkey_names()[6]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[6]),
+            "keybinds --config "+self._hk_manager.get_hotkey_names()[7]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[7]),
+            "cancel": None,
+            "quit": self._quit
         }
         self._COMMANDS_LIST: list[str] = list(self._COMMANDS.keys())
         self._COMMANDS = {key.replace(" ", ""): value for key, value in self._COMMANDS.items()} # dictionary comprehension
     
     
     def _setup_instances(self) -> None:
-        hk_manager.setup_keybinds_and_observer(self._print_output_func)
+        self._hk_manager: HotkeyManager = HotkeyManager()
+        self._hk_manager.setup_keybinds_and_observer(self._print_output_func)
         self._counter: Counter = Counter()
         self._counter.set_observer(self._print_output_func)
         self._timer: Timer = Timer()
         self._timer.set_observer(self._print_output_func)
-        self._key_listener: KeyListener = KeyListener(self._counter, self._timer)
+        self._key_listener: KeyListener = KeyListener(self._hk_manager, self._counter, self._timer)
         self._key_listener.set_observer(self._print_output_func)
         self._save_file: SaveFile = SaveFile()
         self._save_file.setup_db_and_observer(self._print_output_func)
@@ -188,8 +196,8 @@ class CommandManager:
     
     
     def _keybinds_list(self) -> None:
-        cache_hotkeys: dict = hk_manager.get_current_hotkeys()
-        cache_hotkey_names: list[str] = hk_manager.get_hotkey_names()
+        cache_hotkeys: dict = self._hk_manager.get_current_hotkeys()
+        cache_hotkey_names: list[str] = self._hk_manager.get_hotkey_names()
         cache_name_index: int = 0
         
         for item in cache_hotkeys:
@@ -237,6 +245,37 @@ class CommandManager:
                 amount_bosses_w_required_time += self._set_amount_time(item[2])
                 
             self._print_output_func(f"{self._get_average(deaths, amount_bosses_with_deaths, required_time, amount_bosses_w_required_time)}", None)
+            self._print_output_func(f"Sum: D {deaths}, {self._calc_int_to_time(required_time)}", "normal")
+        
+        self._check_ignore_inputs_end()
+    
+    
+    def _stats_list_bosses_deaths(self, filter: str) -> None:
+        self._set_ignore_inputs(1)
+        
+        if self._iteration_count == 0:
+            self._print_output_func("Please enter a game you want all bosses listed from <...>", "normal")
+        else:
+            self._game_title = self._console_input
+            tmp_list_of_bosses: list = self._save_file.get_bosses_from_game_by_deaths(self._game_title, filter)
+            
+            for item in tmp_list_of_bosses:
+                self._print_output_func(f"    • {item[0]}: {self._check_deaths(item[1])}, {self._calc_int_to_time(item[2])}", "normal")
+        
+        self._check_ignore_inputs_end()
+    
+    
+    def _stats_list_bosses_time(self, filter: str) -> None:
+        self._set_ignore_inputs(1)
+        
+        if self._iteration_count == 0:
+            self._print_output_func("Please enter a game you want all bosses listed from <...>", "normal")
+        else:
+            self._game_title = self._console_input
+            tmp_list_of_bosses: list = self._save_file.get_bosses_from_game_by_time(self._game_title, filter)
+            
+            for item in tmp_list_of_bosses:
+                self._print_output_func(f"    • {item[0]}: {self._check_deaths(item[1])}, {self._calc_int_to_time(item[2])}", "normal")
         
         self._check_ignore_inputs_end()
     
@@ -265,16 +304,23 @@ class CommandManager:
     
     
     def _get_average(self, deaths: int, amount_bosses_w_deaths: int, required_time: int, amount_bosses_w_required_time: int) -> str:
-        average_deaths: float = round(deaths / amount_bosses_w_deaths, 1)
-        average_time: str = (self._calc_int_to_time(int(required_time / amount_bosses_w_required_time)))
+        if deaths != 0:
+            average_deaths: str = str(round(deaths / amount_bosses_w_deaths, 1))
+        else:
+            average_deaths: str = "N/A"
+        
+        if required_time != 0:
+            average_time: str = (self._calc_int_to_time(int(required_time / amount_bosses_w_required_time)))
+        else:
+            average_time: str = "N/A"
         
         return f"Average: D {average_deaths}, {average_time}"
     
     
     def _stats_save(self) -> None:
-        if self._counter.get_is_none() or self._timer.get_is_none():
-            self._print_output_func("You first have to start tracking before updating the stats", None)
-            return
+        #if self._counter.get_is_none() or self._timer.get_is_none():
+        #    self._print_output_func("You first have to start tracking before updating the stats", None)
+        #    return
         
         self._set_ignore_inputs(2)
         
@@ -285,7 +331,11 @@ class CommandManager:
             self._print_output_func("Pleas enter the game you want the boss to be connected to...", None)
         else:
             self._game_title = self._console_input
-            self._save_file.update_boss(self._boss_name, self._game_title, self._counter.get_count(), self._timer.get_end_time())
+            self._save_file.update_boss("hund", "hund game", 18, 625)
+            self._save_file.update_boss("junge hund", "hund game", None, 351)
+            self._save_file.update_boss("hundus mundus", "hund game", 35165, 1335)
+            self._save_file.update_boss("nino dino", "hund game", 320, None)
+            #self._save_file.update_boss(self._boss_name, self._game_title, self._counter.get_count(), self._timer.get_end_time())
             self._counter.set_none()
         
         self._check_ignore_inputs_end()
@@ -342,3 +392,30 @@ class CommandManager:
             return
         
         self._iteration_count += 1
+    
+    
+    def _setup_delete_game(self) -> None:
+        self._set_ignore_inputs(1)
+        
+        if self._iteration_count == 0:
+            self._print_output_func("Please enter the game you wish to delete <...>", "normal")
+        else:
+            self._game_title = self._console_input
+            self._save_file.delete_game(self._game_title)
+        
+        self._check_ignore_inputs_end()
+        
+    
+    def _setup_delete_boss(self) -> None:
+        self._set_ignore_inputs(2)
+        
+        if self._iteration_count == 0:
+            self._print_output_func("Please enter the boss you wish to delete <...>", "normal")
+        elif self._iteration_count == 1:
+            self._boss_name = self._console_input
+            self._print_output_func("Please enter the game the boss is linked to <...>", "normal")
+        else:
+            self._game_title = self._console_input
+            self._save_file.delete_boss(self._boss_name, self._game_title)
+        
+        self._check_ignore_inputs_end()

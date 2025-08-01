@@ -1,14 +1,17 @@
-import sqlite3
-from directory import dir
+from sqlite3 import Connection, Cursor, connect, IntegrityError, OperationalError, DatabaseError
+
+from directory import Directory
 
 class SaveFile:
     
     def __init__(self):
-        self._conn: sqlite3.Connection = sqlite3.connect(dir.get_persistent_data_path().joinpath(self._FILE_NAME))
-        self._conn.execute('PRAGMA foreign_keys = ON') #
-        self._cursor: sqlite3.Cursor = self._conn.cursor()
+        self._conn: Connection = connect(self._dir.get_persistent_data_path().joinpath(self._FILE_NAME))
+        self._conn.execute('PRAGMA foreign_keys = ON') # activates foreign key restriction
+        self._cursor: Cursor = self._conn.cursor()
         self._observer: any = None
     
+    
+    _dir: Directory = Directory()
     
     _FILE_NAME: str = "save_file.db"
     
@@ -37,11 +40,13 @@ class SaveFile:
                                         requiredTime INTEGER,
                                         gameTitle TEXT NOT NULL,
                                         PRIMARY KEY (name, gameTitle),
-                                        FOREIGN KEY (gameTitle) REFERENCES Game (title)
+                                        FOREIGN KEY (gameTitle) REFERENCES Game (title) ON DELETE CASCADE
                                 )""")
             self._conn.commit()
-        except sqlite3.OperationalError:
+        except OperationalError:
             self._notify_observer("Error: A syntax error occured while creating database tables", "error")
+        except DatabaseError:
+            self._notify_observer(f"The file '{self._FILE_NAME}' is corrupted", "error")
     
     
     def _add_game(self, title: str) -> None:
@@ -51,9 +56,9 @@ class SaveFile:
             self._conn.commit()
             
             self._notify_observer(f"The game '{title}' has been added to the save file", None)
-        except sqlite3.IntegrityError:
+        except IntegrityError:
             self._notify_observer(f"Error: The game '{title}' already exists in the save file", "error")
-        except sqlite3.OperationalError:
+        except OperationalError:
             self._notify_observer(f"Error: A syntax error occured while adding '{title}' to save file", "error")
     
     
@@ -69,13 +74,37 @@ class SaveFile:
             self._conn.commit()
             
             self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' has been added to the save file", None)
-        except sqlite3.IntegrityError:
+        except IntegrityError:
             if not game_exists:
                 self._notify_observer(f"Error: The game '{game_title}' is not added yet", "error")
             else:
                 self._notify_observer(f"Error: The boss '{boss_name}' is already added to the game '{game_title}'", "error")
-        except sqlite3.OperationalError:
+        except OperationalError:
             self._notify_observer(f"Error: A syntax error occured while adding '{game_title}' and '{boss_name}' to save file", "error")
+    
+    
+    def delete_game(self, title: str) -> None:
+        game_exists: bool = self._get_specific_game(title)
+        
+        if game_exists:
+            self._cursor.execute("""DELETE FROM Game
+                                        WHERE title = (?)""", (title,))
+            self._conn.commit()
+            self._notify_observer(f"The game '{title}' has been deleted successfully", "success")
+        else:
+            self._notify_observer(f"The game '{title}' does not exists in the save file", "indication")
+    
+    
+    def delete_boss(self, boss_name: str, game_title: str) -> None:
+        boss_exists: bool = self._get_specific_boss(boss_name, game_title)
+        
+        if boss_exists:
+            self._cursor.execute("""DELETE FROM Boss
+                                        WHERE name = (?) and gameTitle = (?)""", (boss_name, game_title))
+            self._conn.commit()
+            self._notify_observer(f"The boss '{boss_name}' from game '{game_title}' has been deleted successfully", "success")
+        else:
+            self._notify_observer(f"The boss '{boss_name}' from game '{game_title}' does not exists in the save file", "indication")
     
     
     def _get_specific_game(self, game_title: str) -> bool:
@@ -106,6 +135,17 @@ class SaveFile:
             return cleaned_selection
     
     
+    def _get_specific_boss(self, boss_name: str, game_title: str) -> bool:
+        self._cursor.execute("""SELECT name FROM Boss
+                                    WHERE name = (?) and gameTitle = (?)""", (boss_name, game_title))
+        selection: list[str] = self._cursor.fetchone()
+        
+        if selection is None:
+            return False
+        else:
+            return True
+    
+    
     def get_all_bosses_from_game(self, game_title: str) -> list[str]:
         self._cursor.execute("""SELECT b.name, b.deaths, b.requiredTime FROM Boss b
                                     JOIN Game g ON b.gameTitle = g.title
@@ -114,6 +154,48 @@ class SaveFile:
         
         if not selection:
             self._notify_observer(f"Error: There are no bosses linked to the game {game_title} so far", "error")
+            return []
+        else:
+            return selection
+    
+    
+    def get_bosses_from_game_by_deaths(self, game_title: str, filter: str) -> list:
+        if filter == "desc":
+            self._cursor.execute("""SELECT * FROM Boss b
+                                        JOIN Game g ON b.gameTitle = g.title
+                                        WHERE g.title = (?)
+                                        ORDER BY b.deaths DESC""", (game_title,))
+        elif filter == "asc":
+            self._cursor.execute("""SELECT * FROM Boss b
+                                        JOIN Game g ON b.gameTitle = g.title
+                                        WHERE g.title = (?)
+                                        ORDER BY b.deaths ASC""", (game_title,))
+        
+        selection: list = self._cursor.fetchall()
+        
+        if not selection:
+            self._notify_observer(f"There are no bosses linked to the game {game_title} so far", "indication")
+            return []
+        else:
+            return selection
+    
+    
+    def get_bosses_from_game_by_time(self, game_title: str, filter: str) -> list:
+        if filter == "desc":
+            self._cursor.execute("""SELECT * FROM Boss b
+                                        JOIN Game g ON b.gameTitle = g.title
+                                        WHERE g.title = (?)
+                                        ORDER BY b.requiredTime DESC""", (game_title,))
+        elif filter == "asc":
+            self._cursor.execute("""SELECT * FROM Boss b
+                                        JOIN Game g ON b.gameTitle = g.title
+                                        WHERE g.title = (?)
+                                        ORDER BY b.requiredTime ASC""", (game_title,))
+        
+        selection: list = self._cursor.fetchall()
+        
+        if not selection:
+            self._notify_observer(f"There are no bosses linked to the game {game_title} so far", "indication")
             return []
         else:
             return selection
@@ -165,35 +247,6 @@ class SaveFile:
                 return 0
             else:
                 return selection
-#    
-#    
-#    def get_specific_statistics(self, boss_name: str) -> list:
-#        self.__cursor.execute("""SELECT * FROM Boss
-#                                    WHERE name = (?)""", (boss_name,))
-#        
-#        selection: list = self.__cursor.fetchall()
-#        
-#        if not selection:
-#            print("Nothing was selected because the given value isn't a data set in the database")
-#            pass
-#        else:
-#            return selection
-#    
-#    
-#    def get_all_game_statistics(self) -> list:
-#        game_title: str = self.__get_game_title()
-#            
-#        self.__cursor.execute("""SELECT * FROM Boss b
-#                                    JOIN Game g ON b.gameTitle = g.title
-#                                    WHERE g.title = (?)""", (game_title,))
-#        
-#        selection: list = self.__cursor.fetchall()
-#        
-#        if not selection:
-#            print("Nothing was selected because the given value isn't a data set in the database")
-#            pass
-#        else:
-#            return selection
     
     
     def close_connection(self) -> None:

@@ -15,6 +15,3 @@ class Directory:
     
     def get_persistent_data_path(self) -> Path:
         return self._data_path
-
-
-dir: Directory = Directory()
