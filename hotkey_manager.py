@@ -1,9 +1,11 @@
-from pynput import keyboard
 from json import load, dump, JSONDecodeError
 from os import remove
-from directory import dir
 
-class _HotkeyManager:
+from pynput import keyboard
+
+from directory import Directory
+
+class HotkeyManager:
     
     def __init__(self):
         self._hotkeys: dict = {
@@ -18,6 +20,8 @@ class _HotkeyManager:
         }
         self._observer: any = None
     
+    
+    _dir: Directory = Directory()
     
     _FILE_NAME: str = "hotkeys_config.json"
     
@@ -50,31 +54,31 @@ class _HotkeyManager:
         try:
             self._perform_load()
         except FileNotFoundError:
-            self._notify_observer(f"Error: The file '{self._FILE_NAME}' could not be found. Default keybinds will be restored", "error")
+            self._notify_observer(f"The file '{self._FILE_NAME}' could not be found. Default keybinds will be restored", "error")
         except JSONDecodeError:
-            self._notify_observer(f"Error: An error occured while loading the file '{self._FILE_NAME}'. An attempt is made to re-initialize file", "error")
+            self._notify_observer(f"An error occured while loading the file '{self._FILE_NAME}'. An attempt is made to re-initialize file", "error")
             
             try:
-                remove(dir.get_persistent_data_path().joinpath(self._FILE_NAME))
+                remove(self._dir.get_persistent_data_path().joinpath(self._FILE_NAME))
                 self._create_file()
                 self._perform_load()
                 self._notify_observer("Re-initializing file was successful. Default keybinds were restored", "success")
             except Exception as e:
-                self._notify_observer(f"Error: Failed to re-initialize file. Exception: {e}", "error")
+                self._notify_observer(f"Failed to re-initialize file. Exception: {e}", "error")
     
     
     def _perform_load(self) -> None:
-        with open(dir.get_persistent_data_path().joinpath(self._FILE_NAME), "r") as input:
+        with open(self._dir.get_persistent_data_path().joinpath(self._FILE_NAME), "r") as input:
             self._hotkeys = load(input)
     
     
     def _save_hotkeys(self) -> None:
-        with open(dir.get_persistent_data_path().joinpath(self._FILE_NAME), "w") as output:
+        with open(self._dir.get_persistent_data_path().joinpath(self._FILE_NAME), "w") as output:
             dump(self._hotkeys, output, indent=4)
     
     
     def _create_file(self) -> None:
-        if not dir.get_persistent_data_path().joinpath(self._FILE_NAME).exists():
+        if not self._dir.get_persistent_data_path().joinpath(self._FILE_NAME).exists():
             self._save_hotkeys()
     
     
@@ -89,6 +93,3 @@ class _HotkeyManager:
     
     def get_hotkey_names(self) -> list[str]:
         return self._HK_NAMES
-
-
-hk_manager: _HotkeyManager = _HotkeyManager()

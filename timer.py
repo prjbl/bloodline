@@ -36,7 +36,7 @@ class Timer:
             else:
                 self._resume()
         else:
-            self._notify_observer("Indication: Timer has not started yet", "indication")
+            self._notify_observer("Timer has not started yet", "indication")
     
     
     def _pause(self) -> None:
@@ -61,7 +61,7 @@ class Timer:
     
     def reset(self) -> None:
         if not self._timer_active and self._start_time is not None:
-            self._start_time, self._end_time, self._paused_time = None, None, 0
+            self._start_time, self._end_time, self._paused_time = 0, 0, 0
             self._notify_observer("Timer has been reset", "normal")
         elif self._timer_active:
             self._notify_observer("Timer must be stopped for the reset to work", "indication")

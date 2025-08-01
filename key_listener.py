@@ -1,12 +1,17 @@
 import threading as th
+
 from pynput import keyboard as kb
-from hotkey_manager import hk_manager
+
+from counter import Counter
+from hotkey_manager import HotkeyManager
+from timer import Timer
 
 class KeyListener:
     
-    def __init__(self, counter: any, timer: any):
-        self._counter = counter
-        self._timer = timer
+    def __init__(self, hk_manager: HotkeyManager, counter: Counter, timer: Timer):
+        self._hk_manager: HotkeyManager = hk_manager
+        self._counter: Counter = counter
+        self._timer: Timer = timer
         self._key_listener: kb.Listener = None
         self._listener_thread: th.Thread = None
         self._observer: any = None
@@ -21,7 +26,7 @@ class KeyListener:
     
     
     def _equals_hotkey(self, key: any, hk_index: int) -> bool:
-        tmp_list_hotkeys: list[str] = list(hk_manager.get_current_hotkeys().values())
+        tmp_list_hotkeys: list[str] = list(self._hk_manager.get_current_hotkeys().values())
         cleaned_key_input: str = str(key).replace("'", "")
         
         return cleaned_key_input == tmp_list_hotkeys[hk_index]
@@ -47,7 +52,7 @@ class KeyListener:
                 return False
         except AttributeError:
             cleaned_key_input: str = str(key).replace("'", "")
-            self._notify_observer(f"Error: An error occured while pressing the key '{cleaned_key_input}'", "error")
+            self._notify_observer(f"An error occured while pressing the key '{cleaned_key_input}'", "error")
 
 
     def _run_listener(self) -> None:
@@ -63,20 +68,20 @@ class KeyListener:
             self._listener_thread.start()
             self._notify_observer("Key listener started in seperat thread", "normal")
         else:
-            self._notify_observer("Warning: Key listener already running", "warning")
+            self._notify_observer("Key listener already running", "warning")
     
     
     # methods to change hotkeys via input detection below
     def _on_change_keybind(self, key: any) -> None:
-        tmp_dict_hotkeys: dict = hk_manager.get_current_hotkeys()
+        tmp_dict_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         cleaned_key_input: str = str(key).replace("'", "")
         
         if not self._check_helper_keys(cleaned_key_input):
             for item in tmp_dict_hotkeys.values():
                 if cleaned_key_input == item:
-                    self._notify_observer(f"Error: Hotkey '{cleaned_key_input}' already in use. Please start config again and try another key", "error")
+                    self._notify_observer(f"Hotkey '{cleaned_key_input}' already in use. Please start config again and try another key", "indication")
                     return False
-            hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)
+            self._hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)
             self._notify_observer(f"Hotkey was successfully changed to: '{cleaned_key_input}'", "success")
             return False
     
@@ -95,7 +100,7 @@ class KeyListener:
             self._notify_observer("Key listener started in seperat thread\n"
                                   +"Press key to change hotkey <...>", "normal")
         else:
-            self._notify_observer("Warning: Key listener already running", "warning")
+            self._notify_observer("Key listener already running", "warning")
     
     
     def _check_helper_keys(self, cleaned_key_input: str) -> bool:
