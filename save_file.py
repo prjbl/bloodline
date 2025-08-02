@@ -1,3 +1,5 @@
+from os import remove
+from shutil import copy2
 from sqlite3 import Connection, Cursor, connect, IntegrityError, OperationalError, DatabaseError
 
 from directory import Directory
@@ -5,26 +7,33 @@ from directory import Directory
 class SaveFile:
     
     def __init__(self):
-        self._conn: Connection = connect(self._dir.get_persistent_data_path().joinpath(self._FILE_NAME))
-        self._conn.execute('PRAGMA foreign_keys = ON') # activates foreign key restriction
-        self._cursor: Cursor = self._conn.cursor()
+        self._conn: Connection = None
+        self._cursor: Cursor = None
         self._observer: any = None
+        
+        self._open_connection()
     
     
     _dir: Directory = Directory()
     
-    _FILE_NAME: str = "save_file.db"
+    _DB_FILE_NAME: str = "save_file.db"
+    _BACKUP_FILE_NAME: str = "save_file_backup.db"
     
     
     def setup_db_and_observer(self, observer: any) -> None:
         self._observer = observer
         
-        # setup had to be outsourced to after the observer has been set, as its required for the setup process
-        self._create_tables()
+        self._create_tables() # setup had to be outsourced to after the observer has been set, as its required for the setup process
     
     
     def _notify_observer(self, text: str, text_type: str) -> None:
         self._observer(text, text_type)
+    
+    
+    def _open_connection(self) -> None:
+        self._conn = connect(self._dir.get_persistent_data_path().joinpath(self._DB_FILE_NAME))
+        self._conn.execute('PRAGMA foreign_keys = ON') # activates foreign key restriction
+        self._cursor = self._conn.cursor()
     
     
     def _create_tables(self) -> None:
@@ -32,7 +41,7 @@ class SaveFile:
             self._cursor.execute("""CREATE TABLE IF NOT EXISTS Game (
                                         title TEXT NOT NULL,
                                         PRIMARY KEY (title)
-                                )""")
+                                    )""")
             
             self._cursor.execute("""CREATE TABLE IF NOT EXISTS Boss (
                                         name TEXT NOT NULL,
@@ -41,12 +50,34 @@ class SaveFile:
                                         gameTitle TEXT NOT NULL,
                                         PRIMARY KEY (name, gameTitle),
                                         FOREIGN KEY (gameTitle) REFERENCES Game (title) ON DELETE CASCADE
-                                )""")
+                                    )""")
             self._conn.commit()
+            self._create_backup()
         except OperationalError:
-            self._notify_observer("Error: A syntax error occured while creating database tables", "error")
+            self._notify_observer("A syntax error occured while creating save file", "error")
         except DatabaseError:
-            self._notify_observer(f"The file '{self._FILE_NAME}' is corrupted", "error")
+            self._notify_observer(f"The file '{self._DB_FILE_NAME}' is corrupted. This save file will be deleted and the last backup file is beeing loaded", "error")
+            
+            try:
+                self.close_connection()
+                remove(self._dir.get_persistent_data_path().joinpath(self._DB_FILE_NAME))
+                self._load_backup()
+                self._open_connection()
+                self._notify_observer("Whole process was successful", "success")
+            except Exception as e:
+                self._notify_observer(f"Failed to load the save_file backup. Exception: {e}", "error")
+    
+    
+    def _create_backup(self) -> None:
+        backup_conn: Connection = connect(self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME))
+        self._conn.backup(backup_conn)
+        backup_conn.close()
+        self._notify_observer(f"Backup was created/updated", "normal")
+    
+    
+    def _load_backup(self) -> None:
+        copy2(self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME), self._dir.get_persistent_data_path().joinpath(self._DB_FILE_NAME))
+        self._notify_observer("Loading backup was successful", "success")
     
     
     def _add_game(self, title: str) -> None:
@@ -56,6 +87,7 @@ class SaveFile:
             self._conn.commit()
             
             self._notify_observer(f"The game '{title}' has been added to the save file", None)
+            self._create_backup()
         except IntegrityError:
             self._notify_observer(f"Error: The game '{title}' already exists in the save file", "error")
         except OperationalError:
@@ -63,7 +95,7 @@ class SaveFile:
     
     
     def add_boss(self, boss_name: str, game_title: str) -> None:
-        game_exists: bool = self._get_specific_game(game_title)
+        game_exists: bool = self._get_specific_game(game_title.casefold())
         
         if not game_exists:
             self._add_game(game_title)
@@ -74,6 +106,7 @@ class SaveFile:
             self._conn.commit()
             
             self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' has been added to the save file", None)
+            self._create_backup()
         except IntegrityError:
             if not game_exists:
                 self._notify_observer(f"Error: The game '{game_title}' is not added yet", "error")
@@ -91,6 +124,7 @@ class SaveFile:
                                         WHERE title = (?)""", (title,))
             self._conn.commit()
             self._notify_observer(f"The game '{title}' has been deleted successfully", "success")
+            self._create_backup()
         else:
             self._notify_observer(f"The game '{title}' does not exists in the save file", "indication")
     
@@ -103,6 +137,7 @@ class SaveFile:
                                         WHERE name = (?) and gameTitle = (?)""", (boss_name, game_title))
             self._conn.commit()
             self._notify_observer(f"The boss '{boss_name}' from game '{game_title}' has been deleted successfully", "success")
+            self._create_backup()
         else:
             self._notify_observer(f"The boss '{boss_name}' from game '{game_title}' does not exists in the save file", "indication")
     
@@ -211,6 +246,7 @@ class SaveFile:
             self._notify_observer("Nothing was updated because the given value isn't a valid data set in the save file", "error")
         else:
             self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", None)
+            self._create_backup()
     
     
     def get_specific_deaths(self, boss_name: str, game_title: str) -> int:

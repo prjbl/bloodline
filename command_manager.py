@@ -14,6 +14,8 @@ class CommandManager:
         self._setup_input_history_vars()
         self._setup_auto_complete_vars()
         
+        self._CANCEL_COMMANDS: dict = {"cancel": self._cancel}
+        
         self._COMMANDS: dict = {
             "help": self._help,
             "start": self._start,
@@ -28,6 +30,7 @@ class CommandManager:
             "stats --list bosses -deaths -asc": lambda: self._stats_list_bosses_deaths("asc"),
             "stats --list bosses -time -desc": lambda: self._stats_list_bosses_time("desc"),
             "stats --list bosses -time -asc": lambda: self._stats_list_bosses_time("asc"),
+            "stats --list bosses -all -deaths -desc": None,
             "stats --save": self._stats_save,
             "keybinds": self._keybinds,
             "keybinds --list": self._keybinds_list,
@@ -39,11 +42,11 @@ class CommandManager:
             "keybinds --config "+self._hk_manager.get_hotkey_names()[5]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[5]),
             "keybinds --config "+self._hk_manager.get_hotkey_names()[6]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[6]),
             "keybinds --config "+self._hk_manager.get_hotkey_names()[7]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[7]),
-            "cancel": None,
-            "quit": self._quit
         }
+        self._COMMANDS.update(self._CANCEL_COMMANDS)
+        self._COMMANDS["quit"] = self.quit
         self._COMMANDS_LIST: list[str] = list(self._COMMANDS.keys())
-        self._COMMANDS = {key.replace(" ", ""): value for key, value in self._COMMANDS.items()} # dictionary comprehension
+        #self._COMMANDS = {key.replace(" ", ""): value for key, value in self._COMMANDS.items()} # dictionary comprehension
     
     
     def _setup_instances(self) -> None:
@@ -84,21 +87,27 @@ class CommandManager:
     
     
     def execute_input(self, event, console_input: str) -> None:
-        if console_input != "":
-            self._add_input_to_history(console_input)
+        if console_input == "":
+            return
+        
+        self._add_input_to_history(console_input)
+        
+        if self._ignore_input:
+            if console_input in self._CANCEL_COMMANDS:
+                self._CANCEL_COMMANDS.get(console_input)()
+                return
             
-            if self._ignore_input:
-                self._console_input = console_input
+            self._print_output_func(console_input, "normal")
+            self._console_input = console_input
+            self._COMMANDS.get(self._cleaned_console_input)()
+        else:
+            self._print_output_func(console_input, "command")
+            self._cleaned_console_input = console_input.lower()
+            
+            if self._cleaned_console_input in self._COMMANDS:
                 self._COMMANDS.get(self._cleaned_console_input)()
             else:
-                self._print_output_func(console_input, "command")
-                
-                self._cleaned_console_input = console_input.replace(" ", "")
-                
-                if self._cleaned_console_input in self._COMMANDS:
-                    self._COMMANDS.get(self._cleaned_console_input)()
-                else:
-                    self._print_output_func("Error: Unknown input. Please use 'help' to get a list of all working commands", "error")
+                self._print_output_func("Error: Unknown input. Please use 'help' to get a list of all working commands", "error")
     
     
     def set_entry_var(self, entry_var: str) -> None:
@@ -167,9 +176,18 @@ class CommandManager:
                                 +"• keybinds: Lists all keybinding commands", None)
     
     
-    def _quit(self) -> None:
+    def quit(self) -> None:
         self._save_file.close_connection()
         self._quit_app_func()
+    
+    
+    def _cancel(self) -> None:
+        if self._ignore_input:
+            self._ignore_input = False
+            self._iteration_count = 0
+            self._print_output_func("Process was cancelled", "normal")
+        else:
+            self._print_output_func("Nothing to be cancelled", "error")
     
     
     def _start(self) -> None:
@@ -328,7 +346,7 @@ class CommandManager:
             self._print_output_func("Please enter the boss you want the stats saved to...", None)
         elif self._iteration_count == 1:
             self._boss_name = self._console_input
-            self._print_output_func("Pleas enter the game you want the boss to be connected to...", None)
+            self._print_output_func("Please enter the game you want the boss to be connected to...", None)
         else:
             self._game_title = self._console_input
             self._save_file.update_boss("hund", "hund game", 18, 625)
@@ -351,7 +369,7 @@ class CommandManager:
             self._ignore_input = False
             self._iteration_count = 0
             return
-        
+        print("triggered")
         self._iteration_count += 1
     
     
