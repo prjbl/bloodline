@@ -41,8 +41,7 @@ class HotkeyManager:
     def setup_keybinds_and_observer(self, observer: any) -> None:
         self._observer = observer
         
-        # setup had to be outsourced to after the observer has been set, as its required for the setup process
-        self._create_file()
+        self._create_file() # setup had to be outsourced to after the observer has been set, as its required for the setup process
         self._load_hotkeys()
     
     
