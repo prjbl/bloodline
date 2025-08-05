@@ -16,32 +16,42 @@ class CommandManager:
         
         self._CANCEL_COMMANDS: dict = {"cancel": self._cancel}
         
+        #category
+        #category action
+        #category action -scope-filter arg1
+        #category action -scope-filter arg1 -sort-filter arg2
+        #category action -scope-filter arg1 -sort-filter arg2 -order-filter arg3
+        
         self._COMMANDS: dict = {
             "help": self._help,
             "start": self._start,
             "setup": self._setup,
-            "setup --add": self._setup_add,
-            "setup --delete boss": self._setup_delete_boss,
-            "setup --delete game": self._setup_delete_game,
+            "setup add": self._setup_add,
+            "setup delete boss": self._setup_delete_boss,
+            "setup delete game": self._setup_delete_game,
             "stats": None,
-            "stats --list games": self._stats_list_games,
-            "stats --list bosses": self._stats_list_bosses,
-            "stats --list bosses -deaths -desc": lambda: self._stats_list_bosses_deaths("desc"),
-            "stats --list bosses -deaths -asc": lambda: self._stats_list_bosses_deaths("asc"),
-            "stats --list bosses -time -desc": lambda: self._stats_list_bosses_time("desc"),
-            "stats --list bosses -time -asc": lambda: self._stats_list_bosses_time("asc"),
-            "stats --list bosses -all -deaths -desc": None,
+            "stats list games": self._stats_list_games,
+            "stats list bosses": self._stats_list_bosses,
+            "stats list bosses -s deaths -o desc": lambda: self._stats_list_bosses_deaths("desc"),
+            "stats list bosses -s deaths -o asc": lambda: self._stats_list_bosses_deaths("asc"),
+            "stats list bosses -s time -o desc": lambda: self._stats_list_bosses_time("desc"),
+            "stats list bosses -s time -o asc": lambda: self._stats_list_bosses_time("asc"),
+            "stats list bosses -a -s deaths -o desc": None,
+            "stats list bosses -a -s deaths -o asc": None,
+            "stats list bosses -a -s time -o desc": None,
+            "stats list bosses -a -s time -o asc": None,
             "stats --save": self._stats_save,
             "keybinds": self._keybinds,
-            "keybinds --list": self._keybinds_list,
-            "keybinds --config "+self._hk_manager.get_hotkey_names()[0]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[0]),
-            "keybinds --config "+self._hk_manager.get_hotkey_names()[1]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[1]),
-            "keybinds --config "+self._hk_manager.get_hotkey_names()[2]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[2]),
-            "keybinds --config "+self._hk_manager.get_hotkey_names()[3]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[3]),
-            "keybinds --config "+self._hk_manager.get_hotkey_names()[4]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[4]),
-            "keybinds --config "+self._hk_manager.get_hotkey_names()[5]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[5]),
-            "keybinds --config "+self._hk_manager.get_hotkey_names()[6]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[6]),
-            "keybinds --config "+self._hk_manager.get_hotkey_names()[7]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[7]),
+            "keybinds list": self._keybinds_list,
+            "keybinds config "+self._hk_manager.get_hotkey_names()[0]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[0]),
+            "keybinds config "+self._hk_manager.get_hotkey_names()[1]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[1]),
+            "keybinds config "+self._hk_manager.get_hotkey_names()[2]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[2]),
+            "keybinds config "+self._hk_manager.get_hotkey_names()[3]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[3]),
+            "keybinds config "+self._hk_manager.get_hotkey_names()[4]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[4]),
+            "keybinds config "+self._hk_manager.get_hotkey_names()[5]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[5]),
+            "keybinds config "+self._hk_manager.get_hotkey_names()[6]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[6]),
+            "keybinds config "+self._hk_manager.get_hotkey_names()[7]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[7]),
+            "syntax": self._syntax,
         }
         self._COMMANDS.update(self._CANCEL_COMMANDS)
         self._COMMANDS["quit"] = self.quit
@@ -169,11 +179,12 @@ class CommandManager:
     
     
     def _help(self) -> None:
-        self._print_output_func("This is a list of all working commands:\n"
-                                +"• quit: Quits the application\n"
-                                +"• start: Starts the key listener\n"
-                                +"• setup: List all setup commands\n"
-                                +"• keybinds: Lists all keybinding commands", None)
+        self._print_output_func("This is a list of all command categories:", "normal")
+        self._print_output_func("start: Starts the key listener\n"
+                                +"setup: Lists all setup actions\n"
+                                +"stats: Lists all stat actions\n"
+                                +"keybinds: Lists all keybind actions\n"
+                                +"quit: Quits the application", "list")
     
     
     def quit(self) -> None:
