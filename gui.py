@@ -28,6 +28,8 @@ class Application:
     _INITIAL_WIDTH: int = 600
 
     _PADDING: int = 5
+    
+    _INDENT: str = "    "
 
     _COLOR_BG: str = "#292c30"
     _COLOR_NORMAL: str = "#ffffff"
@@ -151,6 +153,11 @@ class Application:
             self._console.insert("end", f"Warning: {text}\n", "warning")
         elif text_type == "error":
             self._console.insert("end", f"Error: {text}\n", "error")
+        elif text_type == "list":
+            lines: list[str] = text.split("\n")
+            
+            for line in lines:
+                self._console.insert("end", f"{self._INDENT}• {line}\n", "normal")
         else:
             self._console.insert("end", f"{text}\n", "normal")
             
