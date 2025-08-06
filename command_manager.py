@@ -24,7 +24,9 @@ class CommandManager:
         
         self._COMMANDS: dict = {
             "help": self._help,
-            "start": self._start,
+            "tracking": None,
+            "tracking new": self._tracking_new,
+            "tracking continue": self._start,
             "setup": self._setup,
             "setup add": self._setup_add,
             "setup delete boss": self._setup_delete_boss,
@@ -36,11 +38,12 @@ class CommandManager:
             "stats list bosses -s deaths -o asc": lambda: self._stats_list_bosses_deaths("asc"),
             "stats list bosses -s time -o desc": lambda: self._stats_list_bosses_time("desc"),
             "stats list bosses -s time -o asc": lambda: self._stats_list_bosses_time("asc"),
-            "stats list bosses -a -s deaths -o desc": None,
-            "stats list bosses -a -s deaths -o asc": None,
-            "stats list bosses -a -s time -o desc": None,
-            "stats list bosses -a -s time -o asc": None,
-            "stats --save": self._stats_save,
+            "stats list bosses -a -s deaths -o desc": lambda: self._stats_list_all_bosses_deaths("desc"),
+            "stats list bosses -a -s deaths -o asc": lambda: self._stats_list_all_bosses_deaths("asc"),
+            "stats list bosses -a -s time -o desc": lambda: self._stats_list_all_bosses_time("desc"),
+            "stats list bosses -a -s time -o asc": lambda: self._stats_list_all_bosses_time("asc"),
+            "stats identify boss": self._stats_identify,
+            "stats save": self._stats_save,
             "keybinds": self._keybinds,
             "keybinds list": self._keybinds_list,
             "keybinds config "+self._hk_manager.get_hotkey_names()[0]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[0]),
@@ -51,7 +54,6 @@ class CommandManager:
             "keybinds config "+self._hk_manager.get_hotkey_names()[5]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[5]),
             "keybinds config "+self._hk_manager.get_hotkey_names()[6]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[6]),
             "keybinds config "+self._hk_manager.get_hotkey_names()[7]: lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[7]),
-            "syntax": self._syntax,
         }
         self._COMMANDS.update(self._CANCEL_COMMANDS)
         self._COMMANDS["quit"] = self.quit
@@ -81,6 +83,8 @@ class CommandManager:
         
         self._boss_name: str = ""
         self._game_title: str = ""
+        self._unknown_boss: str = ""
+        self._unknown_game: str = ""
     
     
     def _setup_input_history_vars(self) -> None:
@@ -152,18 +156,21 @@ class CommandManager:
     def _add_input_to_history(self, console_input: str) -> None:
         if not self._input_history:
             self._input_history.append(console_input)
-            self._input_history_index = len(self._input_history)
         elif console_input != self._input_history[len(self._input_history) - 1]:
             self._input_history.append(console_input)
-            self._input_history_index = len(self._input_history)
+        
+        self._input_history_index = len(self._input_history)
     
     
     def get_last_input(self, event, input_entry) -> None:
+        print(self._input_history_index)
         if self._input_history and self._input_history_index > 0:
+            print("if")
             self._input_history_index -= 1
             input_entry.delete(0, "end")
             input_entry.insert(0, self._input_history[self._input_history_index])
         elif self._input_history and self._input_history_index == 0:
+            print("elif")
             input_entry.delete(0, "end")
             input_entry.insert(0, self._input_history[self._input_history_index])
     
@@ -208,7 +215,7 @@ class CommandManager:
             self._print_output_func("Please enter the boss you want to track...", None)
         elif self._iteration_count == 1:
             self._boss_name = self._console_input
-            self._print_output_func("Pleas enter the game the boss is connected to...", None)
+            self._print_output_func("Please enter the game the boss is connected to...", None)
         else:
             self._game_title = self._console_input
             self._counter.set_count_already_required(self._save_file.get_specific_deaths(self._boss_name, self._game_title))
@@ -216,6 +223,13 @@ class CommandManager:
             self._key_listener.start_key_listener()
         
         self._check_ignore_inputs_end()
+    
+    
+    def _tracking_new(self) -> None:
+        self._save_file.add_unknown()
+        self._counter.set_count_already_required(0)
+        self._timer.set_time_already_required(0)
+        self._key_listener.start_key_listener()
     
     
     def _keybinds(self) -> None:
@@ -309,6 +323,20 @@ class CommandManager:
         self._check_ignore_inputs_end()
     
     
+    def _stats_list_all_bosses_deaths(self, filter: str) -> None:
+        tmp_list_of_bosses: list = self._save_file.get_all_bosses_by_deaths(filter)
+        
+        for item in tmp_list_of_bosses:
+            self._print_output_func(f"{item[0]}: {self._check_deaths(item[1])}, {self._calc_int_to_time(item[2])}", "list")
+    
+    
+    def _stats_list_all_bosses_time(self, filter: str) -> None:
+        tmp_list_of_bosses: list = self._save_file.get_all_bosses_by_time(filter)
+        
+        for item in tmp_list_of_bosses:
+            self._print_output_func(f"{item[0]}: {self._check_deaths(item[1])}, {self._calc_int_to_time(item[2])}", "list")
+    
+    
     def _set_deaths(self, deaths_at_boss: int) -> int:
         if deaths_at_boss is not None:
             return deaths_at_boss
@@ -346,6 +374,27 @@ class CommandManager:
         return f"Average: D {average_deaths}, {average_time}"
     
     
+    def _stats_identify(self) -> None:
+        self._set_ignore_inputs(4)
+        
+        if self._iteration_count == 0:
+            self._print_output_func("Please enter the boss you want to identify <...>", "normal")
+        elif self._iteration_count == 1:
+            self._unknown_boss: str = self._console_input
+            self._print_output_func("Please enter the game the boss is currently connected to <...>", "normal")
+        elif self._iteration_count == 2:
+            self._unknown_game: str = self._console_input
+            self._print_output_func("Please enter the new name for the boss <...>", "normal")
+        elif self._iteration_count == 3:
+            self._boss_name = self._console_input
+            self._print_output_func("Please enter the game you want the boss to be connected to <...>", "normal")
+        else:
+            self._game_title = self._console_input
+            self._save_file.identify_boss(self._unknown_boss, self._unknown_game, self._boss_name, self._game_title)
+        
+        self._check_ignore_inputs_end()
+    
+    
     def _stats_save(self) -> None:
         #if self._counter.get_is_none() or self._timer.get_is_none():
         #    self._print_output_func("You first have to start tracking before updating the stats", None)
@@ -360,11 +409,11 @@ class CommandManager:
             self._print_output_func("Please enter the game you want the boss to be connected to...", None)
         else:
             self._game_title = self._console_input
-            self._save_file.update_boss("hund", "hund game", 18, 625)
-            self._save_file.update_boss("junge hund", "hund game", None, 351)
-            self._save_file.update_boss("hundus mundus", "hund game", 35165, 1335)
-            self._save_file.update_boss("nino dino", "hund game", 320, None)
-            #self._save_file.update_boss(self._boss_name, self._game_title, self._counter.get_count(), self._timer.get_end_time())
+            #self._save_file.update_boss("hund", "hund game", 18, 625)
+            #self._save_file.update_boss("junge hund", "hund game", None, 351)
+            #self._save_file.update_boss("hundus mundus", "hund game", 35165, 1335)
+            #self._save_file.update_boss("nino dino", "hund game", 320, None)
+            self._save_file.update_boss(self._boss_name, self._game_title, self._counter.get_count(), self._timer.get_end_time())
             self._counter.set_none()
         
         self._check_ignore_inputs_end()

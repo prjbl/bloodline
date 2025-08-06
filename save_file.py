@@ -19,6 +19,9 @@ class SaveFile:
     _DB_FILE_NAME: str = "save_file.db"
     _BACKUP_FILE_NAME: str = "save_file_backup.db"
     
+    _UNKNOWN_GAME_TITLE: str = "Unknown Game"
+    _UNKNOWN_BOSS_NAME: str = "Unknown Boss"
+    
     
     def setup_db_and_observer(self, observer: any) -> None:
         self._observer = observer
@@ -114,6 +117,32 @@ class SaveFile:
                 self._notify_observer(f"Error: The boss '{boss_name}' is already added to the game '{game_title}'", "error")
         except OperationalError:
             self._notify_observer(f"Error: A syntax error occured while adding '{game_title}' and '{boss_name}' to save file", "error")
+    
+    
+    def add_unknown(self) -> None:
+        try:
+            self._cursor.execute("""SELECT EXISTS (
+                                        SELECT title FROM Game
+                                            WHERE title = (?))""", (self._UNKNOWN_GAME_TITLE,))
+            value_exists: list[int] = self._cursor.fetchone()
+            
+            if value_exists[0] == 0:
+                self._add_game(self._UNKNOWN_GAME_TITLE)
+            
+            self.add_boss(f"{self._UNKNOWN_BOSS_NAME} {self._get_unknown_bosses()}", self._UNKNOWN_GAME_TITLE)
+        except Exception as e:
+            print(e)
+    
+    
+    def _get_unknown_bosses(self) -> int:
+        try:
+            self._cursor.execute("""SELECT COUNT(b.name) FROM Boss b
+                                        JOIN Game g ON b.gameTitle = g.title
+                                        WHERE g.title = (?)""", (self._UNKNOWN_GAME_TITLE,))
+            boss_count: int = self._cursor.fetchone()[0]
+            return boss_count + 1
+        except Exception as e:
+            print(e)
     
     
     def delete_game(self, title: str) -> None:
@@ -236,6 +265,40 @@ class SaveFile:
             return selection
     
     
+    def get_all_bosses_by_deaths(self, filter: str) -> list:
+        if filter == "desc":
+            self._cursor.execute("""SELECT * FROM Boss
+                                        ORDER BY deaths DESC""")
+        elif filter == "asc":
+            self._cursor.execute("""SELECT * FROM Boss
+                                        ORDER BY deaths ASC""")
+        
+        selection: list = self._cursor.fetchall()
+        
+        if not selection:
+            self._notify_observer(f"There are no bosses in the save file so far", "indication")
+            return []
+        else:
+            return selection
+    
+    
+    def get_all_bosses_by_time(self, filter: str) -> list:
+        if filter == "desc":
+            self._cursor.execute("""SELECT * FROM Boss
+                                        ORDER BY requiredTime DESC""")
+        elif filter == "asc":
+            self._cursor.execute("""SELECT * FROM Boss
+                                        ORDER BY requiredTime ASC""")
+        
+        selection: list = self._cursor.fetchall()
+        
+        if not selection:
+            self._notify_observer(f"There are no bosses in the save file so far", "indication")
+            return []
+        else:
+            return selection
+    
+    
     def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> None:
         self._cursor.execute("""UPDATE Boss
                                     SET deaths = (?), requiredTime = (?)
@@ -247,6 +310,18 @@ class SaveFile:
         else:
             self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", None)
             self._create_backup()
+    
+    
+    def identify_boss(self, unknown_boss: str, unknown_game: str, boss_name: str, game_title: str) -> None:
+        self._cursor.execute("""SELECT deaths, requiredTime FROM Boss
+                                    WHERE name = (?) and gameTitle = (?)""", (unknown_boss, unknown_game))
+        stats: list[str] = self._cursor.fetchall()
+        
+        self.delete_boss(unknown_boss, unknown_game)
+        
+        self.add_boss(boss_name, game_title)
+        
+        self.update_boss(boss_name, game_title, stats[0][0], stats[0][1])
     
     
     def get_specific_deaths(self, boss_name: str, game_title: str) -> int:
