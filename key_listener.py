@@ -1,5 +1,4 @@
-import threading as th
-from concurrent.futures import ThreadPoolExecutor
+from threading import Thread
 
 from pynput import keyboard as kb
 
@@ -14,7 +13,7 @@ class KeyListener:
         self._counter: Counter = counter
         self._timer: Timer = timer
         self._key_listener: kb.Listener = None
-        self._listener_thread: th.Thread = None
+        self._listener_thread: Thread = None
         self._observer: any = None
     
     
@@ -65,7 +64,7 @@ class KeyListener:
     
     def start_key_listener(self) -> None:
         if self._listener_thread is None or not self._listener_thread.is_alive():
-            self._listener_thread = th.Thread(target=self._run_listener, daemon=True)
+            self._listener_thread = Thread(target=self._run_listener, daemon=True)
             self._listener_thread.start()
             self._notify_observer("Key listener started in seperat thread", "normal")
         else:
@@ -96,7 +95,7 @@ class KeyListener:
     
     def start_key_listener_for_one_input(self) -> None:
         if self._listener_thread is None or not self._listener_thread.is_alive():
-            self._listener_thread = th.Thread(target=self._run_listener_for_one_input, daemon=True)
+            self._listener_thread = Thread(target=self._run_listener_for_one_input, daemon=True)
             self._listener_thread.start()
             self._notify_observer("Key listener started in seperat thread\n"
                                   +"Press key to change hotkey <...>", "normal")
