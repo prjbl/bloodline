@@ -1,3 +1,5 @@
+from re import compile, fullmatch, Match
+
 from counter import Counter
 from hotkey_manager import HotkeyManager
 from key_listener import KeyListener
@@ -485,15 +487,28 @@ class CommandManager:
         
     
     def _setup_delete_boss(self) -> None:
-        self._set_ignore_inputs(2)
+        self._set_ignore_inputs(1)
         
         if self._iteration_count == 0:
+            self._print_output_func("Please enter the boss you wish to delete <Boss>, <Game>", "normal")
+        else:
+            pattern: str = compile("\"(.*?)\", \"(.*?)\"")
+            result: Match = fullmatch(pattern, self._console_input)
+            
+            if result:
+                value1: str = result.group(1)
+                value2: str = result.group(2)
+                print(f"{value1}\n{value2}")
+            else:
+                print("No result found")
+        
+        """if self._iteration_count == 0:
             self._print_output_func("Please enter the boss you wish to delete <...>", "normal")
         elif self._iteration_count == 1:
             self._boss_name = self._console_input
             self._print_output_func("Please enter the game the boss is linked to <...>", "normal")
         else:
             self._game_title = self._console_input
-            self._save_file.delete_boss(self._boss_name, self._game_title)
+            self._save_file.delete_boss(self._boss_name, self._game_title)"""
         
         self._check_ignore_inputs_end()
