@@ -198,6 +198,47 @@ class SaveFile:
             
             return cleaned_selection
     
+    # order by id (has to be added to the table)
+    def get_all_games_new(self) -> list:
+        self._cursor.execute("""SELECT g.title, SUM(b.deaths), SUM(b.requiredTime) FROM Game g
+                                    JOIN Boss b ON b.gameTitle = g.title
+                                    GROUP BY g.title""")
+        selection: list = self._cursor.fetchall()
+        
+        if not selection:
+            self._notify_observer("Error: There are no games in the save file so far", "error")
+            return []
+        else:
+            return selection
+    
+    
+    def get_all_games_desc(self) -> list:
+        self._cursor.execute("""SELECT g.title, SUM(b.deaths), SUM(b.requiredTime) FROM Game g
+                                    JOIN Boss b ON b.gameTitle = g.title
+                                    GROUP BY g.title
+                                    ORDER BY SUM(b.deaths) DESC""")
+        selection: list = self._cursor.fetchall()
+        
+        if not selection:
+            self._notify_observer("Error: There are no games in the save file so far", "error")
+            return []
+        else:
+            return selection
+    
+    
+    def get_all_games_asc(self) -> list:
+        self._cursor.execute("""SELECT g.title, SUM(b.deaths), SUM(b.requiredTime) FROM Game g
+                                    JOIN Boss b ON b.gameTitle = g.title
+                                    GROUP BY g.title
+                                    ORDER BY SUM(b.deaths) ASC""")
+        selection: list = self._cursor.fetchall()
+        
+        if not selection:
+            self._notify_observer("Error: There are no games in the save file so far", "error")
+            return []
+        else:
+            return selection
+    
     
     def _get_specific_boss(self, boss_name: str, game_title: str) -> bool:
         self._cursor.execute("""SELECT name FROM Boss

@@ -28,7 +28,6 @@ class Application:
     _INITIAL_WIDTH: int = 600
 
     _PADDING: int = 5
-    
     _INDENT: str = "    "
 
     _COLOR_BG: str = "#292c30"
@@ -134,7 +133,7 @@ class Application:
     
     
     def _on_entry_change(self, *args: tuple) -> None:
-        self._cmd_manager.set_entry_var(self._entry_var.get())
+        self._cmd_manager.set_entry_var(self._entry_var.get().strip())
     
     
     def print_output(self, text: str, text_type: str) -> None:
