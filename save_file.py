@@ -42,17 +42,19 @@ class SaveFile:
     def _create_tables(self) -> None:
         try:
             self._cursor.execute("""CREATE TABLE IF NOT EXISTS Game (
-                                        title TEXT NOT NULL,
-                                        PRIMARY KEY (title)
+                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                        title TEXT UNIQUE NOT NULL
                                     )""")
             
             self._cursor.execute("""CREATE TABLE IF NOT EXISTS Boss (
+                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
                                         name TEXT NOT NULL,
                                         deaths INTEGER,
                                         requiredTime INTEGER,
-                                        gameTitle TEXT NOT NULL,
-                                        PRIMARY KEY (name, gameTitle),
-                                        FOREIGN KEY (gameTitle) REFERENCES Game (title) ON DELETE CASCADE
+                                        gameId INTEGER NOT NULL,
+                                        
+                                        UNIQUE (name, gameId),
+                                        FOREIGN KEY (gameId) REFERENCES Game (id) ON DELETE CASCADE
                                     )""")
             self._conn.commit()
             self._create_backup()

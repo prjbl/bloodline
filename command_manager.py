@@ -333,7 +333,7 @@ class CommandManager:
         max_deaths_len: int = max(len(str(deaths[1])) for deaths in tmp_list_of_games)
         
         for item in tmp_list_of_games:
-            self._print_output_func(f"{item[0].ljust(max_title_len, " ")}  (D {str(item[1]).ljust(max_deaths_len, " ")}  {item[2]})", "list")
+            self._print_output_func(f"{item[0].ljust(max_title_len, " ")}  ({str(self._check_deaths(item[1])).ljust(max_deaths_len, " ")}  {item[2]})", "list")
         """tmp_list_of_games: list[str] = self._save_file.get_all_games()
         
         for item in tmp_list_of_games:
@@ -512,7 +512,7 @@ class CommandManager:
         if deaths is None:
             return "N/A"
         else:
-            return f"D {deaths}"
+            return f"D {deaths:,}".replace(",", ".")
     
     
     def _setup_add(self) -> None:
