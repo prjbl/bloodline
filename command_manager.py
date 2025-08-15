@@ -82,6 +82,7 @@ class CommandManager:
     
     
     def _setup_input_vars(self) -> None:
+        self._console_input: str = ""
         self._last_unignored_input: str = ""
         self._ignore_input: bool = False
         self._inputs_to_ignore: int = 0
@@ -113,6 +114,7 @@ class CommandManager:
                 self._CANCEL_COMMANDS.get(cleaned_console_input)()
                 return
             
+            self._console_input = console_input
             self._print_output_func(console_input, "normal")
             self._COMMANDS.get(self._last_unignored_input)()
         else:
@@ -127,15 +129,17 @@ class CommandManager:
     
     def _set_ignore_inputs(self, number_of_inputs: int) -> None:
         self._ignore_input = True
+        self._inputs_to_ignore = number_of_inputs
         self._COMMANDS.update(self._CANCEL_COMMANDS)
         self._COMMANDS_LIST = list(self._COMMANDS.keys())
-        self._inputs_to_ignore = number_of_inputs
     
     
     def _check_ignore_inputs_end(self) -> None:
         if self._ignore_count == self._inputs_to_ignore:
             self._ignore_input = False
             self._ignore_count = 0
+            self._COMMANDS.pop("cancel")
+            self._COMMANDS_LIST = list(self._COMMANDS.keys())
             return
         
         self._ignore_count += 1
@@ -233,6 +237,20 @@ class CommandManager:
                                 +"setup delete boss|game: Deletes a boss|game", "list")
     
     
+    def _setup_add(self) -> None:
+        self._set_ignore_inputs(1)
+        
+        if self._ignore_count == 0:
+            self._print_output_func("Please enter the <\"boss name\", \"game title\"> you want to add <...>", "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern("single")
+            
+            if result:
+                self._save_file.add_boss(result[0], result[1])
+        
+        self._check_ignore_inputs_end()
+    
+    
     def _setup_identify_boss(self) -> None:
         pass
     
@@ -253,7 +271,15 @@ class CommandManager:
     
     
     def _stats_list_all_bosses(self) -> None:
-        pass
+        """tmp_list_of_bosses: list[str] = self._save_file.get_all_bosses_by_id()
+        
+        max_title_len: int = max(len(boss_name[0]) for boss_name in tmp_list_of_bosses)
+        max_title_len += max(len(game_title[1]) + 1 for game_title in tmp_list_of_bosses)
+        max_deaths_len: int = max(len(str(deaths[2])) for deaths in tmp_list_of_bosses)
+        
+        for item in tmp_list_of_bosses:
+            title: str = f"{item[0]} ({item[1]})"
+            self._print_output_func(f"{title.ljust(max_title_len + 2, " ")}  D {item[2]}, {item[3]}", "list")"""
     
     
     def _keybinds(self) -> None:
@@ -266,6 +292,22 @@ class CommandManager:
         self._save_file.close_connection()
         self._quit_app_func()
     
+    
+    # helper methods below
+    
+    def _get_result_in_pattern(self, pattern_type: str) -> list[str]:
+        if pattern_type == "single":
+            pattern: str = compile("\"(.*?)\", \"(.*?)\"")
+        elif pattern_type == "double":
+            pattern: str = compile("\"(.*?)\", \"(.*?)\" -> \"(.*?)\", \"(.*?)\"")
+            
+        result: Match = fullmatch(pattern, self._console_input)
+        
+        if result:
+            return list[str](result.groups())
+        else:
+            self._print_output_func("The input does not match the pattern. Please try again", "indication")
+            return []
     
     
     
@@ -515,7 +557,7 @@ class CommandManager:
             return f"D {deaths:,}".replace(",", ".")
     
     
-    def _setup_add(self) -> None:
+    """def _setup_add(self) -> None:
         self._ignore_input = True
         self._inputs_to_ignore = 2
         
@@ -533,7 +575,7 @@ class CommandManager:
             self._iteration_count = 0
             return
         
-        self._iteration_count += 1
+        self._iteration_count += 1"""
     
     
     def _setup_delete_game(self) -> None:
