@@ -35,31 +35,31 @@ class SaveFile:
     
     def _open_connection(self) -> None:
         self._conn = connect(self._dir.get_persistent_data_path().joinpath(self._DB_FILE_NAME))
-        self._conn.execute('PRAGMA foreign_keys = ON') # activates foreign key restriction
+        self._conn.execute("PRAGMA foreign_keys = ON") # activates foreign key restriction
         self._cursor = self._conn.cursor()
     
     
     def _create_tables(self) -> None:
         try:
-            self._cursor.execute("""CREATE TABLE IF NOT EXISTS Game (
-                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                        title TEXT UNIQUE NOT NULL
-                                    )""")
-            
-            self._cursor.execute("""CREATE TABLE IF NOT EXISTS Boss (
-                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                        name TEXT NOT NULL,
-                                        deaths INTEGER,
-                                        requiredTime INTEGER,
-                                        gameId INTEGER NOT NULL,
+            self._cursor.executescript("""CREATE TABLE IF NOT EXISTS Game (
+                                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                            title TEXT UNIQUE NOT NULL
+                                        );
                                         
-                                        UNIQUE (name, gameId),
-                                        FOREIGN KEY (gameId) REFERENCES Game (id) ON DELETE CASCADE
-                                    )""")
+                                        CREATE TABLE IF NOT EXISTS Boss (
+                                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                            name TEXT NOT NULL,
+                                            deaths INTEGER,
+                                            requiredTime INTEGER,
+                                            gameId INTEGER NOT NULL,
+                                        
+                                            UNIQUE (name, gameId),
+                                            FOREIGN KEY (gameId) REFERENCES Game (id) ON DELETE CASCADE
+                                        )""")
             self._conn.commit()
-            self._create_backup()
-        except OperationalError:
-            self._notify_observer("A syntax error occured while creating save file", "error")
+            
+            if not self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME).exists():
+                self._create_backup()
         except DatabaseError:
             self._notify_observer(f"The file '{self._DB_FILE_NAME}' is corrupted. This save file will be deleted and the last backup file is beeing loaded", "error")
             
@@ -68,16 +68,32 @@ class SaveFile:
                 remove(self._dir.get_persistent_data_path().joinpath(self._DB_FILE_NAME))
                 self._load_backup()
                 self._open_connection()
-                self._notify_observer("Whole process was successful", "success")
+                self._notify_observer("Whole backuping process was successful", "success")
             except Exception as e:
-                self._notify_observer(f"Failed to load the save_file backup. Exception: {e}", "error")
+                self._notify_observer(f"Failed to load '{self._BACKUP_FILE_NAME}'. Exception: {e}", "error")
     
     
     def _create_backup(self) -> None:
-        backup_conn: Connection = connect(self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME))
-        self._conn.backup(backup_conn)
-        backup_conn.close()
-        self._notify_observer(f"Backup was created/updated", "normal")
+        backup_exists: bool = self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME).exists()
+        
+        try:
+            backup_conn: Connection = connect(self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME))
+            self._conn.backup(backup_conn)
+            backup_conn.close()
+            
+            if not backup_exists:
+                self._notify_observer("Backup was created", "normal")
+            else:
+                self._notify_observer("Backup was updated", "normal")
+        except DatabaseError:
+            self._notify_observer(f"The backup file '{self._BACKUP_FILE_NAME}' is corrupted. An attempt is made to re-initialized file", "error")
+            
+            try:
+                backup_conn.close()
+                remove(self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME))
+                self._create_backup()
+            except Exception as e:
+                self._notify_observer(f"Failed to re-initialize '{self._BACKUP_FILE_NAME}'. Exception: {e}", "error")
     
     
     def _load_backup(self) -> None:
@@ -85,41 +101,91 @@ class SaveFile:
         self._notify_observer("Loading backup was successful", "success")
     
     
-    def _add_game(self, title: str) -> None:
+    def close_connection(self) -> None:
+        self._conn.close()
+    
+    
+    # db manipulation and selection methods below
+    
+    def _add_game(self, game_title: str) -> None:
+        if self._get_specific_game_exists(game_title):
+            self._notify_observer(f"The game '{game_title}' already exists in the save file", "indication")
+            return
+        
         try:
             self._cursor.execute("""INSERT INTO Game (title)
-                                        VALUES (?)""", (title,))
+                                        VALUES (?)""", (game_title,))
             self._conn.commit()
             
-            self._notify_observer(f"The game '{title}' has been added to the save file", None)
-            self._create_backup()
-        except IntegrityError:
-            self._notify_observer(f"Error: The game '{title}' already exists in the save file", "error")
-        except OperationalError:
-            self._notify_observer(f"Error: A syntax error occured while adding '{title}' to save file", "error")
+            self._notify_observer(f"The game '{game_title}' has been added to the save file", "normal")
+        except Exception as e:
+            self._notify_observer(f"An error occured while adding the game '{game_title}'. Exception: {e}", "error")
     
     
     def add_boss(self, boss_name: str, game_title: str) -> None:
-        game_exists: bool = self._get_specific_game(game_title.casefold())
+        if self._get_specific_boss_exists(boss_name, game_title):
+            self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' already exists in the save file", "indication")
+            return
         
-        if not game_exists:
-            self._add_game(game_title)
+        self._add_game(game_title)
         
         try:
-            self._cursor.execute("""INSERT INTO Boss (name, gameTitle)
-                                        VALUES (?, ?)""", (boss_name, game_title))
+            self._cursor.execute("""INSERT INTO Boss (name, gameId)
+                                        VALUES (?, (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE))""", (boss_name, game_title))
             self._conn.commit()
             
-            self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' has been added to the save file", None)
+            self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' has been added to the save file", "normal")
             self._create_backup()
-        except IntegrityError:
-            if not game_exists:
-                self._notify_observer(f"Error: The game '{game_title}' is not added yet", "error")
-            else:
-                self._notify_observer(f"Error: The boss '{boss_name}' is already added to the game '{game_title}'", "error")
-        except OperationalError:
-            self._notify_observer(f"Error: A syntax error occured while adding '{game_title}' and '{boss_name}' to save file", "error")
+        except Exception as e:
+            self._notify_observer(f"An error occured while adding the boss '{boss_name}' to '{game_title}'. Exception: {e}", "error")
     
+    
+    def get_all_bosses_by_id(self) -> list[str]:
+        self._cursor.execute("""SELECT b.name, g.title, b.deaths, b.requiredTime FROM Boss b
+                                    JOIN Game g ON b.gameId = g.id
+                                    ORDER BY b.id ASC""")
+        return self._cursor.fetchall()
+    
+    
+    # helper methods below
+    
+    def _get_specific_game_exists(self, game_title: str) -> bool:
+        self._cursor.execute("""SELECT title FROM Game
+                                    WHERE title = (?) COLLATE NOCASE""", (game_title,))
+        selection: list[str] = self._cursor.fetchone()
+        
+        if selection is None:
+            return False
+        else:
+            return True
+    
+    
+    def _get_specific_boss_exists(self, boss_name: str, game_title: str) -> bool:
+        self._cursor.execute("""SELECT name FROM Boss
+                                    WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (boss_name, game_title))
+        selection: list[str] = self._cursor.fetchone()
+        
+        if selection is None:
+            return False
+        else:
+            return True
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+
     
     def add_unknown(self) -> None:
         try:
@@ -171,17 +237,6 @@ class SaveFile:
             self._create_backup()
         else:
             self._notify_observer(f"The boss '{boss_name}' from game '{game_title}' does not exists in the save file", "indication")
-    
-    
-    def _get_specific_game(self, game_title: str) -> bool:
-        self._cursor.execute("""SELECT title FROM Game
-                                    WHERE title = (?)""", (game_title,))
-        selection: list[str] = self._cursor.fetchone()
-        
-        if selection is None:
-            return False
-        else:
-            return True
     
     
     def get_all_games(self) -> list[str]:
@@ -401,7 +456,3 @@ class SaveFile:
                 return 0
             else:
                 return selection
-    
-    
-    def close_connection(self) -> None:
-        self._conn.close()
