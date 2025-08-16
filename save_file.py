@@ -1,6 +1,6 @@
 from os import remove
 from shutil import copy2
-from sqlite3 import Connection, Cursor, connect, IntegrityError, OperationalError, DatabaseError
+from sqlite3 import Connection, Cursor, connect, DatabaseError
 
 from directory import Directory
 
@@ -109,7 +109,6 @@ class SaveFile:
     
     def _add_game(self, game_title: str) -> None:
         if self._get_specific_game_exists(game_title):
-            self._notify_observer(f"The game '{game_title}' already exists in the save file", "indication")
             return
         
         try:
@@ -119,12 +118,12 @@ class SaveFile:
             
             self._notify_observer(f"The game '{game_title}' has been added to the save file", "normal")
         except Exception as e:
-            self._notify_observer(f"An error occured while adding the game '{game_title}'. Exception: {e}", "error")
+            self._notify_observer(f"An unexpected error occured while adding the game '{game_title}'. Exception: {e}", "error")
     
     
     def add_boss(self, boss_name: str, game_title: str) -> None:
-        if self._get_specific_boss_exists(boss_name, game_title):
-            self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' already exists in the save file", "indication")
+        if self.get_specific_boss_exists(boss_name, game_title):
+            self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' already exists in the save file", "indication")
             return
         
         self._add_game(game_title)
@@ -134,13 +133,86 @@ class SaveFile:
                                         VALUES (?, (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE))""", (boss_name, game_title))
             self._conn.commit()
             
-            self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' has been added to the save file", "normal")
+            self._notify_observer(f"The boss '{boss_name}' of game '{self._get_specific_game(game_title) if self._get_specific_game_exists(game_title) else game_title}' has been added to the save file", "normal")
             self._create_backup()
         except Exception as e:
-            self._notify_observer(f"An error occured while adding the boss '{boss_name}' to '{game_title}'. Exception: {e}", "error")
+            self._notify_observer(f"An unexpected error occured while adding the boss '{boss_name}' to '{game_title}'. Exception: {e}", "error")
     
     
-    def get_all_bosses_by_id(self) -> list[str]:
+    def add_unknown(self) -> None:
+        self._add_game(self._UNKNOWN_GAME_TITLE)
+        self.add_boss(f"{self._UNKNOWN_BOSS_NAME} {self._get_unknown_bosses_count()}", self._UNKNOWN_GAME_TITLE)
+    
+    
+    def identify_boss(self, boss_name: str, new_boss_name: str, new_game_title: str) -> None:
+        self.rename_boss(boss_name, self._UNKNOWN_GAME_TITLE, new_boss_name)
+        self.move_boss(new_boss_name, self._UNKNOWN_GAME_TITLE, new_game_title)
+    
+    
+    def move_boss(self, boss_name: str, game_title: str, new_game_title: str) -> None:
+        if not self._get_specific_game_exists(game_title):
+            self._notify_observer(f"The game '{game_title}' you selected to move does not exists in the save file so far", "indication")
+            return
+        elif not self.get_specific_boss_exists(boss_name, game_title):
+            self._notify_observer(f"The boss '{boss_name}' you selected to move does not exists in the game '{self._get_specific_game(game_title)}' in the save file so far", "indication")
+            return
+        elif not self._get_specific_game_exists(new_game_title):
+            self._notify_observer(f"The game '{new_game_title}' you selected to be moved to does not exists in the save file so far", "indication")
+            return
+        elif self.get_specific_boss_exists(boss_name, new_game_title):
+            self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' already exists in the game '{self._get_specific_game(new_game_title)}'", "indication")
+            return
+        
+        try:
+            old_game_title: str = self._get_specific_game(game_title)
+            
+            self._cursor.execute("""UPDATE Boss
+                                        SET gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)
+                                        WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (new_game_title, boss_name, game_title))
+            self._conn.commit()
+            
+            self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, new_game_title)}' was moved from game '{old_game_title}' to '{self._get_specific_game(new_game_title)}'", "success")
+        except Exception as e:
+            self._notify_observer(f"An unexpected error occured while moving the boss '{self._get_specific_boss(boss_name, game_title)}' from '{self._get_specific_game(game_title)}' to '{new_game_title}'. Exception: {e}", "error")
+    
+    
+    def rename_game(self, game_title: str, new_game_title: str) -> None:
+        if not self._get_specific_game_exists(game_title):
+            self._notify_observer(f"The game '{game_title}' you wish to rename does not exists in the save file so far", "indication")
+            return
+        
+        try:
+            old_game_title: str = self._get_specific_game(game_title)
+            
+            self._cursor.execute("""UPDATE Game
+                                        SET title = (?)
+                                        WHERE title = (?) COLLATE NOCASE""", (new_game_title, game_title))
+            self._conn.commit()
+            
+            self._notify_observer(f"The game '{old_game_title}' was renamed to '{new_game_title}'", "success")
+        except Exception as e:
+            self._notify_observer(f"An unexpected error occured while renaming the game '{self._get_specific_game(game_title)}' to '{new_game_title}'. Exception: {e}", "error")
+    
+    
+    def rename_boss(self, boss_name: str, game_title: str, new_boss_name: str) -> None:
+        if not self.get_specific_boss_exists(boss_name, game_title):
+            self._notify_observer(f"The boss '{boss_name}' you wish to rename does not exists in in the game '{self._get_specific_game(game_title)}' in the save file so far", "indication")
+            return
+        
+        try:
+            old_boss_name: str = self._get_specific_boss(boss_name, game_title)
+            
+            self._cursor.execute("""UPDATE Boss
+                                        SET name = (?)
+                                        WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (new_boss_name, boss_name, game_title))
+            self._conn.commit()
+            
+            self._notify_observer(f"The boss '{old_boss_name}' of game '{self._get_specific_game(game_title)}' was renamed to '{new_boss_name}'", "success")
+        except Exception as e:
+            self._notify_observer(f"An unexpected error occured while renaming the boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' to '{new_boss_name}'. Exception: {e}", "error")
+    
+    
+    def get_all_bosses_by_id(self) -> list:
         self._cursor.execute("""SELECT b.name, g.title, b.deaths, b.requiredTime FROM Boss b
                                     JOIN Game g ON b.gameId = g.id
                                     ORDER BY b.id ASC""")
@@ -149,10 +221,19 @@ class SaveFile:
     
     # helper methods below
     
-    def _get_specific_game_exists(self, game_title: str) -> bool:
+    def _get_specific_game(self, game_title: str) -> str:
         self._cursor.execute("""SELECT title FROM Game
                                     WHERE title = (?) COLLATE NOCASE""", (game_title,))
-        selection: list[str] = self._cursor.fetchone()
+        selection: list[tuple] = self._cursor.fetchone()
+        
+        if selection is None:
+            return
+        else:
+            return selection[0]
+    
+    
+    def _get_specific_game_exists(self, game_title: str) -> bool:
+        selection: str = self._get_specific_game(game_title)
         
         if selection is None:
             return False
@@ -160,10 +241,19 @@ class SaveFile:
             return True
     
     
-    def _get_specific_boss_exists(self, boss_name: str, game_title: str) -> bool:
+    def _get_specific_boss(self, boss_name: str, game_title: str) -> str:
         self._cursor.execute("""SELECT name FROM Boss
                                     WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (boss_name, game_title))
-        selection: list[str] = self._cursor.fetchone()
+        selection: list[tuple] = self._cursor.fetchone()
+        
+        if selection is None:
+            return
+        else:
+            return selection[0]
+    
+    
+    def get_specific_boss_exists(self, boss_name: str, game_title: str) -> bool:
+        selection: str = self._get_specific_boss(boss_name, game_title)
         
         if selection is None:
             return False
@@ -171,9 +261,33 @@ class SaveFile:
             return True
     
     
+    def _get_unknown_bosses_count(self) -> int:
+        self._cursor.execute("""SELECT COUNT(b.name) FROM Boss b
+                                    JOIN Game g ON b.gameId = g.id
+                                    WHERE g.title = (?)""", (self._UNKNOWN_GAME_TITLE,))
+        return self._cursor.fetchone()[0] + 1 # +1 so the first boss starts at 1 and not 0
     
     
+    def get_specific_boss_deaths(self, boss_name: str, game_title: str) -> int:
+        self._cursor.execute("""SELECT deaths FROM Boss
+                                    WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (boss_name, game_title))
+        selection: list[tuple] = self._cursor.fetchone()
+        
+        if selection[0] is None:
+            return 0
+        else:
+            return selection[0]
     
+    
+    def get_specific_boss_time(self, boss_name: str, game_title: str) -> int:
+        self._cursor.execute("""SELECT requiredTime FROM Boss
+                                    WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (boss_name, game_title))
+        selection: list[tuple] = self._cursor.fetchone()
+        
+        if selection[0] is None:
+            return 0
+        else:
+            return selection[0]
     
     
     
@@ -187,30 +301,10 @@ class SaveFile:
     
 
     
-    def add_unknown(self) -> None:
-        try:
-            self._cursor.execute("""SELECT EXISTS (
-                                        SELECT title FROM Game
-                                            WHERE title = (?))""", (self._UNKNOWN_GAME_TITLE,))
-            value_exists: list[int] = self._cursor.fetchone()
-            
-            if value_exists[0] == 0:
-                self._add_game(self._UNKNOWN_GAME_TITLE)
-            
-            self.add_boss(f"{self._UNKNOWN_BOSS_NAME} {self._get_unknown_bosses()}", self._UNKNOWN_GAME_TITLE)
-        except Exception as e:
-            print(e)
+
     
     
-    def _get_unknown_bosses(self) -> int:
-        try:
-            self._cursor.execute("""SELECT COUNT(b.name) FROM Boss b
-                                        JOIN Game g ON b.gameTitle = g.title
-                                        WHERE g.title = (?)""", (self._UNKNOWN_GAME_TITLE,))
-            boss_count: int = self._cursor.fetchone()[0]
-            return boss_count + 1
-        except Exception as e:
-            print(e)
+    
     
     
     def delete_game(self, title: str) -> None:
@@ -295,17 +389,6 @@ class SaveFile:
             return []
         else:
             return selection
-    
-    
-    def _get_specific_boss(self, boss_name: str, game_title: str) -> bool:
-        self._cursor.execute("""SELECT name FROM Boss
-                                    WHERE name = (?) and gameTitle = (?)""", (boss_name, game_title))
-        selection: list[str] = self._cursor.fetchone()
-        
-        if selection is None:
-            return False
-        else:
-            return True
     
     
     def get_all_bosses_from_game(self, game_title: str) -> list[str]:
@@ -410,34 +493,16 @@ class SaveFile:
             self._create_backup()
     
     
-    def identify_boss(self, unknown_boss: str, unknown_game: str, boss_name: str, game_title: str) -> None:
-        self._cursor.execute("""SELECT deaths, requiredTime FROM Boss
-                                    WHERE name = (?) and gameTitle = (?)""", (unknown_boss, unknown_game))
-        stats: list[str] = self._cursor.fetchall()
-        
-        self.delete_boss(unknown_boss, unknown_game)
-        
-        self.add_boss(boss_name, game_title)
-        
-        self.update_boss(boss_name, game_title, stats[0][0], stats[0][1])
-    
-    
-    def get_specific_deaths(self, boss_name: str, game_title: str) -> int:
-        self._cursor.execute("""SELECT deaths FROM Boss
-                                    WHERE name = (?) and gameTitle = (?)""", (boss_name, game_title))
-        tmp_selection: list[int] = self._cursor.fetchall()
-        
-        for item in tmp_selection:
-            selection: int = item[0]
-        
-        if not tmp_selection:
-            self._notify_observer(f"Error: There are no deaths linked to the boss {boss_name} from {game_title} so far", "error")
-            return
-        else:
-            if selection is None:
-                return 0
-            else:
-                return selection
+    #def identify_boss(self, unknown_boss: str, unknown_game: str, boss_name: str, game_title: str) -> None:
+    #    self._cursor.execute("""SELECT deaths, requiredTime FROM Boss
+    #                                WHERE name = (?) and gameTitle = (?)""", (unknown_boss, unknown_game))
+    #    stats: list[str] = self._cursor.fetchall()
+    #    
+    #    self.delete_boss(unknown_boss, unknown_game)
+    #    
+    #    self.add_boss(boss_name, game_title)
+    #    
+    #    self.update_boss(boss_name, game_title, stats[0][0], stats[0][1])
     
     
     def get_specific_required_time(self, boss_name: str, game_title: str) -> int:
