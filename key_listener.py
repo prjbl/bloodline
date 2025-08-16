@@ -72,6 +72,7 @@ class KeyListener:
     
     
     # methods to change hotkeys via input detection below
+    
     def _on_change_keybind(self, key: any) -> None:
         tmp_dict_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         cleaned_key_input: str = str(key).replace("'", "")
@@ -90,7 +91,8 @@ class KeyListener:
         with kb.Listener(
             on_press=self._on_change_keybind) as self._key_listener:
                 self._key_listener.join()
-        self._notify_observer("Keyboard listener stopped", None)
+        self._notify_observer("Keyboard listener stopped", "normal")
+        self._notify_observer("Make sure to save the data using the 'stats save' command", "indication")
     
     
     def start_key_listener_for_one_input(self) -> None:

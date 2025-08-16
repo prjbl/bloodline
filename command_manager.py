@@ -30,6 +30,7 @@ class CommandManager:
             "setup": self._setup,
             "setup add": self._setup_add,
             "setup identify boss": self._setup_identify_boss,
+            "setup move boss": self._setup_move_boss,
             "setup rename boss": self._setup_rename_boss,
             "setup rename game": self._setup_rename_game,
             "setup delete boss": self._setup_delete_boss,
@@ -201,6 +202,8 @@ class CommandManager:
             input_entry.delete(0, "end")
     
     
+    # command methods below
+    
     def _help(self) -> None:
         self._print_output_func("This is a list of all command categories:", "normal")
         self._print_output_func("tracking: Lists all tracking actions\n"
@@ -217,22 +220,37 @@ class CommandManager:
     
     
     def _tracking_new(self) -> None:
-        pass
-        """def _tracking_new(self) -> None:
         self._save_file.add_unknown()
         self._counter.set_count_already_required(0)
         self._timer.set_time_already_required(0)
-        self._key_listener.start_key_listener()"""
+        self._key_listener.start_key_listener()
     
     
     def _tracking_continue(self) -> None:
-        pass
+        self._set_ignore_inputs(1)
+        
+        if self._ignore_count == 0:
+            self._print_output_func("Please enter the <\"boss name\", \"game title\"> you want to continue tracking <...>", "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern("single")
+            boss_name: str = result[0]
+            game_title: str = result[1]
+            
+            if result and self._save_file.get_specific_boss_exists(boss_name, game_title):
+                self._counter.set_count_already_required(self._save_file.get_specific_boss_deaths(boss_name, game_title))
+                self._timer.set_time_already_required(self._save_file.get_specific_boss_time(boss_name, game_title))
+                self._key_listener.start_key_listener()
+            else:
+                self._print_output_func(f"There is no boss '{boss_name}' from game '{game_title}' in the save file so far", "indication")
+        
+        self._check_ignore_inputs_end()
     
     
     def _setup(self) -> None:
         self._print_output_func("This is a list of all setup commands:", "normal")
         self._print_output_func("setup add: Adds a boss with the corresponding game to the save file\n"
                                 +"setup identify boss: Identifies a unknown boss an updates its meta info\n"
+                                +"setup move boss: Moves a boss to another game\n"
                                 +"setup rename boss|game: Renames a boss|game\n"
                                 +"setup delete boss|game: Deletes a boss|game", "list")
     
@@ -252,14 +270,66 @@ class CommandManager:
     
     
     def _setup_identify_boss(self) -> None:
-        pass
+        self._set_ignore_inputs(1)
+        
+        if self._ignore_count == 0:
+            self._print_output_func("Please enter the <\"boss name\" -> \"new boss name\", \"new game title\"> you want to identify", "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern("identify")
+            
+            if result:
+                self._save_file.identify_boss(result[0], result[1], result[2])
+        
+        self._check_ignore_inputs_end()
+    
+    
+    def _setup_move_boss(self) -> None:
+        self._set_ignore_inputs(1)
+        
+        if self._ignore_count == 0:
+            self._print_output_func("Please enter the <\"boss name\", \"game title\" -> \"new game title\"> you want to move <...>", "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern("move")
+            
+            if result:
+                self._save_file.move_boss(result[0], result[1], result[2])
+        
+        self._check_ignore_inputs_end()
     
     
     def _setup_rename_boss(self) -> None:
-        pass
+        self._set_ignore_inputs(1)
+        
+        if self._ignore_count == 0:
+            self._print_output_func("Please enter the <\"boss name\", \"game title\" -> \"new boss name\"> you want to rename <...>", "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern("re_boss")
+            
+            if result:
+                self._save_file.rename_boss(result[0], result[1], result[2])
+        
+        self._check_ignore_inputs_end()
     
     
     def _setup_rename_game(self) -> None:
+        self._set_ignore_inputs(1)
+        
+        if self._ignore_count == 0:
+            self._print_output_func("Please enther the <\"game title\" -> \"new game title\"> you wish to rename <...>", "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern("re_game")
+            
+            if result:
+                self._save_file.rename_game(result[0], result[1])
+        
+        self._check_ignore_inputs_end()
+    
+    
+    def _setup_delete_boss(self) -> None:
+        pass
+    
+    
+    def _setup_delete_game(self) -> None:
         pass
     
     
@@ -271,7 +341,7 @@ class CommandManager:
     
     
     def _stats_list_all_bosses(self) -> None:
-        """tmp_list_of_bosses: list[str] = self._save_file.get_all_bosses_by_id()
+        tmp_list_of_bosses: list[str] = self._save_file.get_all_bosses_by_id()
         
         max_title_len: int = max(len(boss_name[0]) for boss_name in tmp_list_of_bosses)
         max_title_len += max(len(game_title[1]) + 1 for game_title in tmp_list_of_bosses)
@@ -279,7 +349,7 @@ class CommandManager:
         
         for item in tmp_list_of_bosses:
             title: str = f"{item[0]} ({item[1]})"
-            self._print_output_func(f"{title.ljust(max_title_len + 2, " ")}  D {item[2]}, {item[3]}", "list")"""
+            self._print_output_func(f"{title.ljust(max_title_len + 2, " ")}  D {item[2]}, {item[3]}", "list")
     
     
     def _keybinds(self) -> None:
@@ -298,8 +368,12 @@ class CommandManager:
     def _get_result_in_pattern(self, pattern_type: str) -> list[str]:
         if pattern_type == "single":
             pattern: str = compile("\"(.*?)\", \"(.*?)\"")
-        elif pattern_type == "double":
-            pattern: str = compile("\"(.*?)\", \"(.*?)\" -> \"(.*?)\", \"(.*?)\"")
+        elif pattern_type == "identify":
+            pattern: str = compile("\"(.*?)\" -> \"(.*?)\", \"(.*?)\"")
+        elif pattern_type == "re_boss" or pattern_type == "move":
+            pattern: str = compile("\"(.*?)\", \"(.*?)\" -> \"(.*?)\"")
+        elif pattern_type == "re_game":
+            pattern: str = compile("\"(.*?)\" -> \"(.*?)\"")
             
         result: Match = fullmatch(pattern, self._console_input)
         
@@ -333,23 +407,6 @@ class CommandManager:
             self._print_output_func("Process was cancelled", "normal")
         else:
             self._print_output_func("Nothing to be cancelled", "error")
-    
-    
-    def _start(self) -> None:
-        self._set_ignore_inputs(2)
-        
-        if self._iteration_count == 0:
-            self._print_output_func("Please enter the boss you want to track...", None)
-        elif self._iteration_count == 1:
-            self._boss_name = self._last_unignored_input
-            self._print_output_func("Please enter the game the boss is connected to...", None)
-        else:
-            self._game_title = self._last_unignored_input
-            self._counter.set_count_already_required(self._save_file.get_specific_deaths(self._boss_name, self._game_title))
-            self._timer.set_time_already_required(self._save_file.get_specific_required_time(self._boss_name, self._game_title))
-            self._key_listener.start_key_listener()
-        
-        self._check_ignore_inputs_end()
     
     
     def _keybinds_list(self) -> None:
@@ -493,7 +550,7 @@ class CommandManager:
         return f"Average: D {average_deaths}, {average_time}"
     
     
-    def _setup_identify_boss(self) -> None:
+    """def _setup_identify_boss(self) -> None:
         self._set_ignore_inputs(4)
         
         if self._ignore_count == 0:
@@ -511,7 +568,7 @@ class CommandManager:
             self._game_title = self._last_unignored_input
             self._save_file.identify_boss(self._unknown_boss, self._unknown_game, self._boss_name, self._game_title)
         
-        self._check_ignore_inputs_end()
+        self._check_ignore_inputs_end()"""
     
     
     def _stats_save(self) -> None:
