@@ -230,9 +230,9 @@ class CommandManager:
         self._set_ignore_inputs(1)
         
         if self._ignore_count == 0:
-            self._print_output_func("Please enter the <\"boss name\", \"game title\"> you want to continue tracking <...>", "normal")
+            self._print_output_func("Please enter the <\"boss name\", \"game title\"> of the boss you want to continue tracking <...>", "normal")
         else:
-            result: list[str] = self._get_result_in_pattern("single")
+            result: list[str] = self._get_result_in_pattern("double")
             boss_name: str = result[0]
             game_title: str = result[1]
             
@@ -241,7 +241,7 @@ class CommandManager:
                 self._timer.set_time_already_required(self._save_file.get_specific_boss_time(boss_name, game_title))
                 self._key_listener.start_key_listener()
             else:
-                self._print_output_func(f"There is no boss '{boss_name}' from game '{game_title}' in the save file so far", "indication")
+                self._print_output_func(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "indication")
         
         self._check_ignore_inputs_end()
     
@@ -256,81 +256,67 @@ class CommandManager:
     
     
     def _setup_add(self) -> None:
+        self._run_setup_command(
+            text="Please enter the <\"boss name\", \"game title\"> of the boss you want to add <...>",
+            pattern_type="double",
+            target_method=self._save_file.add_boss
+        )
+    
+    
+    def _setup_identify_boss(self) -> None:
+        self._run_setup_command(
+            text="Please enter the <\"boss name\" -> \"new boss name\", \"new game title\"> of the boss you want to identify <...>",
+            pattern_type="single_double",
+            target_method=self._save_file.identify_boss
+        )
+    
+    
+    def _setup_move_boss(self) -> None:
+        self._run_setup_command(
+            text="Please enter the <\"boss name\", \"game title\" -> \"new game title\"> of the boss you want to move <...>",
+            pattern_type="double_single",
+            target_method=self._save_file.move_boss
+        )
+    
+    
+    def _setup_rename_boss(self) -> None:
+        self._run_setup_command(
+            text="Please enter the <\"boss name\", \"game title\" -> \"new boss name\"> of the boss you want to rename <...>",
+            pattern_type="double_single",
+            target_method=self._save_file.rename_boss
+        )
+    
+    
+    def _setup_rename_game(self) -> None:
+        self._run_setup_command(
+            text="Please enter the <\"game title\" -> \"new game title\"> of the game you want to rename <...>",
+            pattern_type="single_single",
+            target_method=self._save_file.rename_game
+        )
+    
+    
+    def _setup_delete_boss(self) -> None:
+        self._run_setup_command(
+            text="Please enter the <\"boss name\", \"game title\"> of the boss you want to delete <...>",
+            pattern_type="double",
+            target_method=self._save_file.delete_boss
+        )
+    
+    
+    # has to be written manually because its a special case and needs a seconds print out
+    def _setup_delete_game(self) -> None:
         self._set_ignore_inputs(1)
         
         if self._ignore_count == 0:
-            self._print_output_func("Please enter the <\"boss name\", \"game title\"> you want to add <...>", "normal")
+            self._print_output_func("All bosses linked to the game to be deleted will also be removed", "warning")
+            self._print_output_func("Please enter the <\"game title\"> of the game you want to delete <...>", "normal")
         else:
             result: list[str] = self._get_result_in_pattern("single")
             
             if result:
-                self._save_file.add_boss(result[0], result[1])
+                self._save_file.delete_game(result[0])
         
         self._check_ignore_inputs_end()
-    
-    
-    def _setup_identify_boss(self) -> None:
-        self._set_ignore_inputs(1)
-        
-        if self._ignore_count == 0:
-            self._print_output_func("Please enter the <\"boss name\" -> \"new boss name\", \"new game title\"> you want to identify", "normal")
-        else:
-            result: list[str] = self._get_result_in_pattern("identify")
-            
-            if result:
-                self._save_file.identify_boss(result[0], result[1], result[2])
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _setup_move_boss(self) -> None:
-        self._set_ignore_inputs(1)
-        
-        if self._ignore_count == 0:
-            self._print_output_func("Please enter the <\"boss name\", \"game title\" -> \"new game title\"> you want to move <...>", "normal")
-        else:
-            result: list[str] = self._get_result_in_pattern("move")
-            
-            if result:
-                self._save_file.move_boss(result[0], result[1], result[2])
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _setup_rename_boss(self) -> None:
-        self._set_ignore_inputs(1)
-        
-        if self._ignore_count == 0:
-            self._print_output_func("Please enter the <\"boss name\", \"game title\" -> \"new boss name\"> you want to rename <...>", "normal")
-        else:
-            result: list[str] = self._get_result_in_pattern("re_boss")
-            
-            if result:
-                self._save_file.rename_boss(result[0], result[1], result[2])
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _setup_rename_game(self) -> None:
-        self._set_ignore_inputs(1)
-        
-        if self._ignore_count == 0:
-            self._print_output_func("Please enther the <\"game title\" -> \"new game title\"> you wish to rename <...>", "normal")
-        else:
-            result: list[str] = self._get_result_in_pattern("re_game")
-            
-            if result:
-                self._save_file.rename_game(result[0], result[1])
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _setup_delete_boss(self) -> None:
-        pass
-    
-    
-    def _setup_delete_game(self) -> None:
-        pass
     
     
     def _stats(self) -> None:
@@ -341,6 +327,7 @@ class CommandManager:
     
     
     def _stats_list_all_bosses(self) -> None:
+        #pass
         tmp_list_of_bosses: list[str] = self._save_file.get_all_bosses_by_id()
         
         max_title_len: int = max(len(boss_name[0]) for boss_name in tmp_list_of_bosses)
@@ -365,15 +352,33 @@ class CommandManager:
     
     # helper methods below
     
+    def _run_setup_command(self, text: str, pattern_type: str, target_method: any):
+        self._set_ignore_inputs(1)
+        
+        if self._ignore_count == 0:
+            self._print_output_func(text, "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern(pattern_type)
+            
+            if result:
+                target_method(*result)
+        
+        self._check_ignore_inputs_end()
+    
+    
     def _get_result_in_pattern(self, pattern_type: str) -> list[str]:
+        pattern: str = ""
+        
         if pattern_type == "single":
-            pattern: str = compile("\"(.*?)\", \"(.*?)\"")
-        elif pattern_type == "identify":
-            pattern: str = compile("\"(.*?)\" -> \"(.*?)\", \"(.*?)\"")
-        elif pattern_type == "re_boss" or pattern_type == "move":
-            pattern: str = compile("\"(.*?)\", \"(.*?)\" -> \"(.*?)\"")
-        elif pattern_type == "re_game":
-            pattern: str = compile("\"(.*?)\" -> \"(.*?)\"")
+            pattern = compile("\"([^\"]+)\"$")
+        elif pattern_type == "double":
+            pattern = compile("\"([^\"]+)\", \"([^\"]+)\"$")
+        elif pattern_type == "single_single":
+            pattern = compile("\"([^\"]+)\" -> \"([^\"]+)\"$")
+        elif pattern_type == "single_double":
+            pattern = compile("\"([^\"]+)\" -> \"([^\"]+)\", \"([^\"]+)\"$")
+        elif pattern_type == "double_single":
+            pattern = compile("\"([^\"]+)\", \"([^\"]+)\" -> \"([^\"]+)\"$")
             
         result: Match = fullmatch(pattern, self._console_input)
         
@@ -382,6 +387,17 @@ class CommandManager:
         else:
             self._print_output_func("The input does not match the pattern. Please try again", "indication")
             return []
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -633,43 +649,3 @@ class CommandManager:
             return
         
         self._iteration_count += 1"""
-    
-    
-    def _setup_delete_game(self) -> None:
-        self._set_ignore_inputs(1)
-        
-        if self._iteration_count == 0:
-            self._print_output_func("Please enter the game you wish to delete <...>", "normal")
-        else:
-            self._game_title = self._last_unignored_input
-            self._save_file.delete_game(self._game_title)
-        
-        self._check_ignore_inputs_end()
-        
-    
-    def _setup_delete_boss(self) -> None:
-        self._set_ignore_inputs(1)
-        
-        if self._iteration_count == 0:
-            self._print_output_func("Please enter the boss you wish to delete <Boss>, <Game>", "normal")
-        else:
-            pattern: str = compile("\"(.*?)\", \"(.*?)\"")
-            result: Match = fullmatch(pattern, self._last_unignored_input)
-            
-            if result:
-                value1: str = result.group(1)
-                value2: str = result.group(2)
-                print(f"{value1}\n{value2}")
-            else:
-                print("No result found")
-        
-        """if self._iteration_count == 0:
-            self._print_output_func("Please enter the boss you wish to delete <...>", "normal")
-        elif self._iteration_count == 1:
-            self._boss_name = self._console_input
-            self._print_output_func("Please enter the game the boss is linked to <...>", "normal")
-        else:
-            self._game_title = self._console_input
-            self._save_file.delete_boss(self._boss_name, self._game_title)"""
-        
-        self._check_ignore_inputs_end()
