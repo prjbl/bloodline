@@ -258,7 +258,7 @@ class SaveFile:
     
     
     def get_bosses_from_game_by(self, game_title: str, sort_filter: str, order_filter: str) -> list[tuple]:
-        allowed_sort_filters: list[str] = ["id", "deaths", "time"]
+        allowed_sort_filters: list[str] = ["id", "deaths", "requiredTime"]
         allowed_order_filters: list[str] = ["desc", "asc"]
         
         if sort_filter not in allowed_sort_filters:
@@ -284,7 +284,7 @@ class SaveFile:
     
     
     def get_all_bosses_by(self, sort_filter: str, order_filter: str) -> list[tuple]:
-        allowed_sort_filters: list[str] = ["id", "deaths", "time"]
+        allowed_sort_filters: list[str] = ["id", "deaths", "requiredTime"]
         allowed_order_filters: list[str] = ["desc", "asc"]
         
         if sort_filter not in allowed_sort_filters:
@@ -306,7 +306,7 @@ class SaveFile:
     
     
     def get_all_games(self, sort_filter: str, order_filter: str) -> list[tuple]:
-        allowed_sort_filters: list[str] = ["gameId", "deaths", "time"]
+        allowed_sort_filters: list[str] = ["gameId", "deaths", "requiredTime"]
         allowed_order_filters: list[str] = ["desc", "asc"]
         
         if sort_filter not in allowed_sort_filters:
@@ -326,6 +326,26 @@ class SaveFile:
             self._notify_observer(f"There are no games in the save file so far", "indication")
         
         return selection
+    
+    
+    def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> None:
+        if not self._get_specific_game_exists(game_title):
+            self._notify_observer(f"The game '{game_title}' you selected to save the stats to a boss from does not exists in the save file", "indication")
+            return
+        elif not self.get_specific_boss_exists(boss_name, game_title):
+            self._notify_observer(f"The boss '{boss_name}' you wish to save the stats to does not exists in the game '{self._get_specific_game(game_title)}' in the save file", "indication")
+            return
+        
+        try:
+            self._cursor.execute("""UPDATE Boss
+                                        SET deaths = (?), requiredTime = (?)
+                                        WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (deaths, required_time, boss_name, game_title))
+            self._conn.commit()
+            
+            self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", "success")
+            self._create_backup()
+        except Exception as e:
+            self._notify_observer(f"An unexpected error occured while saving the stats to the boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}'. Exception: {e}", "error")
     
     
     # helper methods below
@@ -403,16 +423,21 @@ class SaveFile:
     
     
     def get_specific_game_avg(self, game_title: str) -> list[tuple]:
-        self._cursor.execute("""SELECT ROUND(AVG(b.deaths), 2), CAST(AVG(b.requiredTime) + 0.5 AS INTEGER) FROM Boss b
-                                    JOIN Game g ON b.gameId = g.id
-                                    WHERE g.title = (?)""", (game_title,))
+        self._cursor.execute("""SELECT 
+                                    CASE
+                                        WHEN ROUND(AVG(b.deaths), 2) = CAST(AVG(b.deaths) AS INTEGER) THEN CAST(AVG(b.deaths) AS INTEGER)
+                                        ELSE ROUND(AVG(b.deaths), 2)
+                                    END,
+                                    CAST(AVG(b.requiredTime) + 0.5 AS INTEGER) FROM Boss b
+                                        JOIN Game g ON b.gameId = g.id
+                                        WHERE g.title = (?) COLLATE NOCASE""", (game_title,))
         return self._cursor.fetchall()
     
     
     def get_specific_game_sum(self, game_title: str) -> list[tuple]:
         self._cursor.execute("""SELECT SUM(b.deaths), SUM(b.requiredTime) FROM Boss b
                                     JOIN Game g ON b.gameId = g.id
-                                    WHERE g.title = (?)""", (game_title,))
+                                    WHERE g.title = (?) COLLATE NOCASE""", (game_title,))
         return self._cursor.fetchall()
     
     
@@ -423,59 +448,29 @@ class SaveFile:
                                         JOIN Game g on b.gameId = g.id
                                         GROUP BY g.title
                                 )
-                                SELECT ROUND(AVG(totalDeaths), 2), CAST(AVG(totalTime) + 0.5 AS INTEGER) FROM GameTotal""")
+                                SELECT
+                                    CASE
+                                        WHEN ROUND(AVG(totalDeaths), 2) = CAST(AVG(totalDeaths) AS INTEGER) THEN CAST(AVG(totalDeaths) AS INTEGER)
+                                        ELSE ROUND(AVG(totalDeaths), 2)
+                                    END,
+                                    CAST(AVG(totalTime) + 0.5 AS INTEGER) FROM GameTotal""")
         return self._cursor.fetchall()
     
     
     def get_all_game_sum(self) -> list[tuple]:
-        self._cursor.execute("""SELECT SUM(b.deaths), SUM(b.requiredTime) FROM Boss b
-                                    JOIN Game g on b.gameId = g.id
-                                    GROUP BY g.title""")
-        return self._cursor.fetchall()
+        return self.get_all_boss_sum()
     
     
     def get_all_boss_avg(self) -> list[tuple]:
-        self._cursor.execute("""SELECT ROUND(AVG(deaths), 2), CAST(AVG(requiredTime) + 0.5 AS INTEGER) FROM Boss""")
+        self._cursor.execute("""SELECT
+                                    CASE
+                                        WHEN ROUND(AVG(deaths), 2) = CAST(AVG(deaths) AS INTEGER) THEN CAST(AVG(deaths) AS INTEGER)
+                                        ELSE ROUND(AVG(deaths), 2)
+                                    END,
+                                    CAST(AVG(requiredTime) + 0.5 AS INTEGER) FROM Boss""")
         return self._cursor.fetchall()
     
     
     def get_all_boss_sum(self) -> list[tuple]:
         self._cursor.execute("""SELECT SUM(deaths), SUM(requiredTime) FROM Boss""")
         return self._cursor.fetchall()
-    
-    
-    
-    
-    
-    
-    
-    
-
-    
-    
-
-    
-
-    
-    
-    
-    
-    
-    
-
-    
-    
-    
-    
-    
-    #def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> None:
-    #    self._cursor.execute("""UPDATE Boss
-    #                                SET deaths = (?), requiredTime = (?)
-    #                                WHERE name = (?) and gameTitle = (?)""", (deaths, required_time, boss_name, game_title))
-    #    self._conn.commit()
-    #    
-    #    if self._cursor.rowcount == 0:
-    #        self._notify_observer("Nothing was updated because the given value isn't a valid data set in the save file", "error")
-    #    else:
-    #        self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", None)
-    #        self._create_backup()
