@@ -141,7 +141,7 @@ class SaveFile:
     
     
     def add_unknown(self) -> None:
-        self.add_boss(f"{self._UNKNOWN_BOSS_NAME} {self._get_unknown_bosses_count()}", self._UNKNOWN_GAME_TITLE)
+        self.add_boss(f"{self._UNKNOWN_BOSS_NAME} {self._get_unknown_boss_count()}", self._UNKNOWN_GAME_TITLE)
     
     
     def identify_boss(self, boss_name: str, new_boss_name: str, new_game_title: str) -> None:
@@ -257,11 +257,75 @@ class SaveFile:
             self._notify_observer(f"An unexpected error occured while removing the boss '{self._get_specific_boss(boss_name, game_title)}' from game '{self._get_specific_game(game_title)}' the save file. Exception: {e}", "error")
     
     
-    def get_all_bosses_by_id(self) -> list:
-        self._cursor.execute("""SELECT b.name, g.title, b.deaths, b.requiredTime FROM Boss b
+    def get_bosses_from_game_by(self, game_title: str, sort_filter: str, order_filter: str) -> list[tuple]:
+        allowed_sort_filters: list[str] = ["id", "deaths", "time"]
+        allowed_order_filters: list[str] = ["desc", "asc"]
+        
+        if sort_filter not in allowed_sort_filters:
+            self._notify_observer(f"Illegal sort filter '{sort_filter}' used", "indication")
+            return
+        elif order_filter.lower() not in allowed_order_filters:
+            self._notify_observer(f"Illegal order filter '{order_filter}' used", "indication")
+            return
+        elif not self._get_specific_game_exists(game_title):
+            self._notify_observer(f"The game '{game_title}' you selected all bosses from does not exists in the save file", "indication")
+            return
+        
+        self._cursor.execute(f"""SELECT b.name, b.deaths, b.requiredTime FROM Boss b
+                                    JOIN Game g on b.gameId = g.id
+                                    WHERE g.title = (?) COLLATE NOCASE
+                                    ORDER BY b.{sort_filter} {order_filter}""", (game_title,))
+        selection: list[tuple] = self._cursor.fetchall()
+        
+        if not selection:
+            self._notify_observer(f"There are no bosses linked to the game '{self._get_specific_game(game_title)}'", "indication")
+        
+        return selection
+    
+    
+    def get_all_bosses_by(self, sort_filter: str, order_filter: str) -> list[tuple]:
+        allowed_sort_filters: list[str] = ["id", "deaths", "time"]
+        allowed_order_filters: list[str] = ["desc", "asc"]
+        
+        if sort_filter not in allowed_sort_filters:
+            self._notify_observer(f"Illegal sort filter '{sort_filter}' used", "indication")
+            return
+        elif order_filter.lower() not in allowed_order_filters:
+            self._notify_observer(f"Illegal order filter '{order_filter}' used", "indication")
+            return
+        
+        self._cursor.execute(f"""SELECT b.name, g.title, b.deaths, b.requiredTime FROM Boss b
                                     JOIN Game g ON b.gameId = g.id
-                                    ORDER BY b.id ASC""")
-        return self._cursor.fetchall()
+                                    ORDER BY b.{sort_filter} {order_filter}""")
+        selection: list[tuple] = self._cursor.fetchall()
+        
+        if not selection:
+            self._notify_observer(f"There are no bosses in the save file so far", "indication")
+        
+        return selection
+    
+    
+    def get_all_games(self, sort_filter: str, order_filter: str) -> list[tuple]:
+        allowed_sort_filters: list[str] = ["gameId", "deaths", "time"]
+        allowed_order_filters: list[str] = ["desc", "asc"]
+        
+        if sort_filter not in allowed_sort_filters:
+            self._notify_observer(f"Illegal sort filter '{sort_filter}' used", "indication")
+            return
+        elif order_filter.lower() not in allowed_order_filters:
+            self._notify_observer(f"Illegal order filter '{order_filter}' used", "indication")
+            return
+        
+        self._cursor.execute(f"""SELECT g.title, SUM(b.deaths), SUM(b.requiredTime) FROM Game g
+                                    JOIN Boss b ON b.gameId = g.id
+                                    GROUP BY g.title
+                                    ORDER BY b.{sort_filter} {order_filter}""")
+        selection: list[tuple] = self._cursor.fetchall()
+        
+        if not selection:
+            self._notify_observer(f"There are no games in the save file so far", "indication")
+        
+        return selection
     
     
     # helper methods below
@@ -287,8 +351,9 @@ class SaveFile:
     
     
     def _get_specific_boss(self, boss_name: str, game_title: str) -> str:
-        self._cursor.execute("""SELECT name FROM Boss
-                                    WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (boss_name, game_title))
+        self._cursor.execute("""SELECT b.name FROM Boss b
+                                    JOIN Game g ON b.gameId = g.id
+                                    WHERE b.name = (?) COLLATE NOCASE and g.title = (?) COLLATE NOCASE""", (boss_name, game_title))
         selection: list[tuple] = self._cursor.fetchone()
         
         if selection is None:
@@ -306,7 +371,7 @@ class SaveFile:
             return True
     
     
-    def _get_unknown_bosses_count(self) -> int:
+    def _get_unknown_boss_count(self) -> int:
         self._cursor.execute("""SELECT COUNT(b.name) FROM Boss b
                                     JOIN Game g ON b.gameId = g.id
                                     WHERE g.title = (?)""", (self._UNKNOWN_GAME_TITLE,))
@@ -314,8 +379,9 @@ class SaveFile:
     
     
     def get_specific_boss_deaths(self, boss_name: str, game_title: str) -> int:
-        self._cursor.execute("""SELECT deaths FROM Boss
-                                    WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (boss_name, game_title))
+        self._cursor.execute("""SELECT b.deaths FROM Boss b
+                                    JOIN Game g ON b.gameId = g.id
+                                    WHERE b.name = (?) COLLATE NOCASE and g.title = (?) COLLATE NOCASE""", (boss_name, game_title))
         selection: list[tuple] = self._cursor.fetchone()
         
         if selection[0] is None:
@@ -325,8 +391,9 @@ class SaveFile:
     
     
     def get_specific_boss_time(self, boss_name: str, game_title: str) -> int:
-        self._cursor.execute("""SELECT requiredTime FROM Boss
-                                    WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (boss_name, game_title))
+        self._cursor.execute("""SELECT b.requiredTime FROM Boss b
+                                    JOIN Game g ON b.gameId = g.id
+                                    WHERE b.name = (?) COLLATE NOCASE and g.title = (?) COLLATE NOCASE""", (boss_name, game_title))
         selection: list[tuple] = self._cursor.fetchone()
         
         if selection[0] is None:
@@ -335,200 +402,80 @@ class SaveFile:
             return selection[0]
     
     
-    
-    
-    
-    
-    
-    
-
-    
-    
-
-    
-
-    
-    
-    
-    
-    
-    
-
-    
-    
-    def get_all_games(self) -> list[str]:
-        self._cursor.execute("""SELECT * FROM Game""")
-        
-        selection: list[str] = self._cursor.fetchall()
-        
-        if not selection:
-            self._notify_observer("Error: There are no games in the save file so far", "error")
-            return []
-        else:
-            cleaned_selection: list[str] = []
-            
-            for item_tuple in selection:
-                cleaned_selection.extend(item_tuple)
-            
-            return cleaned_selection
-    
-    # order by id (has to be added to the table)
-    def get_all_games_new(self) -> list:
-        self._cursor.execute("""SELECT g.title, SUM(b.deaths), SUM(b.requiredTime) FROM Game g
-                                    JOIN Boss b ON b.gameTitle = g.title
-                                    GROUP BY g.title""")
-        selection: list = self._cursor.fetchall()
-        
-        if not selection:
-            self._notify_observer("Error: There are no games in the save file so far", "error")
-            return []
-        else:
-            return selection
-    
-    
-    def get_all_games_desc(self) -> list:
-        self._cursor.execute("""SELECT g.title, SUM(b.deaths), SUM(b.requiredTime) FROM Game g
-                                    JOIN Boss b ON b.gameTitle = g.title
-                                    GROUP BY g.title
-                                    ORDER BY SUM(b.deaths) DESC""")
-        selection: list = self._cursor.fetchall()
-        
-        if not selection:
-            self._notify_observer("Error: There are no games in the save file so far", "error")
-            return []
-        else:
-            return selection
-    
-    
-    def get_all_games_asc(self) -> list:
-        self._cursor.execute("""SELECT g.title, SUM(b.deaths), SUM(b.requiredTime) FROM Game g
-                                    JOIN Boss b ON b.gameTitle = g.title
-                                    GROUP BY g.title
-                                    ORDER BY SUM(b.deaths) ASC""")
-        selection: list = self._cursor.fetchall()
-        
-        if not selection:
-            self._notify_observer("Error: There are no games in the save file so far", "error")
-            return []
-        else:
-            return selection
-    
-    
-    def get_all_bosses_from_game(self, game_title: str) -> list[str]:
-        self._cursor.execute("""SELECT b.name, b.deaths, b.requiredTime FROM Boss b
-                                    JOIN Game g ON b.gameTitle = g.title
+    def get_specific_game_avg(self, game_title: str) -> list[tuple]:
+        self._cursor.execute("""SELECT ROUND(AVG(b.deaths), 2), CAST(AVG(b.requiredTime) + 0.5 AS INTEGER) FROM Boss b
+                                    JOIN Game g ON b.gameId = g.id
                                     WHERE g.title = (?)""", (game_title,))
-        selection: list[str] = self._cursor.fetchall()
-        
-        if not selection:
-            self._notify_observer(f"Error: There are no bosses linked to the game {game_title} so far", "error")
-            return []
-        else:
-            return selection
+        return self._cursor.fetchall()
     
     
-    def get_bosses_from_game_by_deaths(self, game_title: str, filter: str) -> list:
-        if filter == "desc":
-            self._cursor.execute("""SELECT * FROM Boss b
-                                        JOIN Game g ON b.gameTitle = g.title
-                                        WHERE g.title = (?)
-                                        ORDER BY b.deaths DESC""", (game_title,))
-        elif filter == "asc":
-            self._cursor.execute("""SELECT * FROM Boss b
-                                        JOIN Game g ON b.gameTitle = g.title
-                                        WHERE g.title = (?)
-                                        ORDER BY b.deaths ASC""", (game_title,))
-        
-        selection: list = self._cursor.fetchall()
-        
-        if not selection:
-            self._notify_observer(f"There are no bosses linked to the game {game_title} so far", "indication")
-            return []
-        else:
-            return selection
+    def get_specific_game_sum(self, game_title: str) -> list[tuple]:
+        self._cursor.execute("""SELECT SUM(b.deaths), SUM(b.requiredTime) FROM Boss b
+                                    JOIN Game g ON b.gameId = g.id
+                                    WHERE g.title = (?)""", (game_title,))
+        return self._cursor.fetchall()
     
     
-    def get_bosses_from_game_by_time(self, game_title: str, filter: str) -> list:
-        if filter == "desc":
-            self._cursor.execute("""SELECT * FROM Boss b
-                                        JOIN Game g ON b.gameTitle = g.title
-                                        WHERE g.title = (?)
-                                        ORDER BY b.requiredTime DESC""", (game_title,))
-        elif filter == "asc":
-            self._cursor.execute("""SELECT * FROM Boss b
-                                        JOIN Game g ON b.gameTitle = g.title
-                                        WHERE g.title = (?)
-                                        ORDER BY b.requiredTime ASC""", (game_title,))
-        
-        selection: list = self._cursor.fetchall()
-        
-        if not selection:
-            self._notify_observer(f"There are no bosses linked to the game {game_title} so far", "indication")
-            return []
-        else:
-            return selection
+    def get_all_game_avg(self) -> list[tuple]:
+        # CTE (common table expression): tmp selection to use more than one aggregate function on the selection
+        self._cursor.execute("""WITH GameTotal AS (
+                                    SELECT SUM(b.deaths) AS totalDeaths, SUM(b.requiredTime) AS totalTime FROM Boss b
+                                        JOIN Game g on b.gameId = g.id
+                                        GROUP BY g.title
+                                )
+                                SELECT ROUND(AVG(totalDeaths), 2), CAST(AVG(totalTime) + 0.5 AS INTEGER) FROM GameTotal""")
+        return self._cursor.fetchall()
     
     
-    def get_all_bosses_by_deaths(self, filter: str) -> list:
-        if filter == "desc":
-            self._cursor.execute("""SELECT * FROM Boss
-                                        ORDER BY deaths DESC""")
-        elif filter == "asc":
-            self._cursor.execute("""SELECT * FROM Boss
-                                        ORDER BY deaths ASC""")
-        
-        selection: list = self._cursor.fetchall()
-        
-        if not selection:
-            self._notify_observer(f"There are no bosses in the save file so far", "indication")
-            return []
-        else:
-            return selection
+    def get_all_game_sum(self) -> list[tuple]:
+        self._cursor.execute("""SELECT SUM(b.deaths), SUM(b.requiredTime) FROM Boss b
+                                    JOIN Game g on b.gameId = g.id
+                                    GROUP BY g.title""")
+        return self._cursor.fetchall()
     
     
-    def get_all_bosses_by_time(self, filter: str) -> list:
-        if filter == "desc":
-            self._cursor.execute("""SELECT * FROM Boss
-                                        ORDER BY requiredTime DESC""")
-        elif filter == "asc":
-            self._cursor.execute("""SELECT * FROM Boss
-                                        ORDER BY requiredTime ASC""")
-        
-        selection: list = self._cursor.fetchall()
-        
-        if not selection:
-            self._notify_observer(f"There are no bosses in the save file so far", "indication")
-            return []
-        else:
-            return selection
+    def get_all_boss_avg(self) -> list[tuple]:
+        self._cursor.execute("""SELECT ROUND(AVG(deaths), 2), CAST(AVG(requiredTime) + 0.5 AS INTEGER) FROM Boss""")
+        return self._cursor.fetchall()
     
     
-    def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> None:
-        self._cursor.execute("""UPDATE Boss
-                                    SET deaths = (?), requiredTime = (?)
-                                    WHERE name = (?) and gameTitle = (?)""", (deaths, required_time, boss_name, game_title))
-        self._conn.commit()
-        
-        if self._cursor.rowcount == 0:
-            self._notify_observer("Nothing was updated because the given value isn't a valid data set in the save file", "error")
-        else:
-            self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", None)
-            self._create_backup()
+    def get_all_boss_sum(self) -> list[tuple]:
+        self._cursor.execute("""SELECT SUM(deaths), SUM(requiredTime) FROM Boss""")
+        return self._cursor.fetchall()
     
     
-    def get_specific_required_time(self, boss_name: str, game_title: str) -> int:
-        self._cursor.execute("""SELECT requiredTime FROM Boss
-                                    WHERE name = (?) and gameTitle = (?)""", (boss_name, game_title))
-        tmp_selection: list[int] = self._cursor.fetchall()
-        
-        for item in tmp_selection:
-            selection: int = item[0]
-        
-        if not tmp_selection:
-            self._notify_observer(f"Error: There is no time linked to the boss {boss_name} from {game_title} so far", "error")
-            return
-        else:
-            if selection is None:
-                return 0
-            else:
-                return selection
+    
+    
+    
+    
+    
+    
+
+    
+    
+
+    
+
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    #def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> None:
+    #    self._cursor.execute("""UPDATE Boss
+    #                                SET deaths = (?), requiredTime = (?)
+    #                                WHERE name = (?) and gameTitle = (?)""", (deaths, required_time, boss_name, game_title))
+    #    self._conn.commit()
+    #    
+    #    if self._cursor.rowcount == 0:
+    #        self._notify_observer("Nothing was updated because the given value isn't a valid data set in the save file", "error")
+    #    else:
+    #        self._notify_observer(f"The boss '{boss_name}' of game '{game_title}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", None)
+    #        self._create_backup()
