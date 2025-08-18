@@ -39,18 +39,18 @@ class CommandManager:
             "stats list bosses": lambda: self._stats_list_bosses_by("id", "asc"),
             "stats list bosses -s deaths -o desc": lambda: self._stats_list_bosses_by("deaths", "desc"),
             "stats list bosses -s deaths -o asc": lambda: self._stats_list_bosses_by("deaths", "asc"),
-            "stats list bosses -s time -o desc": lambda: self._stats_list_bosses_by("time", "desc"),
-            "stats list bosses -s time -o asc": lambda: self._stats_list_bosses_by("time", "asc"),
+            "stats list bosses -s time -o desc": lambda: self._stats_list_bosses_by("requiredTime", "desc"),
+            "stats list bosses -s time -o asc": lambda: self._stats_list_bosses_by("requiredTime", "asc"),
             "stats list bosses -a": lambda: self._stats_list_all_bosses_by("id", "asc"),
             "stats list bosses -a -s deaths -o desc": lambda: self._stats_list_all_bosses_by("deaths", "desc"),
             "stats list bosses -a -s deaths -o asc": lambda: self._stats_list_all_bosses_by("deaths", "asc"),
-            "stats list bosses -a -s time -o desc": lambda: self._stats_list_all_bosses_by("time", "desc"),
-            "stats list bosses -a -s time -o asc": lambda: self._stats_list_all_bosses_by("time", "asc"),
+            "stats list bosses -a -s time -o desc": lambda: self._stats_list_all_bosses_by("requiredTime", "desc"),
+            "stats list bosses -a -s time -o asc": lambda: self._stats_list_all_bosses_by("requiredTime", "asc"),
             "stats list games": lambda: self._stats_list_games_by("gameId", "asc"),
             "stats list games -s deaths -o desc": lambda: self._stats_list_games_by("deaths", "desc"),
             "stats list games -s deaths -o asc": lambda: self._stats_list_games_by("deaths", "asc"),
-            "stats list games -s time -o desc": lambda: self._stats_list_games_by("time", "desc"),
-            "stats list games -s time -o asc": lambda: self._stats_list_games_by("time", "asc"),
+            "stats list games -s time -o desc": lambda: self._stats_list_games_by("requiredTime", "desc"),
+            "stats list games -s time -o asc": lambda: self._stats_list_games_by("requiredTime", "asc"),
             "stats save": self._stats_save,
             "keybinds": self._keybinds,
             "keybinds list": self._keybinds_list,
@@ -351,8 +351,7 @@ class CommandManager:
             for item in list_of_bosses:
                 self._print_output_func(f"{item[0].ljust(max_name_len, " ")}  {self._get_boss_values(item[1], item[2], max_deaths_len)}", "list")
             
-            self._print_output_func(f"\n{self._get_avg_value(self._save_file.get_specific_game_avg(game_title))}\n"
-                                    +f"{self._get_sum_value(self._save_file.get_specific_game_sum(game_title))}", "list")
+            self._print_output_func(f"\n{self._get_calc_values(self._save_file.get_specific_game_avg(game_title), self._save_file.get_specific_game_sum(game_title))}", "list")
         
         self._check_ignore_inputs_end()
     
@@ -369,8 +368,7 @@ class CommandManager:
         for item in list_of_bosses:
             self._print_output_func(f"{self._get_boss_meta(item[0], item[1], max_meta_len)}  {self._get_boss_values(item[2], item[3], max_deaths_len)}", "list")
         
-        self._print_output_func(f"\n{self._get_avg_value(self._save_file.get_all_boss_avg())}\n"
-                                +f"{self._get_sum_value(self._save_file.get_all_boss_sum())}", "list")
+        self._print_output_func(f"\n{self._get_calc_values(self._save_file.get_all_boss_avg(), self._save_file.get_all_boss_sum())}", "list")
     
     
     def _stats_list_games_by(self, sort_filter: str, order_filter: str) -> None:
@@ -383,14 +381,30 @@ class CommandManager:
         max_deaths_len: int = max(len(self._format_deaths(deaths[1])) for deaths in list_of_games)
         
         for item in list_of_games:
-            self._print_output_func(f"{item[0].ljust(max_title_len, " ")}  ({self._get_sum_value(self._save_file.get_specific_game_sum(item[0]))})", "list")
+            self._print_output_func(f"{item[0].ljust(max_title_len, " ")}  ({self._format_sum(self._save_file.get_specific_game_sum(item[0]), max_deaths_len)})", "list")
         
-        self._print_output_func(f"\n{self._get_avg_value(self._save_file.get_all_game_avg())}\n"
-                                +f"{self._get_sum_value(self._save_file.get_all_game_sum())}", "list")
+        self._print_output_func(f"\n{self._get_calc_values(self._save_file.get_all_game_avg(), self._save_file.get_all_game_sum())}", "list")
     
     
     def _stats_save(self) -> None:
-        pass
+        self._set_ignore_inputs(1)
+        
+        if self._ignore_count == 0:
+            self._print_output_func("Please enter the <\"boss name\", \"game title\"> of the boss you want the stats safed to <...>", "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern("double")
+            
+            if result:
+                self._save_file.update_boss("identified 7", "knecht game", 322, None)
+                self._save_file.update_boss("hund", "hund game", 20, 625)
+                self._save_file.update_boss("junge hund", "hund game", None, 351)
+                self._save_file.update_boss("hundus mundus", "nien game", 35165, 1335)
+                self._save_file.update_boss("nino dino", "knecht game", 320, None)
+                self._save_file.update_boss("ü100h boss", "knecht game", 3610, 810351)
+                # self._save_file.update_boss(result[0], result[1], self._counter.get_count(), self._timer.get_end_time())
+                # reset counter and timer
+        
+        self._check_ignore_inputs_end()
     
     
     def _keybinds(self) -> None:
@@ -451,14 +465,18 @@ class CommandManager:
         return f"{self._format_deaths(deaths).ljust(max_deaths_len, " ")}  {self._format_time(time)}".replace(" ", "\u00A0") # replace regular whitespace with unicode non-breaking space so word wrap does not split values in half if name is so long that not all values are fitting in the same line anymore
     
     
-    def _get_avg_value(self, target_method: list[tuple]) -> str:
-        list_of_values: list[tuple] = target_method
-        return f"AVG  {self._format_deaths(list_of_values[0][0])}  {self._format_time(list_of_values[0][1])}"
+    def _get_calc_values(self, avg_value: list[tuple], sum_value: list[tuple]) -> str:
+        combined_list_of_values: list[tuple] = avg_value + sum_value
+        max_deaths_len: int = max(len(self._format_deaths(deaths[0])) for deaths in combined_list_of_values)
+        return f"{self._format_avg(avg_value, max_deaths_len)}\n{self._format_sum(sum_value, max_deaths_len)}"
     
     
-    def _get_sum_value(self, target_method: list[tuple]) -> str:
-        list_of_values: list[tuple] = target_method
-        return f"SUM  {self._format_deaths(list_of_values[0][0])}  {self._format_time(list_of_values[0][1])}"
+    def _format_avg(self, avg_value: list[tuple], max_deaths_len: int) -> str:
+        return f"AVG  {self._format_deaths(avg_value[0][0]).ljust(max_deaths_len, " ")}  {self._format_time(avg_value[0][1])}"
+    
+    
+    def _format_sum(self, sum_value: list[tuple], max_deaths_len: int) -> str:
+        return f"SUM  {self._format_deaths(sum_value[0][0]).ljust(max_deaths_len, " ")}  {self._format_time(sum_value[0][1])}"
     
     
     def _format_deaths(self, deaths: float) -> str:
@@ -540,28 +558,3 @@ class CommandManager:
     def _keybinds_config(self, hotkey: str) -> None:
         self._key_listener.set_new_keybind(hotkey)
         self._key_listener.start_key_listener_for_one_input()
-    
-    
-        def _stats_save(self) -> None:
-        #if self._counter.get_is_none() or self._timer.get_is_none():
-        #    self._print_output_func("You first have to start tracking before updating the stats", None)
-        #    return
-        
-            self._set_ignore_inputs(2)
-            
-            if self._iteration_count == 0:
-                self._print_output_func("Please enter the boss you want the stats saved to...", None)
-            elif self._iteration_count == 1:
-                self._boss_name = self._last_unignored_input
-                self._print_output_func("Please enter the game you want the boss to be connected to...", None)
-            else:
-                self._game_title = self._last_unignored_input
-                #self._save_file.update_boss("hund", "hund game", 18, 625)
-                #self._save_file.update_boss("junge hund", "hund game", None, 351)
-                #self._save_file.update_boss("hundus mundus", "hund game", 35165, 1335)
-                #self._save_file.update_boss("nino dino", "hund game", 320, None)
-                self._save_file.update_boss("ü100h boss", "hund game", 3610, 810351)
-                #self._save_file.update_boss(self._boss_name, self._game_title, self._counter.get_count(), self._timer.get_end_time())
-                self._counter.set_none()
-            
-            self._check_ignore_inputs_end()
