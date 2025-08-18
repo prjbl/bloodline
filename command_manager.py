@@ -36,21 +36,21 @@ class CommandManager:
             "setup delete boss": self._setup_delete_boss,
             "setup delete game": self._setup_delete_game,
             "stats": self._stats,
-            "stats list bosses": self._stats_list_bosses,
-            "stats list bosses -s deaths -o desc": lambda: self._stats_list_bosses_by_deaths("desc"),
-            "stats list bosses -s deaths -o asc": lambda: self._stats_list_bosses_by_deaths("asc"),
-            "stats list bosses -s time -o desc": lambda: self._stats_list_bosses_by_time("desc"),
-            "stats list bosses -s time -o asc": lambda: self._stats_list_bosses_by_time("asc"),
-            "stats list bosses -a": self._stats_list_all_bosses,
-            "stats list bosses -a -s deaths -o desc": lambda: self._stats_list_all_bosses_by_deaths("desc"),
-            "stats list bosses -a -s deaths -o asc": lambda: self._stats_list_all_bosses_by_deaths("asc"),
-            "stats list bosses -a -s time -o desc": lambda: self._stats_list_all_bosses_by_time("desc"),
-            "stats list bosses -a -s time -o asc": lambda: self._stats_list_all_bosses_by_time("asc"),
-            "stats list games": self._stats_list_games,
-            "stats list games -s deaths -o desc": lambda: self._stats_list_games_by_deaths("desc"),
-            "stats list games -s deaths -o asc": lambda: self._stats_list_games_by_deaths("asc"),
-            "stats list games -s time -o desc": lambda: self._stats_list_games_by_time("desc"),
-            "stats list games -s time -o asc": lambda: self._stats_list_games_by_time("asc"),
+            "stats list bosses": lambda: self._stats_list_bosses_by("id", "asc"),
+            "stats list bosses -s deaths -o desc": lambda: self._stats_list_bosses_by("deaths", "desc"),
+            "stats list bosses -s deaths -o asc": lambda: self._stats_list_bosses_by("deaths", "asc"),
+            "stats list bosses -s time -o desc": lambda: self._stats_list_bosses_by("time", "desc"),
+            "stats list bosses -s time -o asc": lambda: self._stats_list_bosses_by("time", "asc"),
+            "stats list bosses -a": lambda: self._stats_list_all_bosses_by("id", "asc"),
+            "stats list bosses -a -s deaths -o desc": lambda: self._stats_list_all_bosses_by("deaths", "desc"),
+            "stats list bosses -a -s deaths -o asc": lambda: self._stats_list_all_bosses_by("deaths", "asc"),
+            "stats list bosses -a -s time -o desc": lambda: self._stats_list_all_bosses_by("time", "desc"),
+            "stats list bosses -a -s time -o asc": lambda: self._stats_list_all_bosses_by("time", "asc"),
+            "stats list games": lambda: self._stats_list_games_by("gameId", "asc"),
+            "stats list games -s deaths -o desc": lambda: self._stats_list_games_by("deaths", "desc"),
+            "stats list games -s deaths -o asc": lambda: self._stats_list_games_by("deaths", "asc"),
+            "stats list games -s time -o desc": lambda: self._stats_list_games_by("time", "desc"),
+            "stats list games -s time -o asc": lambda: self._stats_list_games_by("time", "asc"),
             "stats save": self._stats_save,
             "keybinds": self._keybinds,
             "keybinds list": self._keybinds_list,
@@ -326,17 +326,71 @@ class CommandManager:
                                 +"stats save: Saves the tracking values to the corresponding boss to the save file", "list")
     
     
-    def _stats_list_all_bosses(self) -> None:
-        #pass
-        tmp_list_of_bosses: list[str] = self._save_file.get_all_bosses_by_id()
+    def _stats_list_bosses_by(self, sort_filter: str, order_filter: str) -> None:
+        self._set_ignore_inputs(1)
         
-        max_title_len: int = max(len(boss_name[0]) for boss_name in tmp_list_of_bosses)
-        max_title_len += max(len(game_title[1]) + 1 for game_title in tmp_list_of_bosses)
-        max_deaths_len: int = max(len(str(deaths[2])) for deaths in tmp_list_of_bosses)
+        if self._ignore_count == 0:
+            self._print_output_func("Please enter the <\"game title\"> from which you want all bosses selected from <...>", "normal")
+        else:
+            result: list[tuple] = self._get_result_in_pattern("single")
+            
+            if not result:
+                self._check_ignore_inputs_end()
+                return
+            
+            game_title: str = result[0]
+            list_of_bosses: list[tuple] = self._save_file.get_bosses_from_game_by(game_title, sort_filter, order_filter)
+            
+            if not list_of_bosses:
+                self._check_ignore_inputs_end()
+                return
+            
+            max_name_len: int = max(len(boss[0]) for boss in list_of_bosses)
+            max_deaths_len: int = max(len(self._format_deaths(deaths[1])) for deaths in list_of_bosses)
+                    
+            for item in list_of_bosses:
+                self._print_output_func(f"{item[0].ljust(max_name_len, " ")}  {self._get_boss_values(item[1], item[2], max_deaths_len)}", "list")
+            
+            self._print_output_func(f"\n{self._get_avg_value(self._save_file.get_specific_game_avg(game_title))}\n"
+                                    +f"{self._get_sum_value(self._save_file.get_specific_game_sum(game_title))}", "list")
         
-        for item in tmp_list_of_bosses:
-            title: str = f"{item[0]} ({item[1]})"
-            self._print_output_func(f"{title.ljust(max_title_len + 2, " ")}  D {item[2]}, {item[3]}", "list")
+        self._check_ignore_inputs_end()
+    
+    
+    def _stats_list_all_bosses_by(self, sort_filter: str, order_filter: str) -> None:
+        list_of_bosses: list[tuple] = self._save_file.get_all_bosses_by(sort_filter, order_filter)
+        
+        if not list_of_bosses:
+            return
+        
+        max_meta_len: int = max(len(boss[0]) for boss in list_of_bosses) + max(len(title[1]) for title in list_of_bosses)
+        max_deaths_len: int = max(len(self._format_deaths(deaths[2])) for deaths in list_of_bosses)
+        
+        for item in list_of_bosses:
+            self._print_output_func(f"{self._get_boss_meta(item[0], item[1], max_meta_len)}  {self._get_boss_values(item[2], item[3], max_deaths_len)}", "list")
+        
+        self._print_output_func(f"\n{self._get_avg_value(self._save_file.get_all_boss_avg())}\n"
+                                +f"{self._get_sum_value(self._save_file.get_all_boss_sum())}", "list")
+    
+    
+    def _stats_list_games_by(self, sort_filter: str, order_filter: str) -> None:
+        list_of_games: list[tuple] = self._save_file.get_all_games(sort_filter, order_filter)
+        
+        if not list_of_games:
+            return
+        
+        max_title_len: int = max(len(title[0]) for title in list_of_games)
+        max_deaths_len: int = max(len(self._format_deaths(deaths[1])) for deaths in list_of_games)
+        
+        for item in list_of_games:
+            self._print_output_func(f"{item[0].ljust(max_title_len, " ")}  ({self._get_sum_value(self._save_file.get_specific_game_sum(item[0]))})", "list")
+        
+        self._print_output_func(f"\n{self._get_avg_value(self._save_file.get_all_game_avg())}\n"
+                                +f"{self._get_sum_value(self._save_file.get_all_game_sum())}", "list")
+    
+    
+    def _stats_save(self) -> None:
+        pass
     
     
     def _keybinds(self) -> None:
@@ -387,6 +441,54 @@ class CommandManager:
         else:
             self._print_output_func("The input does not match the pattern. Please try again", "indication")
             return []
+    
+    
+    def _get_boss_meta(self, boss_name: str, game_title: str, max_meta_len: int) -> str:
+        return f"{boss_name} ({game_title})".ljust(max_meta_len, " ")
+    
+    
+    def _get_boss_values(self, deaths: int, time: int, max_deaths_len: int) -> str:
+        return f"{self._format_deaths(deaths).ljust(max_deaths_len, " ")}  {self._format_time(time)}".replace(" ", "\u00A0") # replace regular whitespace with unicode non-breaking space so word wrap does not split values in half if name is so long that not all values are fitting in the same line anymore
+    
+    
+    def _get_avg_value(self, target_method: list[tuple]) -> str:
+        list_of_values: list[tuple] = target_method
+        return f"AVG  {self._format_deaths(list_of_values[0][0])}  {self._format_time(list_of_values[0][1])}"
+    
+    
+    def _get_sum_value(self, target_method: list[tuple]) -> str:
+        list_of_values: list[tuple] = target_method
+        return f"SUM  {self._format_deaths(list_of_values[0][0])}  {self._format_time(list_of_values[0][1])}"
+    
+    
+    def _format_deaths(self, deaths: float) -> str:
+        if deaths is None:
+            return "D N/A"
+        else:
+            return f"D {deaths:,}"
+    
+    
+    def _format_time(self, time: int) -> str:
+        if time is None:
+            return "N/A"
+        else:
+            seconds: int = time % 60
+            minutes: int = int(time / 60) % 60
+            hours: int = int(time / 3600)
+            
+            return f"{hours:02}:{minutes:02}:{seconds:02}"
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -440,212 +542,26 @@ class CommandManager:
         self._key_listener.start_key_listener_for_one_input()
     
     
-    def _stats_list_games(self) -> None:
-        tmp_list_of_games: list = self._save_file.get_all_games_asc()
-        print(tmp_list_of_games)
-        
-        max_title_len: int = max(len(title[0]) for title in tmp_list_of_games)
-        max_deaths_len: int = max(len(str(deaths[1])) for deaths in tmp_list_of_games)
-        
-        for item in tmp_list_of_games:
-            self._print_output_func(f"{item[0].ljust(max_title_len, " ")}  ({str(self._check_deaths(item[1])).ljust(max_deaths_len, " ")}  {item[2]})", "list")
-        """tmp_list_of_games: list[str] = self._save_file.get_all_games()
-        
-        for item in tmp_list_of_games:
-            self._print_output_func(f"• {item}", None)"""
-    
-    
-    def _stats_list_bosses(self) -> None:
-        self._set_ignore_inputs(1)
-        
-        if self._ignore_count == 0:
-            self._print_output_func("Please enter a game you want all bosses listed from...", None)
-        else:
-            self._game_title = self._last_unignored_input
-            tmp_list_of_bosses: list = self._save_file.get_all_bosses_from_game(self._game_title)
-            deaths: int = 0
-            amount_bosses_with_deaths: int = 0
-            required_time: int = 0
-            amount_bosses_w_required_time: int = 0
-            
-            max_name_len: int = max(len(boss[0]) for boss in tmp_list_of_bosses)
-            max_deaths_len: int = max(len(str(deaths[1])) for deaths in tmp_list_of_bosses)
-            print(max_deaths_len)
-            
-            for item in tmp_list_of_bosses:                                                                                     # + 2 the number of extra spaces before starting with value
-                self._print_output_func(f"{item[0].ljust(max_name_len, " ")}  {self._check_deaths(item[1]).ljust(max_deaths_len + 2, " ")}  {self._calc_int_to_time(item[2])}", "list")
-                deaths += self._set_deaths(item[1])
-                amount_bosses_with_deaths += self._set_amount_deaths(item[1])
-                required_time += self._set_time(item[2])
-                amount_bosses_w_required_time += self._set_amount_time(item[2])
-            
-            self._print_output_func(f"\n{self._get_average(deaths, amount_bosses_with_deaths, required_time, amount_bosses_w_required_time)}", "list")
-            self._print_output_func(f"Sum: D {deaths}, {self._calc_int_to_time(required_time)}", "list")
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _stats_list_bosses_deaths(self, filter: str) -> None:
-        self._set_ignore_inputs(1)
-        
-        if self._iteration_count == 0:
-            self._print_output_func("Please enter a game you want all bosses listed from <...>", "normal")
-        else:
-            self._game_title = self._last_unignored_input
-            tmp_list_of_bosses: list = self._save_file.get_bosses_from_game_by_deaths(self._game_title, filter)
-            
-            for item in tmp_list_of_bosses:
-                self._print_output_func(f"    • {item[0]}: {self._check_deaths(item[1])}, {self._calc_int_to_time(item[2])}", "normal")
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _stats_list_bosses_time(self, filter: str) -> None:
-        self._set_ignore_inputs(1)
-        
-        if self._iteration_count == 0:
-            self._print_output_func("Please enter a game you want all bosses listed from <...>", "normal")
-        else:
-            self._game_title = self._last_unignored_input
-            tmp_list_of_bosses: list = self._save_file.get_bosses_from_game_by_time(self._game_title, filter)
-            
-            for item in tmp_list_of_bosses:
-                self._print_output_func(f"    • {item[0]}: {self._check_deaths(item[1])}, {self._calc_int_to_time(item[2])}", "normal")
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _stats_list_all_bosses_deaths(self, filter: str) -> None:
-        tmp_list_of_bosses: list = self._save_file.get_all_bosses_by_deaths(filter)
-        
-        for item in tmp_list_of_bosses:
-            self._print_output_func(f"{item[0]}: {self._check_deaths(item[1])}, {self._calc_int_to_time(item[2])}", "list")
-    
-    
-    def _stats_list_all_bosses_time(self, filter: str) -> None:
-        tmp_list_of_bosses: list = self._save_file.get_all_bosses_by_time(filter)
-        
-        for item in tmp_list_of_bosses:
-            self._print_output_func(f"{item[0]}: {self._check_deaths(item[1])}, {self._calc_int_to_time(item[2])}", "list")
-    
-    
-    def _set_deaths(self, deaths_at_boss: int) -> int:
-        if deaths_at_boss is not None:
-            return deaths_at_boss
-        return 0
-    
-    def _set_amount_deaths(self, deaths_at_boss: int) -> int:
-        if deaths_at_boss is not None:
-            return 1
-        return 0
-    
-    
-    def _set_time(self, required_time_at_boss: int) -> int:
-        if required_time_at_boss is not None:
-            return required_time_at_boss
-        return 0
-    
-    
-    def _set_amount_time(self, required_time_at_boss: int) -> None:
-        if required_time_at_boss is not None:
-            return 1
-        return 0
-    
-    
-    def _get_average(self, deaths: int, amount_bosses_w_deaths: int, required_time: int, amount_bosses_w_required_time: int) -> str:
-        if deaths != 0:
-            average_deaths: str = str(round(deaths / amount_bosses_w_deaths, 1))
-        else:
-            average_deaths: str = "N/A"
-        
-        if required_time != 0:
-            average_time: str = (self._calc_int_to_time(int(required_time / amount_bosses_w_required_time)))
-        else:
-            average_time: str = "N/A"
-        
-        return f"Average: D {average_deaths}, {average_time}"
-    
-    
-    """def _setup_identify_boss(self) -> None:
-        self._set_ignore_inputs(4)
-        
-        if self._ignore_count == 0:
-            self._print_output_func("Please enter the boss you want to identify <...>", "normal")
-        elif self._ignore_count == 1:
-            self._unknown_boss: str = self._last_unignored_input
-            self._print_output_func("Please enter the game the boss is currently connected to <...>", "normal")
-        elif self._ignore_count == 2:
-            self._unknown_game: str = self._last_unignored_input
-            self._print_output_func("Please enter the new name for the boss <...>", "normal")
-        elif self._ignore_count == 3:
-            self._boss_name = self._last_unignored_input
-            self._print_output_func("Please enter the game you want the boss to be connected to <...>", "normal")
-        else:
-            self._game_title = self._last_unignored_input
-            self._save_file.identify_boss(self._unknown_boss, self._unknown_game, self._boss_name, self._game_title)
-        
-        self._check_ignore_inputs_end()"""
-    
-    
-    def _stats_save(self) -> None:
+        def _stats_save(self) -> None:
         #if self._counter.get_is_none() or self._timer.get_is_none():
         #    self._print_output_func("You first have to start tracking before updating the stats", None)
         #    return
         
-        self._set_ignore_inputs(2)
-        
-        if self._iteration_count == 0:
-            self._print_output_func("Please enter the boss you want the stats saved to...", None)
-        elif self._iteration_count == 1:
-            self._boss_name = self._last_unignored_input
-            self._print_output_func("Please enter the game you want the boss to be connected to...", None)
-        else:
-            self._game_title = self._last_unignored_input
-            #self._save_file.update_boss("hund", "hund game", 18, 625)
-            #self._save_file.update_boss("junge hund", "hund game", None, 351)
-            #self._save_file.update_boss("hundus mundus", "hund game", 35165, 1335)
-            #self._save_file.update_boss("nino dino", "hund game", 320, None)
-            self._save_file.update_boss("ü100h boss", "hund game", 3610, 810351)
-            #self._save_file.update_boss(self._boss_name, self._game_title, self._counter.get_count(), self._timer.get_end_time())
-            self._counter.set_none()
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _calc_int_to_time(self, required_time: int) -> str:
-        if required_time is None:
-            return "N/A"
-        else:
-            seconds: int = required_time % 60
-            minutes: int = int(required_time / 60) % 60
-            hours: int = int(required_time / 3600)
+            self._set_ignore_inputs(2)
             
-            return f"{hours:02}:{minutes:02}:{seconds:02}"
-    
-    
-    def _check_deaths(self, deaths: int) -> str:
-        if deaths is None:
-            return "N/A"
-        else:
-            return f"D {deaths:,}".replace(",", ".")
-    
-    
-    """def _setup_add(self) -> None:
-        self._ignore_input = True
-        self._inputs_to_ignore = 2
-        
-        if self._iteration_count == 0:
-            self._print_output_func("Please enter the boss you want to add...", None)
-        elif self._iteration_count == 1:
-            self._boss_name = self._last_unignored_input
-            self._print_output_func("Please enter the game you want the boss to be connected to...", None)
-        else:
-            self._game_title = self._last_unignored_input
-            self._save_file.add_boss(self._boss_name, self._game_title)
-        
-        if self._iteration_count == self._inputs_to_ignore:
-            self._ignore_input = False
-            self._iteration_count = 0
-            return
-        
-        self._iteration_count += 1"""
+            if self._iteration_count == 0:
+                self._print_output_func("Please enter the boss you want the stats saved to...", None)
+            elif self._iteration_count == 1:
+                self._boss_name = self._last_unignored_input
+                self._print_output_func("Please enter the game you want the boss to be connected to...", None)
+            else:
+                self._game_title = self._last_unignored_input
+                #self._save_file.update_boss("hund", "hund game", 18, 625)
+                #self._save_file.update_boss("junge hund", "hund game", None, 351)
+                #self._save_file.update_boss("hundus mundus", "hund game", 35165, 1335)
+                #self._save_file.update_boss("nino dino", "hund game", 320, None)
+                self._save_file.update_boss("ü100h boss", "hund game", 3610, 810351)
+                #self._save_file.update_boss(self._boss_name, self._game_title, self._counter.get_count(), self._timer.get_end_time())
+                self._counter.set_none()
+            
+            self._check_ignore_inputs_end()
