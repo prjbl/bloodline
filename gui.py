@@ -1,5 +1,5 @@
 from tkinter import Tk, Frame, Label, Entry, StringVar
-from tkinter.font import Font, families
+from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 from datetime import datetime
 
@@ -13,10 +13,10 @@ class Application:
         self._setup_window()
         self._setup_entry_callback()
         self._setup_ui_elements()
-        self._setup_console_tags()
         
         self.print_output(self._META, "normal")
         self._setup_font() # initialising after first console input so a possible error will be displayed after the meta data
+        self._setup_console_tags()
         
         self._cmd_manager: CommandManager = CommandManager(self.print_output, self.quit)
         self._setup_bindings()
@@ -28,14 +28,14 @@ class Application:
     _INITIAL_WIDTH: int = 600
 
     _PADDING: int = 5
-    _INDENT: str = "    "
 
     _COLOR_BG: str = "#292c30"
     _COLOR_NORMAL: str = "#ffffff"
     _COLOR_SUCCESS: str = "#a1e096"
+    _COLOR_DENIED: str = "#d2672e" #d47c1e
     _COLOR_COMMAND: str = "#25b354"
     _COLOR_SELECTION: str = "#1d903e"
-    _COLOR_INDICATION: str = "#35a2de"
+    _COLOR_NOTE: str = "#a448cf"
     _COLOR_WARNING: str = "#d4a61e"
     _COLOR_ERROR: str = "#cf213e"
 
@@ -87,25 +87,31 @@ class Application:
         self._console.pack(fill="both", expand=True)
     
     
-    def _setup_console_tags(self) -> None:
-        self._console.tag_config("normal", foreground=self._COLOR_NORMAL)
-        self._console.tag_config("success", foreground=self._COLOR_SUCCESS)
-        self._console.tag_config("command", foreground=self._COLOR_COMMAND)
-        self._console.tag_config("indication", foreground=self._COLOR_INDICATION)
-        self._console.tag_config("warning", foreground=self._COLOR_WARNING)
-        self._console.tag_config("error", foreground=self._COLOR_ERROR)
-    
-    
     def _setup_font(self) -> None:
         desired_font_family: str = "DM Mono"
-        custom_font: Font = Font(family=desired_font_family, size=10, weight="normal")
         
         if desired_font_family in families():
-            self._input_prefix.config(font=custom_font)
-            self._input_entry.config(font=custom_font)
-            self._console.config(font=custom_font)
+            font_to_use: Font = Font(family=desired_font_family, size=10, weight="normal")
         else:
+            font_to_use: Font = nametofont(self._console.cget("font"))
             self.print_output(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
+        
+        self._input_prefix.config(font=font_to_use)
+        self._input_entry.config(font=font_to_use)
+        self._console.config(font=font_to_use)
+        
+        self._char_width_in_px: int = font_to_use.measure("M")
+    
+    
+    def _setup_console_tags(self) -> None:
+        self._console.tag_config("normal", foreground=self._COLOR_NORMAL)
+        self._console.tag_config("list", lmargin1=self._char_width_in_px * 4, lmargin2=self._char_width_in_px * 8)
+        self._console.tag_config("success", foreground=self._COLOR_SUCCESS)
+        self._console.tag_config("denied", foreground=self._COLOR_DENIED)
+        self._console.tag_config("command", foreground=self._COLOR_COMMAND)
+        self._console.tag_config("note", foreground=self._COLOR_NOTE)
+        self._console.tag_config("warning", foreground=self._COLOR_WARNING)
+        self._console.tag_config("error", foreground=self._COLOR_ERROR)
     
     
     def _setup_bindings(self) -> None:
@@ -144,10 +150,16 @@ class Application:
         if text_type == "command":
             self._console.insert("end", f"\n{datetime.now().time().strftime("%H:%M:%S")}{self._PREFIX} ", "normal")
             self._console.insert("end", f"{text}\n", "command")
+        elif text_type == "request":
+            self._console.delete("end-6c", "end")
+            self._console.insert("end", f"{text}", "command")
+            self._console.insert("end", ">\n", "normal")
         elif text_type == "success":
-            self._console.insert("end", f"{text}\n", "success")
-        elif text_type == "indication":
-            self._console.insert("end", f"Indication: {text}\n", "indication")
+            self._console.insert("end", f"Success: {text}\n", "success")
+        elif text_type == "denied":
+            self._console.insert("end", f"Denied: {text}\n", "denied")
+        elif text_type == "note":
+            self._console.insert("end", f"Note: {text}\n", "note")
         elif text_type == "warning":
             self._console.insert("end", f"Warning: {text}\n", "warning")
         elif text_type == "error":
@@ -156,7 +168,7 @@ class Application:
             lines: list[str] = text.split("\n")
             
             for line in lines:
-                self._console.insert("end", f"{self._INDENT}• {line}\n", "normal")
+                self._console.insert("end", f"• {line}\n", "list")
         else:
             self._console.insert("end", f"{text}\n", "normal")
             
