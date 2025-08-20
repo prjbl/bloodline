@@ -22,7 +22,7 @@ class CommandManager:
         # category action -scope-filter arg1
         # category action -scope-filter arg1 -sort-filter arg2
         # category action -scope-filter arg1 -sort-filter arg2 -order-filter arg3
-        self._COMMANDS: dict = {
+        self._commands: dict = { # const that is only changed when cancel commands are added/deleted from itself
             "help": self._help,
             "tracking": self._tracking,
             "tracking new": self._tracking_new,
@@ -66,7 +66,7 @@ class CommandManager:
         }
         self._CANCEL_COMMANDS: dict = {"cancel": self._cancel}
         
-        self._COMMANDS_LIST: list[str] = list(self._COMMANDS.keys())
+        self._commands_list: list[str] = list(self._commands.keys()) # const that is only changed when cancel commands are added/deleted from _commands
     
     
     def _setup_instances(self) -> None:
@@ -117,30 +117,27 @@ class CommandManager:
             
             self._console_input = console_input
             self._print_output_func(console_input, "request")
-            self._COMMANDS.get(self._last_unignored_input)()
+            self._commands.get(self._last_unignored_input)()
         else:
             self._print_output_func(console_input, "command")
             self._last_unignored_input: str = cleaned_console_input
             
-            if cleaned_console_input in self._COMMANDS:
-                self._COMMANDS.get(cleaned_console_input)()
+            if cleaned_console_input in self._commands:
+                self._commands.get(cleaned_console_input)()
             else:
-                self._print_output_func("Unknown input. Please use 'help' to get a list of all working command categories", "denied")
+                self._print_output_func("Unknown input. Please use 'help' to get a list of all working command categories", "invalid")
     
     
     def _set_ignore_inputs(self, number_of_inputs: int) -> None:
         self._ignore_input = True
         self._inputs_to_ignore = number_of_inputs
-        self._COMMANDS.update(self._CANCEL_COMMANDS)
-        self._COMMANDS_LIST = list(self._COMMANDS.keys())
+        self._commands.update(self._CANCEL_COMMANDS)
+        self._commands_list = list(self._commands.keys())
     
     
     def _check_ignore_inputs_end(self) -> None:
         if self._ignore_count == self._inputs_to_ignore:
-            self._ignore_input = False
-            self._ignore_count = 0
-            self._COMMANDS.pop("cancel")
-            self._COMMANDS_LIST = list(self._COMMANDS.keys())
+            self._reset_ignore_vars()
             return
         
         self._ignore_count += 1
@@ -160,7 +157,7 @@ class CommandManager:
             self._commands_match.clear()
             self._match_index = 0
             
-            for item in self._COMMANDS_LIST:
+            for item in self._commands_list:
                 if self._entry_var in item:
                     self._commands_match.append(item)
         elif self._match_index < len(self._commands_match) - 1:
@@ -241,7 +238,7 @@ class CommandManager:
                 self._timer.set_time_already_required(self._save_file.get_specific_boss_time(boss_name, game_title))
                 self._key_listener.start_key_listener()
             else:
-                self._print_output_func(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "denied")
+                self._print_output_func(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "invalid")
         
         self._check_ignore_inputs_end()
     
@@ -431,11 +428,22 @@ class CommandManager:
         self._quit_app_func()
     
     
-    def cancel(self) -> None:
-        pass
+    def _cancel(self) -> None:
+        self._reset_ignore_vars()
+        self._print_output_func("Process was cancelled", "normal")
     
     
     # helper methods below
+    
+    def _reset_ignore_vars(self) -> None:
+        self._ignore_input = False
+        self._ignore_count = 0
+        
+        for command in self._CANCEL_COMMANDS:
+            self._commands.pop(command)
+        
+        self._commands_list = list(self._commands.keys())
+    
     
     def _run_setup_command(self, text: str, pattern_type: str, target_method: any):
         self._set_ignore_inputs(1)
@@ -512,51 +520,3 @@ class CommandManager:
             hours: int = int(time / 3600)
             
             return f"{hours:02}:{minutes:02}:{seconds:02}"
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    def _cancel(self) -> None:
-        if self._ignore_input:
-            self._ignore_input = False
-            self._iteration_count = 0
-            self._COMMANDS.pop("cancel")
-            self._COMMANDS_LIST = list(self._COMMANDS.keys())
-            self._print_output_func("Process was cancelled", "normal")
-        else:
-            self._print_output_func("Nothing to be cancelled", "error")

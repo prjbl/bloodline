@@ -60,7 +60,7 @@ class KeyListener:
             on_press=self._on_press) as self._key_listener:
                 self._key_listener.join()
         self._notify_observer("Key listener stopped", "normal")
-        self._notify_observer("Make sure to save the data using the 'stats save' command", "indication")
+        self._notify_observer("Make sure to save the data using the 'stats save' command", "note")
     
     
     def start_key_listener(self) -> None:

@@ -81,9 +81,7 @@ class SaveFile:
             self._conn.backup(backup_conn)
             backup_conn.close()
             
-            if not backup_exists:
-                self._notify_observer("Backup was created", "normal")
-            else:
+            if backup_exists:
                 self._notify_observer("Backup was updated", "normal")
         except DatabaseError:
             self._notify_observer(f"The backup file '{self._BACKUP_FILE_NAME}' is corrupted. An attempt is made to re-initialized file", "error")
@@ -124,7 +122,7 @@ class SaveFile:
     
     def add_boss(self, boss_name: str, game_title: str) -> None:
         if self.get_specific_boss_exists(boss_name, game_title):
-            self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' already exists in the save file", "indication")
+            self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' already exists in the save file", "invalid")
             return
         
         self._add_game(game_title)
@@ -141,7 +139,22 @@ class SaveFile:
     
     
     def add_unknown(self) -> None:
-        self.add_boss(f"{self._UNKNOWN_BOSS_NAME} {self._get_unknown_boss_count()}", self._UNKNOWN_GAME_TITLE)
+        self._cursor.execute(f"""SELECT b.name FROM Boss b
+                                    JOIN Game g ON b.gameId = g.id
+                                    WHERE b.name LIKE '{self._UNKNOWN_BOSS_NAME}%' and g.title = '{self._UNKNOWN_GAME_TITLE}'""")
+        selection: list[tuple] = self._cursor.fetchall()
+        
+        unknown_boss_nums: list[int] = self._get_unknown_boss_numbers(selection)
+        
+        boss_name_exists: bool = True
+        iterator: int = 0
+        
+        while boss_name_exists:
+            iterator += 1
+            
+            if not iterator in unknown_boss_nums:
+                boss_name_exists = False
+                self.add_boss(f"{self._UNKNOWN_BOSS_NAME} {iterator}", self._UNKNOWN_GAME_TITLE)
     
     
     def identify_boss(self, boss_name: str, new_boss_name: str, new_game_title: str) -> None:
@@ -202,6 +215,9 @@ class SaveFile:
             return
         elif not self.get_specific_boss_exists(boss_name, game_title):
             self._notify_observer(f"The boss '{boss_name}' you wish to rename does not exists in in the game '{self._get_specific_game(game_title)}' in the save file so far", "indication")
+            return
+        elif self.get_specific_boss_exists(boss_name, game_title):
+            self._notify_observer(f"The boss '{boss_name}' already exists in the game '{game_title}'", "invalid")
             return
         
         try:
@@ -391,11 +407,15 @@ class SaveFile:
             return True
     
     
-    def _get_unknown_boss_count(self) -> int:
-        self._cursor.execute("""SELECT COUNT(b.name) FROM Boss b
-                                    JOIN Game g ON b.gameId = g.id
-                                    WHERE g.title = (?)""", (self._UNKNOWN_GAME_TITLE,))
-        return self._cursor.fetchone()[0] + 1 # +1 so the first boss starts at 1 and not 0
+    def _get_unknown_boss_numbers(self, list_of_unknown_bosses: list[tuple]) -> list[int]:
+        unknown_boss_nums: list[int] = []
+        
+        for boss_name in list_of_unknown_bosses:
+            for num in str(boss_name[0]).split():
+                if num.isdigit():
+                    unknown_boss_nums.append(int(num))
+        
+        return unknown_boss_nums
     
     
     def get_specific_boss_deaths(self, boss_name: str, game_title: str) -> int:
