@@ -116,7 +116,7 @@ class CommandManager:
                 return
             
             self._console_input = console_input
-            self._print_output_func(console_input, "normal")
+            self._print_output_func(console_input, "request")
             self._COMMANDS.get(self._last_unignored_input)()
         else:
             self._print_output_func(console_input, "command")
@@ -125,7 +125,7 @@ class CommandManager:
             if cleaned_console_input in self._COMMANDS:
                 self._COMMANDS.get(cleaned_console_input)()
             else:
-                self._print_output_func("Unknown input. Please use 'help' to get a list of all working command categories", "indication")
+                self._print_output_func("Unknown input. Please use 'help' to get a list of all working command categories", "denied")
     
     
     def _set_ignore_inputs(self, number_of_inputs: int) -> None:
@@ -241,7 +241,7 @@ class CommandManager:
                 self._timer.set_time_already_required(self._save_file.get_specific_boss_time(boss_name, game_title))
                 self._key_listener.start_key_listener()
             else:
-                self._print_output_func(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "indication")
+                self._print_output_func(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "denied")
         
         self._check_ignore_inputs_end()
     
@@ -413,9 +413,26 @@ class CommandManager:
                                 +"keybinds config <hotkey>: Changes the keybind of the selected hotkey", "list")
     
     
+    def _keybinds_list(self) -> None:
+        dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
+        list_of_hotkey_names: list[str] = self._hk_manager.get_hotkey_names()
+        
+        for hk_index, hotkey in enumerate(dict_of_hotkeys):
+            self._print_output_func(f"{list_of_hotkey_names[hk_index]}: {dict_of_hotkeys.get(hotkey)}", "list")
+    
+    
+    def _keybinds_config(self, hotkey: str) -> None:
+        self._key_listener.set_new_keybind(hotkey)
+        self._key_listener.start_key_listener_for_one_input()
+    
+    
     def quit(self) -> None:
         self._save_file.close_connection()
         self._quit_app_func()
+    
+    
+    def cancel(self) -> None:
+        pass
     
     
     # helper methods below
@@ -453,7 +470,7 @@ class CommandManager:
         if result:
             return list[str](result.groups())
         else:
-            self._print_output_func("The input does not match the pattern. Please try again", "indication")
+            self._print_output_func("The input does not match the pattern. Please try again", "denied")
             return []
     
     
@@ -476,7 +493,7 @@ class CommandManager:
     
     
     def _format_sum(self, sum_value: list[tuple], max_deaths_len: int) -> str:
-        return f"SUM  {self._format_deaths(sum_value[0][0]).ljust(max_deaths_len, " ")}  {self._format_time(sum_value[0][1])}"
+        return f"SUM  {self._format_deaths(sum_value[0][0]).ljust(max_deaths_len, " ")}  {self._format_time(sum_value[0][1])}".replace(" ", "\u00A0") # only required for the sum and not avg because its also used to show sum of every individual game
     
     
     def _format_deaths(self, deaths: float) -> str:
@@ -543,18 +560,3 @@ class CommandManager:
             self._print_output_func("Process was cancelled", "normal")
         else:
             self._print_output_func("Nothing to be cancelled", "error")
-    
-    
-    def _keybinds_list(self) -> None:
-        cache_hotkeys: dict = self._hk_manager.get_current_hotkeys()
-        cache_hotkey_names: list[str] = self._hk_manager.get_hotkey_names()
-        cache_name_index: int = 0
-        
-        for item in cache_hotkeys:
-            self._print_output_func(f"• {str(cache_hotkey_names[cache_name_index])}: {str(cache_hotkeys.get(item))}", None)
-            cache_name_index += 1
-    
-    
-    def _keybinds_config(self, hotkey: str) -> None:
-        self._key_listener.set_new_keybind(hotkey)
-        self._key_listener.start_key_listener_for_one_input()

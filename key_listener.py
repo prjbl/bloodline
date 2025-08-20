@@ -26,10 +26,10 @@ class KeyListener:
     
     
     def _equals_hotkey(self, key: any, hk_index: int) -> bool:
-        tmp_list_hotkeys: list[str] = list(self._hk_manager.get_current_hotkeys().values())
+        list_of_hotkeys: list[str] = list(self._hk_manager.get_current_hotkeys().values())
         cleaned_key_input: str = str(key).replace("'", "")
         
-        return cleaned_key_input == tmp_list_hotkeys[hk_index]
+        return cleaned_key_input == list_of_hotkeys[hk_index]
     
     
     def _on_press(self, key: any) -> None:
@@ -60,6 +60,7 @@ class KeyListener:
             on_press=self._on_press) as self._key_listener:
                 self._key_listener.join()
         self._notify_observer("Key listener stopped", "normal")
+        self._notify_observer("Make sure to save the data using the 'stats save' command", "indication")
     
     
     def start_key_listener(self) -> None:
@@ -74,17 +75,20 @@ class KeyListener:
     # methods to change hotkeys via input detection below
     
     def _on_change_keybind(self, key: any) -> None:
-        tmp_dict_hotkeys: dict = self._hk_manager.get_current_hotkeys()
+        dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         cleaned_key_input: str = str(key).replace("'", "")
         
-        if not self._check_helper_keys(cleaned_key_input):
-            for item in tmp_dict_hotkeys.values():
-                if cleaned_key_input == item:
-                    self._notify_observer(f"Hotkey '{cleaned_key_input}' already in use. Please start config again and try another key", "indication")
-                    return False
-            self._hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)
-            self._notify_observer(f"Hotkey was successfully changed to: '{cleaned_key_input}'", "success")
-            return False
+        if self._check_helper_keys(cleaned_key_input):
+            return
+        
+        for curr_keybind in dict_of_hotkeys.values():
+            if cleaned_key_input == curr_keybind:
+                self._notify_observer(f"Hotkey '{cleaned_key_input}' already in use. Please start config again and try another key", "indication")
+                return False
+        
+        self._hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)
+        self._notify_observer(f"Hotkey was successfully changed to: '{cleaned_key_input}'", "success")
+        return False
     
     
     def _run_listener_for_one_input(self) -> None:
@@ -92,7 +96,6 @@ class KeyListener:
             on_press=self._on_change_keybind) as self._key_listener:
                 self._key_listener.join()
         self._notify_observer("Keyboard listener stopped", "normal")
-        self._notify_observer("Make sure to save the data using the 'stats save' command", "indication")
     
     
     def start_key_listener_for_one_input(self) -> None:
