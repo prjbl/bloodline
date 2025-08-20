@@ -32,7 +32,7 @@ class Application:
     _COLOR_BG: str = "#292c30"
     _COLOR_NORMAL: str = "#ffffff"
     _COLOR_SUCCESS: str = "#a1e096"
-    _COLOR_DENIED: str = "#d2672e" #d47c1e
+    _COLOR_INVALID: str = "#35a2de"
     _COLOR_COMMAND: str = "#25b354"
     _COLOR_SELECTION: str = "#1d903e"
     _COLOR_NOTE: str = "#a448cf"
@@ -107,7 +107,7 @@ class Application:
         self._console.tag_config("normal", foreground=self._COLOR_NORMAL)
         self._console.tag_config("list", lmargin1=self._char_width_in_px * 4, lmargin2=self._char_width_in_px * 8)
         self._console.tag_config("success", foreground=self._COLOR_SUCCESS)
-        self._console.tag_config("denied", foreground=self._COLOR_DENIED)
+        self._console.tag_config("invalid", foreground=self._COLOR_INVALID)
         self._console.tag_config("command", foreground=self._COLOR_COMMAND)
         self._console.tag_config("note", foreground=self._COLOR_NOTE)
         self._console.tag_config("warning", foreground=self._COLOR_WARNING)
@@ -156,8 +156,8 @@ class Application:
             self._console.insert("end", ">\n", "normal")
         elif text_type == "success":
             self._console.insert("end", f"Success: {text}\n", "success")
-        elif text_type == "denied":
-            self._console.insert("end", f"Denied: {text}\n", "denied")
+        elif text_type == "invalid":
+            self._console.insert("end", f"Invalid: {text}\n", "invalid")
         elif text_type == "note":
             self._console.insert("end", f"Note: {text}\n", "note")
         elif text_type == "warning":
