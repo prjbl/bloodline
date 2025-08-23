@@ -395,8 +395,11 @@ class CommandManager:
         else:
             result: list[str] = self._get_result_in_pattern("double")
             
-            if result:
-                self._save_file.update_boss(result[0], result[1], self._counter.get_count(), self._timer.get_end_time())
+            if not result:
+                self._check_ignore_inputs_end()
+                return
+            
+            if self._save_file.update_boss(result[0], result[1], self._counter.get_count(), self._timer.get_end_time()):
                 self._counter.reset(hard_reset=True)
                 self._timer.reset(hard_reset=True)
         
