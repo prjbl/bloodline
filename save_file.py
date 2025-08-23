@@ -352,13 +352,13 @@ class SaveFile:
         return selection
     
     
-    def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> None:
+    def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> bool:
         if not self._get_specific_game_exists(game_title):
             self._notify_observer(f"The game '{game_title}' you selected to save the stats to a boss from does not exists in the save file", "indication")
-            return
+            return False
         elif not self.get_specific_boss_exists(boss_name, game_title):
             self._notify_observer(f"The boss '{boss_name}' you wish to save the stats to does not exists in the game '{self._get_specific_game(game_title)}' in the save file", "indication")
-            return
+            return False
         
         try:
             self._cursor.execute("""UPDATE Boss
@@ -368,8 +368,10 @@ class SaveFile:
             
             self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", "success")
             self._create_backup()
+            return True
         except Exception as e:
             self._notify_observer(f"An unexpected error occured while saving the stats to the boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}'. Exception: {e}", "error")
+            return False
     
     
     # helper methods below
