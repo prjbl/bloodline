@@ -218,8 +218,8 @@ class CommandManager:
     
     def _tracking_new(self) -> None:
         self._save_file.add_unknown()
-        self._counter.set_count_already_required(0)
-        self._timer.set_time_already_required(0)
+        self._counter.set_count_already_required(None)
+        self._timer.set_time_already_required(None)
         self._key_listener.start_key_listener()
     
     
@@ -262,7 +262,7 @@ class CommandManager:
     
     def _setup_identify_boss(self) -> None:
         self._run_setup_command(
-            text="Please enter the <\"boss name\" -> \"new boss name\", \"new game title\"> of the boss you want to identify <...>",
+            text="Please enter the <\"unknown boss number\" -> \"new boss name\", \"new game title\"> of the boss you want to identify <...>",
             pattern_type="single_double",
             target_method=self._save_file.identify_boss
         )
@@ -384,6 +384,10 @@ class CommandManager:
     
     
     def _stats_save(self) -> None:
+        if self._counter.get_is_none() and self._timer.get_is_none():
+            self._print_output_func("There are no values to be saved. Make sure to start a tracking session and try saving again afterwards", "invalid")
+            return
+        
         self._set_ignore_inputs(1)
         
         if self._ignore_count == 0:
@@ -392,14 +396,9 @@ class CommandManager:
             result: list[str] = self._get_result_in_pattern("double")
             
             if result:
-                self._save_file.update_boss("identified 7", "knecht game", 322, None)
-                self._save_file.update_boss("hund", "hund game", 20, 625)
-                self._save_file.update_boss("junge hund", "hund game", None, 351)
-                self._save_file.update_boss("hundus mundus", "nien game", 35165, 1335)
-                self._save_file.update_boss("nino dino", "knecht game", 320, None)
-                self._save_file.update_boss("ü100h boss", "knecht game", 3610, 810351)
-                # self._save_file.update_boss(result[0], result[1], self._counter.get_count(), self._timer.get_end_time())
-                # reset counter and timer
+                self._save_file.update_boss(result[0], result[1], self._counter.get_count(), self._timer.get_end_time())
+                self._counter.reset(hard_reset=True)
+                self._timer.reset(hard_reset=True)
         
         self._check_ignore_inputs_end()
     
