@@ -45,7 +45,7 @@ class KeyListener:
             elif self._equals_hotkey(key, 4):
                 self._timer.toggle_pause()
             elif self._equals_hotkey(key, 5):
-                self._timer.end()
+                self._timer.stop()
             elif self._equals_hotkey(key, 6):
                 self._timer.reset()
             elif self._equals_hotkey(key, 7):
@@ -60,6 +60,8 @@ class KeyListener:
             on_press=self._on_press) as self._key_listener:
                 self._key_listener.join()
         self._notify_observer("Key listener stopped", "normal")
+        
+        self._timer.check_timer_stopped()
         self._notify_observer("Make sure to save the data using the 'stats save' command", "note")
     
     
