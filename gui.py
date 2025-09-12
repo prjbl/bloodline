@@ -1,22 +1,29 @@
+from datetime import datetime
+from queue import Queue
 from tkinter import Tk, Frame, Label, Entry, StringVar
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
-from datetime import datetime
 
 from command_manager import CommandManager
+from config_manager import ConfigManager
 from directory import Directory
 
 class Application:
     
     def __init__(self):
+        self._main_queue: Queue = Queue()
+        self._config_mananger: ConfigManager = ConfigManager()
+        
         self._root: Tk = Tk()
         self._setup_window()
         self._setup_entry_callback()
         self._setup_ui_elements()
+        self._setup_font()
+        self._setup_console_tags()
         
         self.print_output(self._META, "normal")
-        self._setup_font() # initialising after first console input so a possible error will be displayed after the meta data
-        self._setup_console_tags()
+        self._merge_queues(self._main_queue, self._config_mananger.get_error_queue())
+        self._display_startup_problems() # display call after first print out to prevent the texts from being displayed in the wrong order
         
         self._cmd_manager: CommandManager = CommandManager(self.print_output, self.quit)
         self._setup_bindings()
@@ -29,7 +36,7 @@ class Application:
 
     _PADDING: int = 5
 
-    _COLOR_BG: str = "#292c30"
+    _COLOR_BG: str = "#282830"
     _COLOR_NORMAL: str = "#ffffff"
     _COLOR_SUCCESS: str = "#a1e096"
     _COLOR_INVALID: str = "#35a2de"
@@ -44,7 +51,7 @@ class Application:
     
     
     def _setup_window(self) -> None:
-        self._root.geometry(f"{self._INITIAL_WIDTH}x{self._INITIAL_HEIGHT}")
+        self._root.geometry(f"{self._config_mananger.get_geometry()}")
         self._root.title(self._dir._APP_NAME)
         self._root.config(bg=self._COLOR_BG)
     
@@ -94,7 +101,8 @@ class Application:
             font_to_use: Font = Font(family=desired_font_family, size=10, weight="normal")
         else:
             font_to_use: Font = nametofont(self._console.cget("font"))
-            self.print_output(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
+            self._main_queue.put_nowait((f"The font '{desired_font_family}' could not be found. The default has been restored", "warning"))
+            #self.print_output(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
         
         self._input_prefix.config(font=font_to_use)
         self._input_entry.config(font=font_to_use)
@@ -174,6 +182,18 @@ class Application:
             
         self._console.config(state="disabled")
         self._console.see("end")
+    
+    
+    def _merge_queues(self, main_queue: Queue, source_queue: Queue) -> None:
+        while not source_queue.empty():
+            text, text_type = source_queue.get_nowait()
+            main_queue.put_nowait((text, text_type))
+    
+    
+    def _display_startup_problems(self) -> None:
+        while not self._main_queue.empty():
+            text, text_type = self._main_queue.get_nowait()
+            self.print_output(text, text_type)
     
     
     def run(self) -> None:
