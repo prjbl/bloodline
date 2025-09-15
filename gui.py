@@ -1,18 +1,18 @@
 from datetime import datetime
 from queue import Queue
-from tkinter import Tk, Frame, Label, Entry, StringVar
+from tkinter import Tk, Frame, Label, Entry, StringVar, TclError
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
 from command_manager import CommandManager
-from config_manager import ConfigManager
+from gui_config_manager import GuiConfigManager
 from directory import Directory
 
 class Application:
     
     def __init__(self):
         self._main_queue: Queue = Queue()
-        self._config_mananger: ConfigManager = ConfigManager()
+        self._config_mananger: GuiConfigManager = GuiConfigManager()
         
         self._root: Tk = Tk()
         self._setup_window()
@@ -30,13 +30,10 @@ class Application:
     
     
     _dir: Directory = Directory()
-    
-    _INITIAL_HEIGHT: int = 350
-    _INITIAL_WIDTH: int = 600
 
     _PADDING: int = 5
 
-    _COLOR_BG: str = "#282830"
+    _COLOR_BG: str = "#2a2830"
     _COLOR_NORMAL: str = "#ffffff"
     _COLOR_SUCCESS: str = "#a1e096"
     _COLOR_INVALID: str = "#35a2de"
@@ -50,8 +47,17 @@ class Application:
     _META: str = f"{_dir._APP_NAME} {_dir._VERSION}\nBy {_dir._APP_AUTHOR}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
     
     
+    def _setup_ui_config_vars(self) -> None:
+        self._colors: dict = self._config_mananger.get_colors()
+    
+    
     def _setup_window(self) -> None:
-        self._root.geometry(f"{self._config_mananger.get_geometry()}")
+        try:
+            self._root.geometry(f"{self._config_mananger.get_geometry()}")
+        except TclError:
+            self._root.geometry(f"{self._config_mananger.get_default_geometry()}")
+            self._main_queue.put_nowait(("An TclError occured. Default window properties were restored", "error"))
+        
         self._root.title(self._dir._APP_NAME)
         self._root.config(bg=self._COLOR_BG)
     
@@ -102,7 +108,6 @@ class Application:
         else:
             font_to_use: Font = nametofont(self._console.cget("font"))
             self._main_queue.put_nowait((f"The font '{desired_font_family}' could not be found. The default has been restored", "warning"))
-            #self.print_output(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
         
         self._input_prefix.config(font=font_to_use)
         self._input_entry.config(font=font_to_use)
