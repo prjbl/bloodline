@@ -1,8 +1,6 @@
 from json import load, dump, JSONDecodeError
 from os import remove
 
-from pynput import keyboard
-
 from directory import Directory
 
 class HotkeyManager:
@@ -23,10 +21,10 @@ class HotkeyManager:
     
     _dir: Directory = Directory()
     
-    _FILE_NAME: str = "hotkeys_config.json"
+    _FILE_NAME: str = "hotkeys.json"
     
     # count_increase, count_decrease, count_reset, timer_start, timer_pause, timer_end, timer_reset, listener_end
-    _DEFAULT_HOTKEYS: list[str] = ["+", "-", "/", str(keyboard.Key.f10), str(keyboard.Key.f11), str(keyboard.Key.f12), "*", str(keyboard.Key.f1)]
+    _DEFAULT_HOTKEYS: list[str] = ["+", "-", "/", ")", "=", "?", "*", "°"]
     
     _HK_NAMES: list[str] = ["hk_counter_increase",
                             "hk_counter_decrease",
