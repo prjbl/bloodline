@@ -47,10 +47,6 @@ class Application:
     _META: str = f"{_dir._APP_NAME} {_dir._VERSION}\nBy {_dir._APP_AUTHOR}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
     
     
-    def _setup_ui_config_vars(self) -> None:
-        self._colors: dict = self._config_mananger.get_colors()
-    
-    
     def _setup_window(self) -> None:
         try:
             self._root.geometry(f"{self._config_mananger.get_geometry()}")
