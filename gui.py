@@ -1,6 +1,6 @@
 from datetime import datetime
 from queue import Queue
-from tkinter import Tk, Frame, Label, Entry, StringVar, TclError
+from tkinter import Tk, Frame, Label, Entry, StringVar
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
@@ -48,12 +48,7 @@ class Application:
     
     
     def _setup_window(self) -> None:
-        try:
-            self._root.geometry(f"{self._config_mananger.get_geometry()}")
-        except TclError:
-            self._root.geometry(f"{self._config_mananger.get_default_geometry()}")
-            self._main_queue.put_nowait(("An TclError occured. Default window properties were restored", "error"))
-        
+        self._root.geometry("600x350")
         self._root.title(self._dir._APP_NAME)
         self._root.config(bg=self._COLOR_BG)
     
