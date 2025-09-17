@@ -465,15 +465,15 @@ class CommandManager:
         pattern: str = ""
         
         if pattern_type == "single":
-            pattern = compile("\"([^\"]+)\"$")
+            pattern = compile(r"\"([^\"]+)\"$")
         elif pattern_type == "double":
-            pattern = compile("\"([^\"]+)\", \"([^\"]+)\"$")
+            pattern = compile(r"\"([^\"]+)\", \"([^\"]+)\"$")
         elif pattern_type == "single_single":
-            pattern = compile("\"([^\"]+)\" -> \"([^\"]+)\"$")
+            pattern = compile(r"\"([^\"]+)\" -> \"([^\"]+)\"$")
         elif pattern_type == "single_double":
-            pattern = compile("\"([^\"]+)\" -> \"([^\"]+)\", \"([^\"]+)\"$")
+            pattern = compile(r"\"([^\"]+)\" -> \"([^\"]+)\", \"([^\"]+)\"$")
         elif pattern_type == "double_single":
-            pattern = compile("\"([^\"]+)\", \"([^\"]+)\" -> \"([^\"]+)\"$")
+            pattern = compile(r"\"([^\"]+)\", \"([^\"]+)\" -> \"([^\"]+)\"$")
             
         result: Match = fullmatch(pattern, self._console_input)
         
