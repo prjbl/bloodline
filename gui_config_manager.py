@@ -3,7 +3,7 @@ from json import load, dump, JSONDecodeError
 from os import remove
 from pathlib import Path
 from queue import Queue
-from re import compile, match
+from re import compile, fullmatch
 from shutil import copy2
 
 from directory import Directory
@@ -13,7 +13,7 @@ class GuiConfigManager:
     _instance: GuiConfigManager = None
     _error_queue: Queue = None
     
-    def __new__(cls) -> GuiConfigManager:
+    def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             
@@ -116,6 +116,20 @@ class GuiConfigManager:
         return self._error_queue
     
     
+    def get_geometry(self) -> str:
+        self._validate_geometry_pattern()
+        return self._ui_config.get("root").get("geometry")
+    
+    
+    def get_colors(self) -> dict:
+        self._validate_hex_pattern()
+        return self._ui_config.get("theme").get("colors")
+    
+    
+    def get_font(self) -> dict:
+        self._ui_config.get("theme").get("font")
+    
+    
     # helper methods below
     
     def _validate_file_structure(self, loaded_config: dict, parent_dict: dict) -> None:
@@ -127,84 +141,26 @@ class GuiConfigManager:
             
             if isinstance(default_value, dict): # checks if the value is a key of a value/values of a lower layer
                 self._validate_file_structure(loaded_config.get(key), parent_dict.get(key))
+            
+            if type(loaded_config.get(key)) is not type(default_value):
+                print(f"Type mismatch. Default will be restored for {key}")
+                loaded_config.update({key: default_value})
         
         self._ui_config = loaded_config
     
     
-    def _validate_data_type(self) -> None:
-        valid_hex_pattern: str = compile("^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$")
+    def _validate_hex_pattern(self) -> None:
+        valid_hex_pattern: str = compile(r"#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})")
         
         for color, hex_code in self._ui_config.get("theme").get("colors").items():
-            if not match(valid_hex_pattern, hex_code):
-                print(f"{color} ist ein hs")
+            if not fullmatch(valid_hex_pattern, hex_code):
+                print(f"Invalid hex value for {color}")
+                self._ui_config.update({color: self._DEFAULT_CONFIG.get("theme").get("colors").get(color)})
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    def get_geometry(self) -> str:
-        return "600x350" #return self._ui_config.get("window").get("geometry")
-    
-    
-    def get_default_geometry(self) -> str:
-        return f"{self._WINDOW_WIDTH}x{self._WINDOW_HEIGHT}"
-    
-    
-    
-    
-    
-    """_CONFIG_KEYS_PRI: list[str] = ["window", "theme"]
-    _CONFIG_KEYS_SEC: list[str] = ["colors", "font"]
-    
-    _DEFAULT_WINDOW_WIDTH: int = 600
-    _DEFAULT_WINDOW_HEIGHT: int = 350
-    
-    _DEFAULT_COLORS: dict = {
-        "background": "#2a2830",
-        "normal": "#ffffff",
-        "success": "#a1e096",
-        "invalid": "#35a2de",
-        "command": "#25b354",
-        "selection": "#1d903e",
-        "note": "#a448cf",
-        "warning": "#d4a61e",
-        "error": "#cf213e"
-    }
-    _DEFAULT_FONT: dict = {
-        "family": "DM Mono",
-        "size": 10
-    }"""
-    
-    
-    
-    """self._ui_config: dict = {
-            self._CONFIG_KEYS_PRI[0]: {
-                "geometry": f"{self._DEFAULT_WINDOW_WIDTH}x{self._DEFAULT_WINDOW_HEIGHT}"
-            },
-            self._CONFIG_KEYS_PRI[1]: {
-                self._CONFIG_KEYS_SEC[0]: {
-                    key: value for key, value in self._DEFAULT_COLORS.items()
-                },
-                self._CONFIG_KEYS_SEC[1]: {
-                    key: value for key, value in self._DEFAULT_FONT.items()
-                }
-            }
-        }"""
+    def _validate_geometry_pattern(self) -> None:
+        valid_geometry_pattern: str = compile(r"(\d+x\d+)|(\d+x\d+)\+(\-)?\d+\+(\-)?\d+")
+        
+        if not fullmatch(valid_geometry_pattern, self._ui_config.get("root").get("geometry")):
+            print(f"Invalid geometry")
+            self._ui_config.update({"geometry": self._DEFAULT_CONFIG.get("root").get("geometry")})
