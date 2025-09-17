@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import Enum # used for final/unchangable vars
 from json import load, dump, JSONDecodeError
 from os import remove
 from pathlib import Path
@@ -7,6 +8,31 @@ from re import compile, fullmatch
 from shutil import copy2
 
 from directory import Directory
+
+class _SectionKeys(str, Enum):
+    ROOT: str = "root"
+    THEME: str = "theme"
+    COLORS: str = "colors"
+    FONT: str = "font"
+
+class RootKeys(str, Enum):
+    GEOMETRY: str = "geometry"
+    MAXIMIZED: str = "maximized"
+
+class ColorKeys(str, Enum):
+    BACKGROUND: str = "background"
+    NORMAL: str = "normal"
+    SUCCESS: str = "success"
+    INVALID: str = "invalid"
+    COMMAND: str = "command"
+    SELECTION: str = "selection"
+    NOTE: str = "note"
+    WARNING: str = "warning"
+    ERROR: str = "error"
+
+class FontKeys(str, Enum):
+    FAMILY: str = "family"
+    SIZE: str = "size"
 
 class GuiConfigManager:
     
@@ -34,24 +60,25 @@ class GuiConfigManager:
     _BACKUP_FILE_PATH: Path = _dir.get_backup_path().joinpath(_DST_FILE)
     
     _DEFAULT_CONFIG: dict = {
-        "root": {
-            "geometry": "600x350"
+        _SectionKeys.ROOT: {
+            RootKeys.GEOMETRY: "600x350",
+            RootKeys.MAXIMIZED: False
         },
-        "theme": {
-            "colors": {
-                "background": "#2a2830",
-                "normal": "#ffffff",
-                "success": "#a1e096",
-                "invalid": "#35a2de",
-                "command": "#25b354",
-                "selection": "#1d903e",
-                "note": "#a448cf",
-                "warning": "#d4a61e",
-                "error": "#cf213e"
+        _SectionKeys.THEME: {
+            _SectionKeys.COLORS: {
+                ColorKeys.BACKGROUND: "#2a2830",
+                ColorKeys.NORMAL: "#ffffff",
+                ColorKeys.SUCCESS: "#a1e096",
+                ColorKeys.INVALID: "#35a2de",
+                ColorKeys.COMMAND: "#25b354",
+                ColorKeys.SELECTION: "#1d903e",
+                ColorKeys.NOTE: "#a448cf",
+                ColorKeys.WARNING: "#d4a61e",
+                ColorKeys.ERROR: "#cf213e"
             },
-            "font": {
-                "family": "DM Mono",
-                "size": 10
+            _SectionKeys.FONT: {
+                FontKeys.FAMILY: "DM Mono",
+                FontKeys.SIZE: 10
             }
         }
     }
@@ -85,10 +112,14 @@ class GuiConfigManager:
             self._ui_config = load(input)
     
     
+    def _save_config(self) -> None:
+        with open(self._CONFIG_FILE_PATH, "w") as output:
+            dump(self._ui_config, output, indent=4)
+    
+    
     def _create_config(self) -> None:
         if not self._CONFIG_FILE_PATH.exists():
-            with open(self._CONFIG_FILE_PATH, "w") as output:
-                dump(self._ui_config, output, indent=4)
+            self._save_config()
     
     
     def _create_backup(self) -> None:
@@ -116,18 +147,33 @@ class GuiConfigManager:
         return self._error_queue
     
     
-    def get_geometry(self) -> str:
+    def get_root_props(self) -> dict:
         self._validate_geometry_pattern()
-        return self._ui_config.get("root").get("geometry")
+        return self._ui_config.get(_SectionKeys.ROOT)
+    
+    
+    def set_root_props(self, new_geometry: str, new_max_state: bool) -> None:
+        old_geometry: str = self._ui_config.get(_SectionKeys.ROOT).get(RootKeys.GEOMETRY)
+        old_max_state: bool = self._ui_config.get(_SectionKeys.ROOT).get(RootKeys.MAXIMIZED)
+        
+        if new_geometry == old_geometry and new_max_state == old_max_state:
+            return
+        
+        if new_max_state != old_max_state:
+            self._ui_config[_SectionKeys.ROOT][RootKeys.MAXIMIZED] = new_max_state
+        if new_geometry != old_geometry and not new_max_state:
+            self._ui_config[_SectionKeys.ROOT][RootKeys.GEOMETRY] = new_geometry
+        
+        self._save_config()
     
     
     def get_colors(self) -> dict:
         self._validate_hex_pattern()
-        return self._ui_config.get("theme").get("colors")
+        return self._ui_config.get(_SectionKeys.THEME).get(_SectionKeys.COLORS)
     
     
-    def get_font(self) -> dict:
-        self._ui_config.get("theme").get("font")
+    def get_font_props(self) -> dict:
+        return self._ui_config.get(_SectionKeys.THEME).get(_SectionKeys.FONT)
     
     
     # helper methods below
@@ -135,7 +181,7 @@ class GuiConfigManager:
     def _validate_file_structure(self, loaded_config: dict, parent_dict: dict) -> None:
         for key, default_value in parent_dict.items():
             if key not in loaded_config:
-                loaded_config.update({key: default_value})
+                loaded_config[key] = default_value
                 print(f"The key {key} was restored with the default values because it could not be found in the file")
                 continue
             
@@ -144,7 +190,7 @@ class GuiConfigManager:
             
             if type(loaded_config.get(key)) is not type(default_value):
                 print(f"Type mismatch. Default will be restored for {key}")
-                loaded_config.update({key: default_value})
+                loaded_config[key] = default_value
         
         self._ui_config = loaded_config
     
@@ -152,15 +198,15 @@ class GuiConfigManager:
     def _validate_hex_pattern(self) -> None:
         valid_hex_pattern: str = compile(r"#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})")
         
-        for color, hex_code in self._ui_config.get("theme").get("colors").items():
+        for color, hex_code in self._ui_config.get(_SectionKeys.THEME).get(_SectionKeys.COLORS).items():
             if not fullmatch(valid_hex_pattern, hex_code):
                 print(f"Invalid hex value for {color}")
-                self._ui_config.update({color: self._DEFAULT_CONFIG.get("theme").get("colors").get(color)})
+                self._ui_config[_SectionKeys.THEME][_SectionKeys.COLORS][color] = self._DEFAULT_CONFIG[_SectionKeys.THEME][_SectionKeys.COLORS][color]
     
     
     def _validate_geometry_pattern(self) -> None:
         valid_geometry_pattern: str = compile(r"(\d+x\d+)|(\d+x\d+)\+(\-)?\d+\+(\-)?\d+")
         
-        if not fullmatch(valid_geometry_pattern, self._ui_config.get("root").get("geometry")):
+        if not fullmatch(valid_geometry_pattern, self._ui_config.get(_SectionKeys.ROOT).get(RootKeys.GEOMETRY)):
             print(f"Invalid geometry")
-            self._ui_config.update({"geometry": self._DEFAULT_CONFIG.get("root").get("geometry")})
+            self._ui_config[_SectionKeys.ROOT][RootKeys.GEOMETRY] = self._DEFAULT_CONFIG[_SectionKeys.ROOT][RootKeys.GEOMETRY]

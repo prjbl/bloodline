@@ -5,7 +5,7 @@ from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
 from command_manager import CommandManager
-from gui_config_manager import GuiConfigManager
+from gui_config_manager import GuiConfigManager, RootKeys, ColorKeys, FontKeys
 from directory import Directory
 
 class Application:
@@ -13,6 +13,7 @@ class Application:
     def __init__(self):
         self._main_queue: Queue = Queue()
         self._config_mananger: GuiConfigManager = GuiConfigManager()
+        self._setup_config_vars()
         
         self._root: Tk = Tk()
         self._setup_window()
@@ -33,24 +34,23 @@ class Application:
 
     _PADDING: int = 5
 
-    _COLOR_BG: str = "#2a2830"
-    _COLOR_NORMAL: str = "#ffffff"
-    _COLOR_SUCCESS: str = "#a1e096"
-    _COLOR_INVALID: str = "#35a2de"
-    _COLOR_COMMAND: str = "#25b354"
-    _COLOR_SELECTION: str = "#1d903e"
-    _COLOR_NOTE: str = "#a448cf"
-    _COLOR_WARNING: str = "#d4a61e"
-    _COLOR_ERROR: str = "#cf213e"
-
     _PREFIX: chr = ">"
     _META: str = f"{_dir._APP_NAME} {_dir._VERSION}\nBy {_dir._APP_AUTHOR}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
     
     
+    def _setup_config_vars(self) -> None:
+        self._root_props: dict = self._config_mananger.get_root_props()
+        self._colors: dict = self._config_mananger.get_colors()
+        self._font_props: dict = self._config_mananger.get_font_props()
+    
+    
     def _setup_window(self) -> None:
-        self._root.geometry("600x350")
+        if self._root_props.get(RootKeys.MAXIMIZED):
+            self._root.state("zoomed")
+        else:
+            self._root.geometry(self._root_props.get(RootKeys.GEOMETRY))
         self._root.title(self._dir._APP_NAME)
-        self._root.config(bg=self._COLOR_BG)
+        self._root.config(bg=self._colors.get(ColorKeys.BACKGROUND))
     
     
     def _setup_entry_callback(self) -> None:
@@ -60,29 +60,29 @@ class Application:
     
     def _setup_ui_elements(self) -> None:
         self._input_section: Frame = Frame(self._root,
-                                           bg=self._COLOR_BG)
+                                           bg=self._colors.get(ColorKeys.BACKGROUND))
         self._input_section.pack(fill="x", side="bottom", padx=self._PADDING, pady=self._PADDING)
         
         self._input_prefix: Label = Label(self._input_section,
-                                          fg=self._COLOR_COMMAND,
-                                          bg=self._COLOR_BG,
+                                          fg=self._colors.get(ColorKeys.COMMAND),
+                                          bg=self._colors.get(ColorKeys.BACKGROUND),
                                           text=self._PREFIX)
         self._input_prefix.pack(side="left")
         
         self._input_entry: Entry = Entry(self._input_section,
-                                         fg=self._COLOR_COMMAND,
-                                         bg=self._COLOR_BG,
-                                         insertbackground=self._COLOR_COMMAND,
+                                         fg=self._colors.get(ColorKeys.COMMAND),
+                                         bg=self._colors.get(ColorKeys.BACKGROUND),
+                                         insertbackground=self._colors.get(ColorKeys.COMMAND),
                                          relief="flat",
-                                         selectforeground=self._COLOR_NORMAL,
-                                         selectbackground=self._COLOR_SELECTION,
+                                         selectforeground=self._colors.get(ColorKeys.NORMAL),
+                                         selectbackground=self._colors.get(ColorKeys.SELECTION),
                                          textvariable=self._entry_var)
         self._input_entry.pack(fill="x", side="left", expand=True)
         self._input_entry.focus()
         
         self._console: ScrolledText = ScrolledText(self._root,
-                                                   fg=self._COLOR_NORMAL,
-                                                   bg=self._COLOR_BG,
+                                                   fg=self._colors.get(ColorKeys.NORMAL),
+                                                   bg=self._colors.get(ColorKeys.BACKGROUND),
                                                    padx=self._PADDING,
                                                    pady=self._PADDING,
                                                    relief="flat",
@@ -92,10 +92,10 @@ class Application:
     
     
     def _setup_font(self) -> None:
-        desired_font_family: str = "DM Mono"
+        desired_font_family: str = self._font_props.get(FontKeys.FAMILY)
         
         if desired_font_family in families():
-            font_to_use: Font = Font(family=desired_font_family, size=10, weight="normal")
+            font_to_use: Font = Font(family=desired_font_family, size=self._font_props.get(FontKeys.SIZE), weight="normal")
         else:
             font_to_use: Font = nametofont(self._console.cget("font"))
             self._main_queue.put_nowait((f"The font '{desired_font_family}' could not be found. The default has been restored", "warning"))
@@ -108,14 +108,14 @@ class Application:
     
     
     def _setup_console_tags(self) -> None:
-        self._console.tag_config("normal", foreground=self._COLOR_NORMAL)
+        self._console.tag_config("normal", foreground=self._colors.get(ColorKeys.NORMAL))
         self._console.tag_config("list", lmargin1=self._char_width_in_px * 4, lmargin2=self._char_width_in_px * 8)
-        self._console.tag_config("success", foreground=self._COLOR_SUCCESS)
-        self._console.tag_config("invalid", foreground=self._COLOR_INVALID)
-        self._console.tag_config("command", foreground=self._COLOR_COMMAND)
-        self._console.tag_config("note", foreground=self._COLOR_NOTE)
-        self._console.tag_config("warning", foreground=self._COLOR_WARNING)
-        self._console.tag_config("error", foreground=self._COLOR_ERROR)
+        self._console.tag_config("success", foreground=self._colors.get(ColorKeys.SUCCESS))
+        self._console.tag_config("invalid", foreground=self._colors.get(ColorKeys.INVALID))
+        self._console.tag_config("command", foreground=self._colors.get(ColorKeys.COMMAND))
+        self._console.tag_config("note", foreground=self._colors.get(ColorKeys.NOTE))
+        self._console.tag_config("warning", foreground=self._colors.get(ColorKeys.WARNING))
+        self._console.tag_config("error", foreground=self._colors.get(ColorKeys.ERROR))
     
     
     def _setup_bindings(self) -> None:
@@ -197,4 +197,5 @@ class Application:
     
     
     def quit(self) -> None:
+        self._config_mananger.set_root_props(self._root.winfo_geometry(), True if self._root.state() == "zoomed" else False)
         self._root.destroy()
