@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 from enum import Enum # used for final/unchangable vars
 from json import load, dump, JSONDecodeError
-from os import remove
 from pathlib import Path
 from queue import Queue
 from re import compile, fullmatch
@@ -45,9 +45,10 @@ class GuiConfigManager:
             
             cls._instance._set_default_config()
             cls._instance._error_queue = Queue()
-        
+            
             cls._instance._create_config()
-            cls._instance._create_backup()
+            if not cls._instance._BACKUP_FILE_PATH.exists():
+                cls._instance._ensure_backup()
             cls._instance._load_config()
         return cls._instance
     
@@ -96,12 +97,14 @@ class GuiConfigManager:
             print("Syntax error while reading source file")
             
             try:
-                remove(self._CONFIG_FILE_PATH)
+                self._CONFIG_FILE_PATH.unlink(missing_ok=True)
                 self._load_backup()
                 self._perform_load()
                 print("Successfully restored config from backup")
             except Exception as e:
                 print(f"Failed to load '{self._DST_FILE}'. Exception: {e}. Defaults will be restored")
+                self._CONFIG_FILE_PATH.unlink(missing_ok=True)
+                self._BACKUP_FILE_PATH.unlink(missing_ok=True)
                 self._set_default_config()
                 self._create_config()
                 self._create_backup()
@@ -122,25 +125,21 @@ class GuiConfigManager:
             self._save_config()
     
     
-    def _create_backup(self) -> None:
+    def _ensure_backup(self) -> None:
+        backup_exists: bool = self._BACKUP_FILE_PATH.exists()
+        
         try:
             copy2(self._CONFIG_FILE_PATH, self._BACKUP_FILE_PATH)
             
-            if self._BACKUP_FILE_PATH.exists():
-                print("config file updated")
-        except FileNotFoundError:
-            print("Source file could not be found. Try re-initializing source file")
-            
-            try:
-                self._create_config()
-                self._load_backup()
-            except Exception as e:
-                print(f"Problem while backup process. Please note your data saved last and restart the program. Exeception: {e}")
+            if backup_exists:
+                print("Config backup updated")
+        except Exception as e:
+            print(f"An unexpected error occured during the backup process. Exception: {e}")
     
     
     def _load_backup(self) -> None:
         copy2(self._BACKUP_FILE_PATH, self._CONFIG_FILE_PATH)
-        print("Loading config backup was successful")
+        print("Loading backup was successful")
     
     
     def get_error_queue(self) -> Queue:
@@ -165,6 +164,7 @@ class GuiConfigManager:
             self._ui_config[_SectionKeys.ROOT][RootKeys.GEOMETRY] = new_geometry
         
         self._save_config()
+        self._ensure_backup()
     
     
     def get_colors(self) -> dict:
@@ -174,6 +174,20 @@ class GuiConfigManager:
     
     def get_font_props(self) -> dict:
         return self._ui_config.get(_SectionKeys.THEME).get(_SectionKeys.FONT)
+    
+    
+    def set_theme(self, file_path: Path) -> None:
+        with open(file_path, "r") as input:
+            new_theme: dict = load(input)
+        
+        for color, hex_code in new_theme.get(_SectionKeys.COLORS).items():
+            self._ui_config[_SectionKeys.THEME][_SectionKeys.COLORS][color] = hex_code
+        
+        for key, value in new_theme.get(_SectionKeys.FONT).items():
+            self._ui_config[_SectionKeys.THEME][_SectionKeys.FONT][key] = value
+        
+        self._save_config()
+        self._ensure_backup()
     
     
     # helper methods below

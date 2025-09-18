@@ -1,7 +1,9 @@
-from tkinter import Event
+from pathlib import Path
 from re import compile, fullmatch, Match
+from tkinter import Event
 
 from counter import Counter
+from gui_config_manager import GuiConfigManager
 from hotkey_manager import HotkeyManager
 from key_listener import KeyListener
 from save_file import SaveFile
@@ -62,6 +64,8 @@ class CommandManager:
             f"keybinds config {self._hk_manager.get_hotkey_names()[5]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[5]),
             f"keybinds config {self._hk_manager.get_hotkey_names()[6]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[6]),
             f"keybinds config {self._hk_manager.get_hotkey_names()[7]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[7]),
+            "settings": self._settings,
+            "settings import theme": self._settings_import_theme,
             "quit": self.quit
         }
         self._CANCEL_COMMANDS: dict = {"cancel": self._cancel}
@@ -80,6 +84,7 @@ class CommandManager:
         self._key_listener.set_observer(self._print_output_func)
         self._save_file: SaveFile = SaveFile()
         self._save_file.setup_db_and_observer(self._print_output_func)
+        self._config_mananger: GuiConfigManager = GuiConfigManager()
     
     
     def _setup_input_vars(self) -> None:
@@ -329,7 +334,7 @@ class CommandManager:
         if self._ignore_count == 0:
             self._print_output_func("Please enter the <\"game title\"> from which you want all bosses selected from <...>", "normal")
         else:
-            result: list[tuple] = self._get_result_in_pattern("single")
+            result: list[str] = self._get_result_in_pattern("single")
             
             if not result:
                 self._check_ignore_inputs_end()
@@ -423,6 +428,28 @@ class CommandManager:
     def _keybinds_config(self, hotkey: str) -> None:
         self._key_listener.set_new_keybind(hotkey)
         self._key_listener.start_key_listener_for_one_input()
+    
+    
+    def _settings(self) -> None:
+        self._print_output_func("This is a list of all settings commands:", "normal")
+        self._print_output_func("settings import theme: Imports and changes the programs theme", "list")
+    
+    
+    def _settings_import_theme(self) -> None:
+        self._set_ignore_inputs(1)
+        
+        if self._ignore_count == 0:
+            self._print_output_func("Please enter the <\"file path\"> of the theme you want to import <...>", "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern("single")
+            
+            if not result:
+                self._check_ignore_inputs_end()
+                return
+            
+            self._config_mananger.set_theme(Path(result[0]))
+        
+        self._check_ignore_inputs_end()
     
     
     def quit(self) -> None:
