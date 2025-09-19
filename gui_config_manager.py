@@ -55,10 +55,10 @@ class GuiConfigManager:
     
     _dir: Directory = Directory()
     
-    _SRC_FILE: str = "ui_config.json"
-    _DST_FILE: str = f"{_SRC_FILE}.bak"
-    _CONFIG_FILE_PATH: Path = _dir.get_persistent_data_path().joinpath(_SRC_FILE)
-    _BACKUP_FILE_PATH: Path = _dir.get_backup_path().joinpath(_DST_FILE)
+    _CONFIG_FILE: str = "ui_config.json"
+    _BACKUP_FILE: str = f"{_CONFIG_FILE}.bak"
+    _CONFIG_FILE_PATH: Path = _dir.get_persistent_data_path().joinpath(_CONFIG_FILE)
+    _BACKUP_FILE_PATH: Path = _dir.get_backup_path().joinpath(_BACKUP_FILE)
     
     _DEFAULT_CONFIG: dict = {
         _SectionKeys.ROOT: {
@@ -91,18 +91,19 @@ class GuiConfigManager:
     
     def _load_config(self) -> None:
         try:
-            self._perform_load()
-            self._validate_file_structure(self._ui_config, self._DEFAULT_CONFIG)
+            self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
+            if self._validate_file_structure(self._ui_config, self._DEFAULT_CONFIG):
+                self._save_config()
         except JSONDecodeError:
             print("Syntax error while reading source file")
             
             try:
                 self._CONFIG_FILE_PATH.unlink(missing_ok=True)
                 self._load_backup()
-                self._perform_load()
+                self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
                 print("Successfully restored config from backup")
             except Exception as e:
-                print(f"Failed to load '{self._DST_FILE}'. Exception: {e}. Defaults will be restored")
+                print(f"Failed to load '{self._BACKUP_FILE}'. Exception: {e}. Defaults will be restored")
                 self._CONFIG_FILE_PATH.unlink(missing_ok=True)
                 self._BACKUP_FILE_PATH.unlink(missing_ok=True)
                 self._set_default_config()
@@ -110,9 +111,9 @@ class GuiConfigManager:
                 self._create_backup()
     
     
-    def _perform_load(self) -> None:
-        with open(self._CONFIG_FILE_PATH, "r") as input:
-            self._ui_config = load(input)
+    def _perform_load(self, src_file_path: Path) -> dict:
+        with open(src_file_path, "r") as input:
+            return load(input)
     
     
     def _save_config(self) -> None:
@@ -176,14 +177,28 @@ class GuiConfigManager:
         return self._ui_config.get(_SectionKeys.THEME).get(_SectionKeys.FONT)
     
     
-    def set_theme(self, file_path: Path) -> None:
-        with open(file_path, "r") as input:
-            new_theme: dict = load(input)
+    def set_theme(self, src_file_path: Path) -> None:
+        if not self._check_json_extension(src_file_path):
+            print("File is no .json file. Process is beeing canceled")
+            return
         
+        self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
+        self._validate_file_structure(self._ui_config, self._DEFAULT_CONFIG)
+        
+        new_theme: dict = self._perform_load(src_file_path)
+        
+        valid_colors: set = set(ColorKeys.__members__.values())
         for color, hex_code in new_theme.get(_SectionKeys.COLORS).items():
+            if not color in valid_colors:
+                print(f"{color} is an unknown key and will be skipped")
+                continue
             self._ui_config[_SectionKeys.THEME][_SectionKeys.COLORS][color] = hex_code
         
+        valid_font_props: set = set(FontKeys.__members__.values())
         for key, value in new_theme.get(_SectionKeys.FONT).items():
+            if not key in valid_font_props:
+                print(f"{key} is an unknown key and will be skipped")
+                continue
             self._ui_config[_SectionKeys.THEME][_SectionKeys.FONT][key] = value
         
         self._save_config()
@@ -192,21 +207,49 @@ class GuiConfigManager:
     
     # helper methods below
     
-    def _validate_file_structure(self, loaded_config: dict, parent_dict: dict) -> None:
+    def _validate_file_structure(self, loaded_config: dict, parent_dict: dict, is_initial_call: bool = True) -> bool:
+        data_changed: bool = False
+        
+        if self._validate_unknown_keys(loaded_config, parent_dict):
+            data_changed = True
+        
         for key, default_value in parent_dict.items():
             if key not in loaded_config:
                 loaded_config[key] = default_value
+                data_changed = True
                 print(f"The key {key} was restored with the default values because it could not be found in the file")
                 continue
             
             if isinstance(default_value, dict): # checks if the value is a key of a value/values of a lower layer
-                self._validate_file_structure(loaded_config.get(key), parent_dict.get(key))
+                if self._validate_file_structure(loaded_config.get(key), parent_dict.get(key), is_initial_call=False):
+                    data_changed = True
             
-            if type(loaded_config.get(key)) is not type(default_value):
-                print(f"Type mismatch. Default will be restored for {key}")
-                loaded_config[key] = default_value
+            if self._validate_value_type(loaded_config, key, loaded_config.get(key), default_value):
+                data_changed = True
         
-        self._ui_config = loaded_config
+        if is_initial_call:
+            self._ui_config = loaded_config
+        
+        return data_changed
+    
+    
+    def _validate_unknown_keys(self, loaded_config: dict, parent_dict: dict) -> bool:
+        data_changed: bool = False
+        
+        unknown_keys: set = set(loaded_config.keys()) - set(parent_dict.keys())
+        for key in unknown_keys:
+            del loaded_config[key]
+            data_changed = True
+            print(f"The key {key} was removed from the dict")
+        return data_changed
+    
+    
+    def _validate_value_type(self, loaded_config: dict, key: str, value: any, default_value: any) -> bool:
+        if type(value) is not type(default_value):
+            loaded_config[key] = default_value
+            print(f"Type mismatch. Default was restored for key {key}")
+            return True
+        return False
     
     
     def _validate_hex_pattern(self) -> None:
@@ -224,3 +267,9 @@ class GuiConfigManager:
         if not fullmatch(valid_geometry_pattern, self._ui_config.get(_SectionKeys.ROOT).get(RootKeys.GEOMETRY)):
             print(f"Invalid geometry")
             self._ui_config[_SectionKeys.ROOT][RootKeys.GEOMETRY] = self._DEFAULT_CONFIG[_SectionKeys.ROOT][RootKeys.GEOMETRY]
+    
+    
+    def _check_json_extension(self, src_file_path: Path) -> bool:
+        if src_file_path.suffix == ".json":
+            return True
+        return False
