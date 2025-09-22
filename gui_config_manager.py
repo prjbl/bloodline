@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import Enum # used for final/unchangable vars
+from enum import Enum # unchangeable vars
 from json import load, dump, JSONDecodeError
 from pathlib import Path
 from queue import Queue
@@ -146,6 +146,8 @@ class GuiConfigManager:
     def get_error_queue(self) -> Queue:
         return self._error_queue
     
+    
+    # non setup methods below
     
     def get_root_props(self) -> dict:
         self._validate_geometry_pattern()

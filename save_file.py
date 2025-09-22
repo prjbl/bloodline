@@ -1,4 +1,4 @@
-from os import remove
+from pathlib import Path
 from shutil import copy2
 from sqlite3 import Connection, Cursor, connect, DatabaseError
 
@@ -11,13 +11,18 @@ class SaveFile:
         self._cursor: Cursor = None
         self._observer: any = None
         
+        self._db_exists: bool = self._DB_FILE_PATH.exists()
         self._open_connection()
     
     
     _dir: Directory = Directory()
     
-    _DB_FILE_NAME: str = "save_file.db"
-    _BACKUP_FILE_NAME: str = "save_file_backup.db"
+    _DB_FILE: str = "save_file.db"
+    _BACKUP_FILE: str = f"{_DB_FILE}.bak"
+    _DB_FILE_PATH: Path = _dir.get_persistent_data_path().joinpath(_DB_FILE)
+    _BACKUP_FILE_PATH: Path = _dir.get_backup_path().joinpath(_BACKUP_FILE)
+    
+    _LATEST_VERSION: int = 1
     
     _UNKNOWN_GAME_TITLE: str = "Unknown Game"
     _UNKNOWN_BOSS_NAME: str = "Unknown Boss"
@@ -26,7 +31,16 @@ class SaveFile:
     def setup_db_and_observer(self, observer: any) -> None:
         self._observer = observer
         
-        self._create_tables() # setup had to be outsourced to after the observer has been set, as its required for the setup process
+        # setup had to be outsourced to after the observer has been set, as its required for the setup process
+        if not self._db_exists and self._BACKUP_FILE_PATH.exists():
+            self._notify_observer(f"The file '{self._DB_FILE}' could not be found. The last backup will be loaded", "error")
+            self._handle_file_restore()
+        else:
+            self._setup_db()
+        
+        if not self._BACKUP_FILE_PATH.exists():
+            self._ensure_backup()
+        self._check_for_updates()
     
     
     def _notify_observer(self, text: str, text_type: str) -> None:
@@ -34,14 +48,21 @@ class SaveFile:
     
     
     def _open_connection(self) -> None:
-        self._conn = connect(self._dir.get_persistent_data_path().joinpath(self._DB_FILE_NAME))
+        self._conn = connect(self._dir.get_persistent_data_path().joinpath(self._DB_FILE))
         self._conn.execute("PRAGMA foreign_keys = ON") # activates foreign key restriction
         self._cursor = self._conn.cursor()
     
     
-    def _create_tables(self) -> None:
+    def _setup_db(self) -> None:
         try:
-            self._cursor.executescript("""CREATE TABLE IF NOT EXISTS Game (
+            self._create_tables()
+        except DatabaseError:
+            self._notify_observer(f"The file '{self._DB_FILE}' is corrupted. This save file will be deleted and the last backup file is beeing loaded", "error")
+            self._handle_file_restore()
+    
+    
+    def _create_tables(self) -> None:
+        self._cursor.executescript("""CREATE TABLE IF NOT EXISTS Game (
                                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                                             title TEXT UNIQUE NOT NULL
                                         );
@@ -56,48 +77,103 @@ class SaveFile:
                                             UNIQUE (name, gameId),
                                             FOREIGN KEY (gameId) REFERENCES Game (id) ON DELETE CASCADE
                                         )""")
-            self._conn.commit()
-            
-            if not self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME).exists():
-                self._create_backup()
-        except DatabaseError:
-            self._notify_observer(f"The file '{self._DB_FILE_NAME}' is corrupted. This save file will be deleted and the last backup file is beeing loaded", "error")
-            
-            try:
-                self.close_connection()
-                remove(self._dir.get_persistent_data_path().joinpath(self._DB_FILE_NAME))
-                self._load_backup()
-                self._open_connection()
-                self._notify_observer("Whole backuping process was successful", "success")
-            except Exception as e:
-                self._notify_observer(f"Failed to load '{self._BACKUP_FILE_NAME}'. Exception: {e}", "error")
+        self._conn.commit()
     
     
-    def _create_backup(self) -> None:
-        backup_exists: bool = self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME).exists()
+    def _handle_file_restore(self) -> None:
+        if not self._BACKUP_FILE_PATH.exists():
+            self._notify_observer("Backup file could not be found. Both files will be re-initialized", "error")
+            self._reinitialize_db()
+            self._reinitialize_backup()
+            self._notify_observer("Both files were successfully re-initilizied", "success")
+            return
         
         try:
-            backup_conn: Connection = connect(self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME))
-            self._conn.backup(backup_conn)
-            backup_conn.close()
+            self._backup_integrity_check() # checks if backup file is corrupted as well
+            self.close_connection()
+            self._DB_FILE_PATH.unlink(missing_ok=True)
+            self._load_backup()
+            self._open_connection()
+            self._notify_observer("Whole backuping process was successful", "success")
+        except DatabaseError:
+            self._notify_observer(f"The backup file '{self._BACKUP_FILE}' is corrupted. An attempt is made to re-initialize file", "error")
+            self._reinitialize_db()
+            self._reinitialize_backup()
+            self._notify_observer("Both files were re-initialized successfully", "success")
+    
+    
+    def _reinitialize_db(self) -> None:
+        self.close_connection()
+        self._DB_FILE_PATH.unlink(missing_ok=True)
+        self._open_connection()
+        self._create_tables()
+        self._notify_observer("Save file was re-initialized successfully", "success")
+    
+    
+    def _ensure_backup(self) -> None:
+        backup_exists: bool = self._BACKUP_FILE_PATH.exists()
+        
+        try:
+            self._handle_backup_process()
             
             if backup_exists:
                 self._notify_observer("Backup was updated", "normal")
         except DatabaseError:
-            self._notify_observer(f"The backup file '{self._BACKUP_FILE_NAME}' is corrupted. An attempt is made to re-initialized file", "error")
-            
-            try:
+            self._notify_observer(f"The backup file '{self._BACKUP_FILE}' is corrupted. An attempt is made to re-initialize file", "error")
+            self._reinitialize_backup()
+    
+    
+    def _handle_backup_process(self) -> None:
+        backup_conn: Connection = None
+        
+        try:
+            backup_conn = connect(self._BACKUP_FILE_PATH)
+            self._conn.backup(backup_conn)
+        finally:
+            if backup_conn:
                 backup_conn.close()
-                remove(self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME))
-                self._create_backup()
-                self._notify_observer("Backup was re-initialized successfully", "success")
-            except Exception as e:
-                self._notify_observer(f"Failed to re-initialize '{self._BACKUP_FILE_NAME}'. Exception: {e}", "error")
+    
+    
+    def _reinitialize_backup(self) -> None:
+        try:
+            self._BACKUP_FILE_PATH.unlink(missing_ok=True)
+            self._handle_backup_process()
+            self._notify_observer("Backup was re-initialized successfully", "success")
+        except Exception as e:
+            self._notify_observer(f"Failed to re-initialize '{self._BACKUP_FILE}'. Exception: {e}", "error")
+    
+    
+    def _backup_integrity_check(self) -> None:
+        try:
+            backup_conn: Connection = connect(self._BACKUP_FILE_PATH)
+            backup_conn.cursor().execute("PRAGMA integrity_check")
+        finally:
+            backup_conn.close()
     
     
     def _load_backup(self) -> None:
-        copy2(self._dir.get_backup_path().joinpath(self._BACKUP_FILE_NAME), self._dir.get_persistent_data_path().joinpath(self._DB_FILE_NAME))
+        copy2(self._BACKUP_FILE_PATH, self._DB_FILE_PATH)
         self._notify_observer("Loading backup was successful", "success")
+    
+    
+    def _check_for_updates(self) -> None:
+        self._cursor.execute("PRAGMA user_version")
+        selection: int = self._cursor.fetchone()[0]
+        
+        if not selection:
+            self._cursor.execute(f"PRAGMA user_version = {self._LATEST_VERSION}")
+            return
+        
+        if selection == self._LATEST_VERSION:
+            return
+        
+        """try:
+            if selection == 1:
+                # update 1
+            elif selection == 2:
+                # update 2
+            etc.
+        except ..."""
     
     
     def close_connection(self) -> None:
@@ -133,7 +209,7 @@ class SaveFile:
             self._conn.commit()
             
             self._notify_observer(f"The boss '{boss_name}' of game '{self._get_specific_game(game_title) if self._get_specific_game_exists(game_title) else game_title}' has been added to the save file", "normal")
-            self._create_backup()
+            self._ensure_backup()
         except Exception as e:
             self._notify_observer(f"An unexpected error occured while adding the boss '{boss_name}' to '{self._get_specific_game(game_title) if self._get_specific_game_exists(game_title) else game_title}'. Exception: {e}", "error")
     
@@ -178,7 +254,7 @@ class SaveFile:
             return
         
         self._notify_observer(f"The boss '{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}' was identified as '{new_boss_name}' from game '{self._get_specific_game(new_game_title)}'", "success")
-        self._create_backup()
+        self._ensure_backup()
     
     
     def move_boss(self, boss_name: str, game_title: str, new_game_title: str) -> None:
@@ -199,7 +275,7 @@ class SaveFile:
         
         if self._move_boss_operation(boss_name, game_title, new_game_title):
             self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, new_game_title)}' was moved from game '{old_game_title}' to '{self._get_specific_game(new_game_title)}'", "success")
-            self._create_backup()
+            self._ensure_backup()
     
     
     def rename_game(self, game_title: str, new_game_title: str) -> None:
@@ -219,7 +295,7 @@ class SaveFile:
             self._conn.commit()
             
             self._notify_observer(f"The game '{old_game_title}' was renamed to '{new_game_title}'", "success")
-            self._create_backup()
+            self._ensure_backup()
         except Exception as e:
             self._notify_observer(f"An unexpected error occured while renaming the game '{self._get_specific_game(game_title)}' to '{new_game_title}'. Exception: {e}", "error")
     
@@ -239,7 +315,7 @@ class SaveFile:
         
         if self._rename_boss_operation(boss_name, game_title, new_boss_name):
             self._notify_observer(f"The boss '{old_boss_name}' of game '{self._get_specific_game(game_title)}' was renamed to '{new_boss_name}'", "success")
-            self._create_backup()
+            self._ensure_backup()
     
     
     def delete_game(self, game_title: str) -> None:
@@ -255,7 +331,7 @@ class SaveFile:
             self._conn.commit()
             
             self._notify_observer(f"The game '{removed_game}' has been successfully deleted", "success")
-            self._create_backup()
+            self._ensure_backup()
         except Exception as e:
             self._notify_observer(f"An unexpected error occured while removing the game '{self._get_specific_game(game_title)}' from the save file. Exception: {e}", "error")
     
@@ -276,7 +352,7 @@ class SaveFile:
             self._conn.commit()
             
             self._notify_observer(f"The boss '{removed_boss}' of game '{self._get_specific_game(game_title)}' was removed", "success")
-            self._create_backup()
+            self._ensure_backup()
         except Exception as e:
             self._notify_observer(f"An unexpected error occured while removing the boss '{self._get_specific_boss(boss_name, game_title)}' from game '{self._get_specific_game(game_title)}' the save file. Exception: {e}", "error")
     
@@ -367,7 +443,7 @@ class SaveFile:
             self._conn.commit()
             
             self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", "success")
-            self._create_backup()
+            self._ensure_backup()
             return True
         except Exception as e:
             self._notify_observer(f"An unexpected error occured while saving the stats to the boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}'. Exception: {e}", "error")
