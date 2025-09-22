@@ -31,7 +31,7 @@ class HotkeyManager:
                             "hk_counter_reset",
                             "hk_timer_start",
                             "hk_timer_pause",
-                            "hk_timer_end",
+                            "hk_timer_stop",
                             "hk_timer_reset",
                             "hk_listener_end"]
     
