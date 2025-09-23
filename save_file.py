@@ -10,9 +10,6 @@ class SaveFile:
         self._conn: Connection = None
         self._cursor: Cursor = None
         self._observer: any = None
-        
-        self._db_exists: bool = self._DB_FILE_PATH.exists()
-        self._open_connection()
     
     
     _dir: Directory = Directory()
@@ -32,10 +29,11 @@ class SaveFile:
         self._observer = observer
         
         # setup had to be outsourced to after the observer has been set, as its required for the setup process
-        if not self._db_exists and self._BACKUP_FILE_PATH.exists():
+        if not self._DB_FILE_PATH.exists() and self._BACKUP_FILE_PATH.exists():
             self._notify_observer(f"The file '{self._DB_FILE}' could not be found. The last backup will be loaded", "error")
             self._handle_file_restore()
         else:
+            self._open_connection()
             self._setup_db()
         
         if not self._BACKUP_FILE_PATH.exists():
@@ -90,7 +88,8 @@ class SaveFile:
         
         try:
             self._backup_integrity_check() # checks if backup file is corrupted as well
-            self.close_connection()
+            if self._conn:
+                self.close_connection()
             self._DB_FILE_PATH.unlink(missing_ok=True)
             self._load_backup()
             self._open_connection()
@@ -103,11 +102,23 @@ class SaveFile:
     
     
     def _reinitialize_db(self) -> None:
-        self.close_connection()
-        self._DB_FILE_PATH.unlink(missing_ok=True)
-        self._open_connection()
-        self._create_tables()
-        self._notify_observer("Save file was re-initialized successfully", "success")
+        try:
+            self.close_connection()
+            self._DB_FILE_PATH.unlink(missing_ok=True)
+            self._open_connection()
+            self._create_tables()
+            self._notify_observer("Save file was re-initialized successfully", "success")
+        except Exception as e:
+            self._notify_observer(f"Failed to re-initilize '{self._DB_FILE}'. Exception: {e}", "error")
+    
+    
+    def _reinitialize_backup(self) -> None:
+        try:
+            self._BACKUP_FILE_PATH.unlink(missing_ok=True)
+            self._handle_backup_process()
+            self._notify_observer("Backup was re-initialized successfully", "success")
+        except Exception as e:
+            self._notify_observer(f"Failed to re-initialize '{self._BACKUP_FILE}'. Exception: {e}", "error")
     
     
     def _ensure_backup(self) -> None:
@@ -134,13 +145,9 @@ class SaveFile:
                 backup_conn.close()
     
     
-    def _reinitialize_backup(self) -> None:
-        try:
-            self._BACKUP_FILE_PATH.unlink(missing_ok=True)
-            self._handle_backup_process()
-            self._notify_observer("Backup was re-initialized successfully", "success")
-        except Exception as e:
-            self._notify_observer(f"Failed to re-initialize '{self._BACKUP_FILE}'. Exception: {e}", "error")
+    def _load_backup(self) -> None:
+        copy2(self._BACKUP_FILE_PATH, self._DB_FILE_PATH)
+        self._notify_observer("Loading backup was successful", "success")
     
     
     def _backup_integrity_check(self) -> None:
@@ -149,11 +156,6 @@ class SaveFile:
             backup_conn.cursor().execute("PRAGMA integrity_check")
         finally:
             backup_conn.close()
-    
-    
-    def _load_backup(self) -> None:
-        copy2(self._BACKUP_FILE_PATH, self._DB_FILE_PATH)
-        self._notify_observer("Loading backup was successful", "success")
     
     
     def _check_for_updates(self) -> None:

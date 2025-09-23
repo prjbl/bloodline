@@ -46,9 +46,7 @@ class GuiConfigManager:
             cls._instance._set_default_config()
             cls._instance._error_queue = Queue()
             
-            cls._instance._create_config()
-            if not cls._instance._BACKUP_FILE_PATH.exists():
-                cls._instance._ensure_backup()
+            cls._instance._setup_files()
             cls._instance._load_config()
         return cls._instance
     
@@ -89,31 +87,71 @@ class GuiConfigManager:
         self._ui_config: dict = self._DEFAULT_CONFIG
     
     
+    def _setup_files(self) -> None:
+        if not self._CONFIG_FILE_PATH.exists() and self._BACKUP_FILE_PATH.exists():
+            print(f"The file '{self._CONFIG_FILE}' could not be found. The last backup will be loaded")
+            self._handle_file_restore()
+        else:
+            self._create_config()
+        
+        if not self._BACKUP_FILE_PATH.exists():
+            self._ensure_backup()
+    
+    
+    def _handle_file_restore(self) -> None:
+        if not self._BACKUP_FILE_PATH.exists():
+            print("Backup file could not be found. Both files will be re-initialized")
+            self._reinitialize_config()
+            self._reinitialize_backup()
+            return
+            
+        try:
+            self._CONFIG_FILE_PATH.unlink(missing_ok=True)
+            self._load_backup()
+            self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
+            print("Whole config backuping process was successful")
+        except JSONDecodeError:
+            print(f"Syntax error occured while reading '{self._BACKUP_FILE}'. An attempt is made to re-initialize both files")
+            self._reinitialize_config()
+            self._reinitialize_backup()
+    
+    
+    def _reinitialize_config(self) -> None:
+        try:
+            self._set_default_config()
+            self._CONFIG_FILE_PATH.unlink(missing_ok=True)
+            self._create_config()
+            print("Config file was reinitialized successfully")
+        except Exception as e:
+            print(f"Failed to re-initialize '{self._CONFIG_FILE}'. Exception: {e}")
+    
+    
+    def _reinitialize_backup(self) -> None:
+        try:
+            self._BACKUP_FILE_PATH.unlink(missing_ok=True)
+            self._ensure_backup()
+            print("Backup file was re-initialized successfully")
+        except Exception as e:
+            print(f"Failed to re-initialize '{self._BACKUP_FILE}'. Exception: {e}")
+    
+    
     def _load_config(self) -> None:
         try:
             self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
             if self._validate_file_structure(self._ui_config, self._DEFAULT_CONFIG):
                 self._save_config()
         except JSONDecodeError:
-            print("Syntax error while reading source file")
-            
-            try:
-                self._CONFIG_FILE_PATH.unlink(missing_ok=True)
-                self._load_backup()
-                self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
-                print("Successfully restored config from backup")
-            except Exception as e:
-                print(f"Failed to load '{self._BACKUP_FILE}'. Exception: {e}. Defaults will be restored")
-                self._CONFIG_FILE_PATH.unlink(missing_ok=True)
-                self._BACKUP_FILE_PATH.unlink(missing_ok=True)
-                self._set_default_config()
-                self._create_config()
-                self._create_backup()
+            print(f"Syntax error occured while reading '{self._CONFIG_FILE}'. An attempt is made to load the last backup")
+            self._handle_file_restore()
     
     
     def _perform_load(self, src_file_path: Path) -> dict:
         with open(src_file_path, "r") as input:
             return load(input)
+    
+    
+    def _load_data_and_validate(self) -> dict:
+        pass
     
     
     def _save_config(self) -> None:
@@ -184,10 +222,18 @@ class GuiConfigManager:
             print("File is no .json file. Process is beeing canceled")
             return
         
-        self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
-        self._validate_file_structure(self._ui_config, self._DEFAULT_CONFIG)
+        try:
+            self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
+            self._validate_file_structure(self._ui_config, self._DEFAULT_CONFIG)
+        except JSONDecodeError:
+            print(f"Syntax error occured while reading '{self._CONFIG_FILE}'. An attempt is made to load last backup")
+            self._handle_file_restore()
         
-        new_theme: dict = self._perform_load(src_file_path)
+        try:
+            new_theme: dict = self._perform_load(src_file_path)
+        except JSONDecodeError:
+            print(f"Syntax error occured while reading '{src_file_path}'. Process is being canceled")
+            return
         
         valid_colors: set = set(ColorKeys.__members__.values())
         for color, hex_code in new_theme.get(_SectionKeys.COLORS).items():
