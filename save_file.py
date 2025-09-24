@@ -93,6 +93,7 @@ class SaveFile:
             self._DB_FILE_PATH.unlink(missing_ok=True)
             self._load_backup()
             self._open_connection()
+            self._notify_observer("Loading backup was successful", "success")
             self._notify_observer("Whole backuping process was successful", "success")
         except DatabaseError:
             self._notify_observer(f"The backup file '{self._BACKUP_FILE}' is corrupted. An attempt is made to re-initialize file", "error")
@@ -147,7 +148,6 @@ class SaveFile:
     
     def _load_backup(self) -> None:
         copy2(self._BACKUP_FILE_PATH, self._DB_FILE_PATH)
-        self._notify_observer("Loading backup was successful", "success")
     
     
     def _backup_integrity_check(self) -> None:

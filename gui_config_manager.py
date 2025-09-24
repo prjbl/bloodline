@@ -47,7 +47,7 @@ class GuiConfigManager:
             cls._instance._error_queue = Queue()
             
             cls._instance._setup_files()
-            cls._instance._load_config()
+            cls._instance._load_config(is_initial_call=True)
         return cls._instance
     
     
@@ -109,6 +109,10 @@ class GuiConfigManager:
             self._CONFIG_FILE_PATH.unlink(missing_ok=True)
             self._load_backup()
             self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
+            print("Loading backup was successful")
+            if self._validate_file_structure(self._ui_config, self._DEFAULT_CONFIG):
+                self._save_config()
+                self._ensure_backup()
             print("Whole config backuping process was successful")
         except JSONDecodeError:
             print(f"Syntax error occured while reading '{self._BACKUP_FILE}'. An attempt is made to re-initialize both files")
@@ -135,10 +139,10 @@ class GuiConfigManager:
             print(f"Failed to re-initialize '{self._BACKUP_FILE}'. Exception: {e}")
     
     
-    def _load_config(self) -> None:
+    def _load_config(self, is_initial_call: bool = False) -> None:
         try:
             self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
-            if self._validate_file_structure(self._ui_config, self._DEFAULT_CONFIG):
+            if self._validate_file_structure(self._ui_config, self._DEFAULT_CONFIG) and is_initial_call:
                 self._save_config()
         except JSONDecodeError:
             print(f"Syntax error occured while reading '{self._CONFIG_FILE}'. An attempt is made to load the last backup")
@@ -148,10 +152,6 @@ class GuiConfigManager:
     def _perform_load(self, src_file_path: Path) -> dict:
         with open(src_file_path, "r") as input:
             return load(input)
-    
-    
-    def _load_data_and_validate(self) -> dict:
-        pass
     
     
     def _save_config(self) -> None:
@@ -178,7 +178,6 @@ class GuiConfigManager:
     
     def _load_backup(self) -> None:
         copy2(self._BACKUP_FILE_PATH, self._CONFIG_FILE_PATH)
-        print("Loading backup was successful")
     
     
     def get_error_queue(self) -> Queue:
@@ -218,22 +217,11 @@ class GuiConfigManager:
     
     
     def set_theme(self, src_file_path: Path) -> None:
-        if not self._check_json_extension(src_file_path):
-            print("File is no .json file. Process is beeing canceled")
+        new_theme: dict = self._load_external_theme(src_file_path)
+        if new_theme is None:
             return
         
-        try:
-            self._ui_config = self._perform_load(self._CONFIG_FILE_PATH)
-            self._validate_file_structure(self._ui_config, self._DEFAULT_CONFIG)
-        except JSONDecodeError:
-            print(f"Syntax error occured while reading '{self._CONFIG_FILE}'. An attempt is made to load last backup")
-            self._handle_file_restore()
-        
-        try:
-            new_theme: dict = self._perform_load(src_file_path)
-        except JSONDecodeError:
-            print(f"Syntax error occured while reading '{src_file_path}'. Process is being canceled")
-            return
+        self._load_config()
         
         valid_colors: set = set(ColorKeys.__members__.values())
         for color, hex_code in new_theme.get(_SectionKeys.COLORS).items():
@@ -251,6 +239,22 @@ class GuiConfigManager:
         
         self._save_config()
         self._ensure_backup()
+    
+    
+    def _load_external_theme(self, src_file_path: Path) -> dict:
+        if not src_file_path.exists():
+            print("Path does not exists. Process is beeing canceled")
+            return None
+        if not self._check_json_extension(src_file_path):
+            print("File is no .json file. Process is beeing canceled")
+            return None
+        
+        try:
+            new_theme: dict = self._perform_load(src_file_path)
+            return new_theme
+        except JSONDecodeError:
+            print(f"A Syntax error occured while reading '{src_file_path}'. Process is beeing canceled")
+            return None
     
     
     # helper methods below
