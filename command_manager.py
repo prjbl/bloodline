@@ -4,7 +4,7 @@ from tkinter import Event
 
 from counter import Counter
 from gui_config_manager import GuiConfigManager
-from hotkey_manager import HotkeyManager
+from hotkey_manager import HotkeyManager, HotkeyNames
 from key_listener import KeyListener
 from save_file import SaveFile
 from timer import Timer
@@ -56,14 +56,14 @@ class CommandManager:
             "stats save": self._stats_save,
             "keybinds": self._keybinds,
             "keybinds list": self._keybinds_list,
-            f"keybinds config {self._hk_manager.get_hotkey_names()[0]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[0]),
-            f"keybinds config {self._hk_manager.get_hotkey_names()[1]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[1]),
-            f"keybinds config {self._hk_manager.get_hotkey_names()[2]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[2]),
-            f"keybinds config {self._hk_manager.get_hotkey_names()[3]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[3]),
-            f"keybinds config {self._hk_manager.get_hotkey_names()[4]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[4]),
-            f"keybinds config {self._hk_manager.get_hotkey_names()[5]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[5]),
-            f"keybinds config {self._hk_manager.get_hotkey_names()[6]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[6]),
-            f"keybinds config {self._hk_manager.get_hotkey_names()[7]}": lambda: self._keybinds_config(self._hk_manager.get_hotkey_names()[7]),
+            f"keybinds config {HotkeyNames.COUNTER_INC.value}": lambda: self._keybinds_config(HotkeyNames.COUNTER_INC),
+            f"keybinds config {HotkeyNames.COUNTER_DEC.value}": lambda: self._keybinds_config(HotkeyNames.COUNTER_DEC),
+            f"keybinds config {HotkeyNames.COUNTER_RESET.value}": lambda: self._keybinds_config(HotkeyNames.COUNTER_RESET),
+            f"keybinds config {HotkeyNames.TIMER_START.value}": lambda: self._keybinds_config(HotkeyNames.TIMER_START),
+            f"keybinds config {HotkeyNames.TIMER_PAUSE.value}": lambda: self._keybinds_config(HotkeyNames.TIMER_PAUSE),
+            f"keybinds config {HotkeyNames.TIMER_STOP.value}": lambda: self._keybinds_config(HotkeyNames.TIMER_STOP),
+            f"keybinds config {HotkeyNames.TIMER_RESET.value}": lambda: self._keybinds_config(HotkeyNames.TIMER_RESET),
+            f"keybinds config {HotkeyNames.LISTENER_END.value}": lambda: self._keybinds_config(HotkeyNames.LISTENER_END),
             "settings": self._settings,
             "settings import theme": self._settings_import_theme,
             "quit": self.quit
@@ -419,10 +419,9 @@ class CommandManager:
     
     def _keybinds_list(self) -> None:
         dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
-        list_of_hotkey_names: list[str] = self._hk_manager.get_hotkey_names()
         
-        for hk_index, hotkey in enumerate(dict_of_hotkeys):
-            self._print_output_func(f"{list_of_hotkey_names[hk_index]}: {dict_of_hotkeys.get(hotkey)}", "list")
+        for hotkey, keybind in dict_of_hotkeys.items():
+            self._print_output_func(f"{hotkey}: {keybind}", "list")
     
     
     def _keybinds_config(self, hotkey: str) -> None:

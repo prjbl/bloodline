@@ -1,0 +1,167 @@
+from json import load, dump, JSONDecodeError
+from pathlib import Path
+from shutil import copy2
+
+class JsonDataHandler:
+    
+    def __init__(self, main_file_path: Path, backup_file_path: Path, default_data: dict):
+        self._main_file_path: Path = main_file_path
+        self._backup_file_path: Path = backup_file_path
+        self._default_data: dict = default_data
+        self._data: dict = default_data # is initialized with the default to prevent empty value
+    
+    
+    def setup_files(self) -> None:
+        if not self._main_file_path.exists() and self._backup_file_path.exists():
+            # put message in queue
+            self._handle_file_restore()
+        else:
+            self._create_main_file()
+        
+        if not self._backup_file_path.exists():
+            self.ensure_backup()
+    
+    
+    def load_data(self, is_initial_call: bool = False) -> None:
+        try:
+            self._data = self._perform_load(self._main_file_path)
+            if self._validate_file_structure(self._data, self._default_data) and is_initial_call:
+                self.save_data()
+        except JSONDecodeError:
+            # put message in queue
+            self._handle_file_restore()
+    
+    
+    def save_data(self) -> None:
+        with open(self._main_file_path, "w") as output:
+            dump(self._data, output, indent=4)
+    
+    
+    def ensure_backup(self) -> None:
+        backup_exists: bool = self._backup_file_path.exists()
+        
+        try:
+            copy2(self._main_file_path, self._backup_file_path)
+            
+            if backup_exists:
+                # put message in queue
+                pass
+        except Exception as e:
+            # put message in queue
+            pass
+    
+    
+    def get_data(self) -> dict:
+        return self._data
+    
+    
+    def set_data(self, new_data: dict) -> None:
+        self._data = new_data
+    
+    
+    # helper methods below
+    
+    def _handle_file_restore(self) -> None:
+        if not self._backup_file_path.exists():
+            # put message in queue
+            self._reinitialize_main_file()
+            self._reinitialize_backup_file()
+            return
+        
+        try:
+            self._main_file_path.unlink(missing_ok=True)
+            self._load_backup()
+            self._data = self._perform_load(self._main_file_path)
+            # put message in queue
+            if self._validate_file_structure(self._data, self._default_data):
+                self.save_data()
+                self.ensure_backup()
+            # put message in queue
+        except JSONDecodeError:
+            # put message in queue
+            self._reinitialize_main_file()
+            self._reinitialize_backup_file()
+    
+    
+    def _reinitialize_main_file(self) -> None:
+        try:
+            self._set_default_value()
+            self._main_file_path.unlink(missing_ok=True)
+            self._create_main_file()
+            # put message in queue
+        except Exception as e:
+            # put message in queue
+            pass
+    
+    
+    def _reinitialize_backup_file(self) -> None:
+        try:
+            self._backup_file_path.unlink(missing_ok=True)
+            self.ensure_backup()
+            # put message in queue
+        except Exception as e:
+            # put message in queue
+            pass
+    
+    
+    def _perform_load(self, src_file_path: Path) -> dict:
+        with open(src_file_path, "r") as input:
+            return load(input)
+    
+    
+    def _create_main_file(self) -> None:
+        if not self._main_file_path.exists():
+            self.save_data()
+    
+    
+    def _load_backup(self) -> None:
+        copy2(self._backup_file_path, self._main_file_path)
+    
+    
+    def _set_default_value(self) -> None:
+        self._data = self._default_data
+    
+    
+    def _validate_file_structure(self, loaded_config: dict, parent_dict: dict, is_first_iteration: bool = True) -> bool:
+        data_changed: bool = False
+        
+        if self._validate_unknown_keys(loaded_config, parent_dict):
+            data_changed = True
+        
+        for key, default_value in parent_dict.items():
+            if key not in loaded_config:
+                loaded_config[key] = default_value
+                data_changed = True
+                # put message in queue
+                continue
+            
+            if isinstance(default_value, dict): # checks if the value is a key of a value/values of a lower layer
+                if self._validate_file_structure(loaded_config.get(key), parent_dict.get(key), is_first_iteration=False):
+                    data_changed = True
+            
+            if self._validate_value_type(loaded_config, key, loaded_config.get(key), default_value):
+                data_changed = True
+        
+        if is_first_iteration:
+            self._data = loaded_config
+        
+        return data_changed
+    
+    
+    def _validate_unknown_keys(self, loaded_config: dict, parent_dict: dict) -> bool:
+        data_changed: bool = False
+        
+        unknown_keys: set = set(loaded_config.keys()) - set(parent_dict.keys())
+        for key in unknown_keys:
+            del loaded_config[key]
+            data_changed = True
+            # put message in queue
+        return data_changed
+    
+    
+    def _validate_value_type(self, loaded_config: dict, key: str, value: any, default_value: any) -> bool:
+        if type(value) is not type(default_value):
+            loaded_config[key] = default_value
+            # put message in queue
+            return True
+        return False
