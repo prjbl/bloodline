@@ -50,6 +50,7 @@ class Application:
         else:
             self._root.geometry(self._root_props.get(RootKeys.GEOMETRY))
         self._root.title(self._dir._APP_NAME)
+        self._root.iconbitmap("bloodline_logo.ico")
         self._root.config(bg=self._colors.get(ColorKeys.BACKGROUND))
     
     
