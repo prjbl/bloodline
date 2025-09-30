@@ -3,7 +3,7 @@ from threading import Thread
 from pynput import keyboard as kb
 
 from counter import Counter
-from hotkey_manager import HotkeyManager
+from hotkey_manager import HotkeyManager, HotkeyNames
 from timer import Timer
 
 class KeyListener:
@@ -25,30 +25,30 @@ class KeyListener:
         self._observer(text, text_type)
     
     
-    def _equals_hotkey(self, key: any, hk_index: int) -> bool:
-        list_of_hotkeys: list[str] = list(self._hk_manager.get_current_hotkeys().values())
+    def _equals_hotkey(self, key: any, hk_name: str) -> bool:
+        dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         cleaned_key_input: str = str(key).replace("'", "")
         
-        return cleaned_key_input == list_of_hotkeys[hk_index]
+        return cleaned_key_input == dict_of_hotkeys.get(hk_name)
     
     
     def _on_press(self, key: any) -> None:
         try:
-            if self._equals_hotkey(key, 0):
+            if self._equals_hotkey(key, HotkeyNames.COUNTER_INC):
                 self._counter.increase()
-            elif self._equals_hotkey(key, 1):
+            elif self._equals_hotkey(key, HotkeyNames.COUNTER_DEC):
                 self._counter.decrease()
-            elif self._equals_hotkey(key, 2):
+            elif self._equals_hotkey(key, HotkeyNames.COUNTER_RESET):
                 self._counter.reset()
-            elif self._equals_hotkey(key, 3):
+            elif self._equals_hotkey(key, HotkeyNames.TIMER_START):
                 self._timer.start()
-            elif self._equals_hotkey(key, 4):
+            elif self._equals_hotkey(key, HotkeyNames.TIMER_PAUSE):
                 self._timer.toggle_pause()
-            elif self._equals_hotkey(key, 5):
+            elif self._equals_hotkey(key, HotkeyNames.TIMER_STOP):
                 self._timer.stop()
-            elif self._equals_hotkey(key, 6):
+            elif self._equals_hotkey(key, HotkeyNames.TIMER_RESET):
                 self._timer.reset()
-            elif self._equals_hotkey(key, 7):
+            elif self._equals_hotkey(key, HotkeyNames.LISTENER_END):
                 return False
         except AttributeError:
             cleaned_key_input: str = str(key).replace("'", "")
