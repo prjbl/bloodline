@@ -39,6 +39,10 @@ class Counter:
         return self._counter
     
     
+    def convert_none_to_zero(self) -> None:
+        self._counter = 0
+    
+    
     def get_is_none(self) -> bool:
         if self._counter is None:
             return True

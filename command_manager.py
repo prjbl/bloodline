@@ -1,5 +1,5 @@
 from pathlib import Path
-from re import compile, fullmatch, Match
+from re import compile, fullmatch, Match, IGNORECASE
 from tkinter import Event
 
 from counter import Counter
@@ -141,7 +141,7 @@ class CommandManager:
     
     
     def _check_ignore_inputs_end(self) -> None:
-        if self._ignore_count == self._inputs_to_ignore:
+        if self._ignore_count >= self._inputs_to_ignore:
             self._reset_ignore_vars()
             return
         
@@ -229,9 +229,8 @@ class CommandManager:
     
     
     def _tracking_continue(self) -> None:
-        self._set_ignore_inputs(1)
-        
         if self._ignore_count == 0:
+            self._set_ignore_inputs(1)
             self._print_output_func("Please enter the <\"boss name\", \"game title\"> of the boss you want to continue tracking <...>", "normal")
         else:
             result: list[str] = self._get_result_in_pattern("double")
@@ -307,9 +306,8 @@ class CommandManager:
     
     # has to be written manually because its a special case and needs a seconds print out
     def _setup_delete_game(self) -> None:
-        self._set_ignore_inputs(1)
-        
         if self._ignore_count == 0:
+            self._set_ignore_inputs(1)
             self._print_output_func("All bosses linked to the game to be deleted will also be removed", "warning")
             self._print_output_func("Please enter the <\"game title\"> of the game you want to delete <...>", "normal")
         else:
@@ -329,9 +327,8 @@ class CommandManager:
     
     
     def _stats_list_bosses_by(self, sort_filter: str, order_filter: str) -> None:
-        self._set_ignore_inputs(1)
-        
         if self._ignore_count == 0:
+            self._set_ignore_inputs(1)
             self._print_output_func("Please enter the <\"game title\"> from which you want all bosses selected from <...>", "normal")
         else:
             result: list[str] = self._get_result_in_pattern("single")
@@ -393,15 +390,17 @@ class CommandManager:
             self._print_output_func("There are no values to be saved. Make sure to start a tracking session and try saving again afterwards", "invalid")
             return
         
-        self._set_ignore_inputs(1)
+        execution_trigger: int = self._process_count_value(self._counter.get_is_none()) # also calls _set_ignore_inputs()
+        if execution_trigger is None:
+            return
         
-        if self._ignore_count == 0:
+        if self._ignore_count == execution_trigger:
             self._print_output_func("Please enter the <\"boss name\", \"game title\"> of the boss you want the stats safed to <...>", "normal")
-        else:
+        elif self._ignore_count > 0:
             result: list[str] = self._get_result_in_pattern("double")
             
             if not result:
-                self._check_ignore_inputs_end()
+                self._reset_ignore_vars()
                 return
             
             if self._save_file.update_boss(result[0], result[1], self._counter.get_count(), self._timer.get_end_time()):
@@ -435,9 +434,8 @@ class CommandManager:
     
     
     def _settings_import_theme(self) -> None:
-        self._set_ignore_inputs(1)
-        
         if self._ignore_count == 0:
+            self._set_ignore_inputs(1)
             self._print_output_func("Please enter the <\"file path\"> of the theme you want to import <...>", "normal")
         else:
             result: list[str] = self._get_result_in_pattern("single")
@@ -466,6 +464,7 @@ class CommandManager:
     def _reset_ignore_vars(self) -> None:
         self._ignore_input = False
         self._ignore_count = 0
+        self._boss_info = []
         
         for command in self._CANCEL_COMMANDS:
             self._commands.pop(command)
@@ -474,9 +473,8 @@ class CommandManager:
     
     
     def _run_setup_command(self, text: str, pattern_type: str, target_method: any):
-        self._set_ignore_inputs(1)
-        
         if self._ignore_count == 0:
+            self._set_ignore_inputs(1)
             self._print_output_func(text, "normal")
         else:
             result: list[str] = self._get_result_in_pattern(pattern_type)
@@ -500,6 +498,8 @@ class CommandManager:
             pattern = compile(r"\"([^\"]+)\" -> \"([^\"]+)\", \"([^\"]+)\"$")
         elif pattern_type == "double_single":
             pattern = compile(r"\"([^\"]+)\", \"([^\"]+)\" -> \"([^\"]+)\"$")
+        elif pattern_type == "yes_no":
+            pattern = compile(r"((?:y(?:es)?)|(?:n(?:o)?))", IGNORECASE) # ?: ignores group so only one group is returning
             
         result: Match = fullmatch(pattern, self._console_input)
         
@@ -548,3 +548,30 @@ class CommandManager:
             hours: int = int(time / 3600)
             
             return f"{hours:02}:{minutes:02}:{seconds:02}"
+    
+    
+    def _process_count_value(self, count_is_none: bool) -> int | None:
+        if not count_is_none:
+            if self._ignore_count == 0:
+                self._set_ignore_inputs(1)
+            return 0
+        
+        if self._ignore_count == 0:
+            self._set_ignore_inputs(2)
+            self._print_output_func("Please enter <y[es] | n[o]> if you tracked deaths <...>", "normal")
+        elif self._ignore_count == 1:
+            result: list[str] = self._get_result_in_pattern("yes_no")
+            
+            if not result:
+                self._reset_ignore_vars()
+                return None
+            
+            if self._check_yes_confirmation(result[0]):
+                self._counter.convert_none_to_zero()
+        return 1
+    
+    
+    def _check_yes_confirmation(self, decision: str) -> bool:
+        if decision.casefold() == "y" or decision.casefold() == "yes":
+            return True
+        return False
