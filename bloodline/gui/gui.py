@@ -4,9 +4,9 @@ from tkinter import Tk, Frame, Label, Entry, StringVar
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
-from command_manager import CommandManager
-from gui_config_manager import GuiConfigManager, RootKeys, ColorKeys, FontKeys
-from directory import Directory
+from core.command_manager import CommandManager
+from gui.gui_config_manager import GuiConfigManager, RootKeys, ColorKeys, FontKeys
+from utils.directory import Directory
 
 class Application:
     
@@ -50,7 +50,7 @@ class Application:
         else:
             self._root.geometry(self._root_props.get(RootKeys.GEOMETRY))
         self._root.title(self._dir._APP_NAME)
-        self._root.iconbitmap("bloodline_logo.ico")
+        self._root.iconbitmap("bloodline/assets/bloodline_logo.ico")
         self._root.config(bg=self._colors.get(ColorKeys.BACKGROUND))
     
     

@@ -6,8 +6,8 @@ from pathlib import Path
 from queue import Queue
 from re import compile, fullmatch
 
-from directory import Directory
-from json_data_handler import JsonDataHandler
+from utils.directory import Directory
+from utils.json_data_handler import JsonDataHandler
 
 class _SectionKeys(str, Enum):
     ROOT: str = "root"

@@ -3,12 +3,12 @@ from pathlib import Path
 from re import compile, fullmatch, Match, IGNORECASE
 from tkinter import Event
 
-from counter import Counter
-from gui_config_manager import GuiConfigManager
-from hotkey_manager import HotkeyManager, HotkeyNames
-from key_listener import KeyListener
-from save_file import SaveFile
-from timer import Timer
+from core.counter import Counter
+from gui.gui_config_manager import GuiConfigManager
+from core.hotkey_manager import HotkeyManager, HotkeyNames
+from core.key_listener import KeyListener
+from core.save_file import SaveFile
+from core.timer import Timer
 
 class CommandManager:
     
@@ -255,7 +255,8 @@ class CommandManager:
                                 +"setup identify boss: Identifies a unknown boss an updates its meta info\n"
                                 +"setup move boss: Moves a boss to another game\n"
                                 +"setup rename boss|game: Renames a boss|game\n"
-                                +"setup delete boss|game: Deletes a boss|game", "list")
+                                +"setup delete boss|game: Deletes a boss|game\n"
+                                +"setup import preset: Imports and adds game data", "list")
     
     
     def _setup_add(self) -> None:
@@ -335,10 +336,9 @@ class CommandManager:
             with open(Path(result[0]), "r") as input:
                 imported_preset: dict = load(input)
             
-            #for game, bosses in imported_preset.items():
-            #    self._print_output_func(f"Game: {game}", "normal")
-            #    for boss in bosses:
-            #        self._print_output_func(f"Boss: {boss}", "normal")
+            for game, bosses in imported_preset.items():
+                for boss in bosses:
+                    self._save_file.add_boss(boss, game)
         
         self._check_ignore_inputs_end()
     
@@ -583,7 +583,7 @@ class CommandManager:
         
         if self._ignore_count == 0:
             self._set_ignore_inputs(2)
-            self._print_output_func("Please enter <y[es] | n[o]> if you tracked deaths <...>", "normal")
+            self._print_output_func("Please enter <y[es]|n[o]> if you tracked deaths <...>", "normal")
         elif self._ignore_count == 1:
             result: list[str] = self._get_result_in_pattern("yes_no")
             

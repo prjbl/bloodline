@@ -1,8 +1,8 @@
 from enum import Enum
 from pathlib import Path
 
-from directory import Directory
-from json_data_handler import JsonDataHandler
+from utils.directory import Directory
+from utils.json_data_handler import JsonDataHandler
 
 class HotkeyNames(str, Enum):
     COUNTER_INC: str = "hk_counter_increase"
