@@ -1,3 +1,4 @@
+from json import load # testing only
 from pathlib import Path
 from re import compile, fullmatch, Match, IGNORECASE
 from tkinter import Event
@@ -24,7 +25,7 @@ class CommandManager:
         # category action -scope-filter arg1
         # category action -scope-filter arg1 -sort-filter arg2
         # category action -scope-filter arg1 -sort-filter arg2 -order-filter arg3
-        self._commands: dict = { # const that is only changed when cancel commands are added/deleted from itself
+        self._commands: dict = { # const that is only changed when cancel commands are added/deleted to/from itself
             "help": self._help,
             "tracking": self._tracking,
             "tracking new": self._tracking_new,
@@ -37,6 +38,7 @@ class CommandManager:
             "setup rename game": self._setup_rename_game,
             "setup delete boss": self._setup_delete_boss,
             "setup delete game": self._setup_delete_game,
+            "setup import preset": self._setup_import_preset,
             "stats": self._stats,
             "stats list bosses": lambda: self._stats_list_bosses_by("id", "asc"),
             "stats list bosses -s deaths -o desc": lambda: self._stats_list_bosses_by("deaths", "desc"),
@@ -319,6 +321,28 @@ class CommandManager:
         self._check_ignore_inputs_end()
     
     
+    def _setup_import_preset(self) -> None:
+        if self._ignore_count == 0:
+            self._set_ignore_inputs(1)
+            self._print_output_func("Please enter the <\"file path\"> of the preset you want to import <...>", "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern("single")
+            
+            if not result:
+                self._reset_ignore_vars()
+                return
+            
+            with open(Path(result[0]), "r") as input:
+                imported_preset: dict = load(input)
+            
+            #for game, bosses in imported_preset.items():
+            #    self._print_output_func(f"Game: {game}", "normal")
+            #    for boss in bosses:
+            #        self._print_output_func(f"Boss: {boss}", "normal")
+        
+        self._check_ignore_inputs_end()
+    
+    
     def _stats(self) -> None:
         self._print_output_func("This is a list of all stat commands:", "normal")
         self._print_output_func("stats list bosses [-a] [-s deaths|time -o desc|asc]: Lists bosses by the selected filters. By default all bosses of one selected game will be listed in the order they were added\n"
@@ -334,14 +358,14 @@ class CommandManager:
             result: list[str] = self._get_result_in_pattern("single")
             
             if not result:
-                self._check_ignore_inputs_end()
+                self._reset_ignore_vars()
                 return
             
             game_title: str = result[0]
             list_of_bosses: list[tuple] = self._save_file.get_bosses_from_game_by(game_title, sort_filter, order_filter)
             
             if not list_of_bosses:
-                self._check_ignore_inputs_end()
+                self._reset_ignore_vars()
                 return
             
             max_name_len: int = max(len(boss[0]) for boss in list_of_bosses)
@@ -361,7 +385,8 @@ class CommandManager:
         if not list_of_bosses:
             return
         
-        max_meta_len: int = max(len(boss[0]) for boss in list_of_bosses) + max(len(title[1]) for title in list_of_bosses)
+        seperator_len: int = len(" (") + len(")")
+        max_meta_len: int = max(len(boss[0]) for boss in list_of_bosses) + max(len(title[1]) for title in list_of_bosses) + seperator_len
         max_deaths_len: int = max(len(self._format_deaths(deaths[2])) for deaths in list_of_bosses)
         
         for item in list_of_bosses:
@@ -390,13 +415,13 @@ class CommandManager:
             self._print_output_func("There are no values to be saved. Make sure to start a tracking session and try saving again afterwards", "invalid")
             return
         
-        execution_trigger: int = self._process_count_value(self._counter.get_is_none()) # also calls _set_ignore_inputs()
+        execution_trigger: int = self._process_count_value() # also calls _set_ignore_inputs()
         if execution_trigger is None:
             return
         
         if self._ignore_count == execution_trigger:
             self._print_output_func("Please enter the <\"boss name\", \"game title\"> of the boss you want the stats safed to <...>", "normal")
-        elif self._ignore_count > 0:
+        elif self._ignore_count > execution_trigger: # should only trigger after the first if statement is called
             result: list[str] = self._get_result_in_pattern("double")
             
             if not result:
@@ -441,7 +466,7 @@ class CommandManager:
             result: list[str] = self._get_result_in_pattern("single")
             
             if not result:
-                self._check_ignore_inputs_end()
+                self._reset_ignore_vars()
                 return
             
             self._config_mananger.set_theme(Path(result[0]))
@@ -550,8 +575,8 @@ class CommandManager:
             return f"{hours:02}:{minutes:02}:{seconds:02}"
     
     
-    def _process_count_value(self, count_is_none: bool) -> int | None:
-        if not count_is_none:
+    def _process_count_value(self) -> int | None:
+        if not self._counter.get_is_none() or self._counter.get_question_answered():
             if self._ignore_count == 0:
                 self._set_ignore_inputs(1)
             return 0
@@ -568,6 +593,7 @@ class CommandManager:
             
             if self._check_yes_confirmation(result[0]):
                 self._counter.convert_none_to_zero()
+            self._counter.set_question_answered()
         return 1
     
     

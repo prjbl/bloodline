@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum # unchangeable vars
-from json import JSONDecodeError
+from json import load, JSONDecodeError
 from pathlib import Path
 from queue import Queue
 from re import compile, fullmatch
@@ -161,7 +161,8 @@ class GuiConfigManager:
             return None
         
         try:
-            new_theme: dict = self._perform_load(src_file_path)
+            with open(src_file_path, "r") as input:
+                new_theme: dict = load(input)
             return new_theme
         except JSONDecodeError:
             print(f"A Syntax error occured while reading '{src_file_path}'. Process is beeing canceled")
