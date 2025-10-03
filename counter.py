@@ -2,6 +2,7 @@ class Counter:
     
     def __init__(self):
         self._counter: int = None
+        self._question_answered: bool = False
         self._observer: any = None
     
     
@@ -30,6 +31,7 @@ class Counter:
     def reset(self, hard_reset: bool = False) -> None:
         if hard_reset:
             self._counter = None
+            self._question_answered = False
         elif self._counter > 0:
             self._counter = 0
             self._notify_observer("Counter has been reset", "normal")
@@ -41,6 +43,14 @@ class Counter:
     
     def convert_none_to_zero(self) -> None:
         self._counter = 0
+    
+    
+    def set_question_answered(self) -> None:
+        self._question_answered = True
+    
+    
+    def get_question_answered(self) -> bool:
+        return self._question_answered
     
     
     def get_is_none(self) -> bool:
