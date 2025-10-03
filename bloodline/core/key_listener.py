@@ -2,9 +2,9 @@ from threading import Thread
 
 from pynput import keyboard as kb
 
-from counter import Counter
-from hotkey_manager import HotkeyManager, HotkeyNames
-from timer import Timer
+from core.counter import Counter
+from core.hotkey_manager import HotkeyManager, HotkeyNames
+from core.timer import Timer
 
 class KeyListener:
     
