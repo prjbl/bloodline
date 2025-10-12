@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from enum import Enum # unchangeable vars
-from json import load, JSONDecodeError
+from json import JSONDecodeError
 from pathlib import Path
 from queue import Queue
 from re import compile, fullmatch
 
 from utils.directory import Directory
-from utils.json_data_handler import JsonDataHandler
+from utils.json_file_operations import JsonFileOperations
+from utils.persistent_json_handler import PersistentJsonHandler
 
 class _SectionKeys(str, Enum):
     ROOT: str = "root"
@@ -38,14 +39,14 @@ class GuiConfigManager:
     
     _instance: GuiConfigManager = None
     _error_queue: Queue = None
-    _json_handler: JsonDataHandler = None
+    _json_handler: PersistentJsonHandler = None
     
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             
             cls._instance._error_queue = Queue()
-            cls._instance._json_handler = JsonDataHandler(
+            cls._instance._json_handler = PersistentJsonHandler(
                 cls._instance._CONFIG_FILE_PATH,
                 cls._instance._BACKUP_FILE_PATH,
                 cls._instance._DEFAULT_CONFIG
@@ -156,13 +157,12 @@ class GuiConfigManager:
         if not src_file_path.exists():
             print("Path does not exists. Process is beeing canceled")
             return None
-        if not self._check_json_extension(src_file_path):
+        if not JsonFileOperations.check_json_extension(src_file_path):
             print("File is no .json file. Process is beeing canceled")
             return None
         
         try:
-            with open(src_file_path, "r") as input:
-                new_theme: dict = load(input)
+            new_theme: dict = JsonFileOperations.perform_load(src_file_path)
             return new_theme
         except JSONDecodeError:
             print(f"A Syntax error occured while reading '{src_file_path}'. Process is beeing canceled")
@@ -198,9 +198,3 @@ class GuiConfigManager:
         
         if data_changed:
             self._json_handler.set_data(ui_config)
-    
-    
-    def _check_json_extension(self, src_file_path: Path) -> bool:
-        if src_file_path.suffix == ".json":
-            return True
-        return False

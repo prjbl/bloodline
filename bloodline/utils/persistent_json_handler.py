@@ -1,8 +1,10 @@
-from json import load, dump, JSONDecodeError
+from json import JSONDecodeError
 from pathlib import Path
 from shutil import copy2
 
-class JsonDataHandler:
+from utils.json_file_operations import JsonFileOperations
+
+class PersistentJsonHandler(JsonFileOperations):
     
     def __init__(self, main_file_path: Path, backup_file_path: Path, default_data: dict):
         self._main_file_path: Path = main_file_path
@@ -24,7 +26,7 @@ class JsonDataHandler:
     
     def load_data(self, is_initial_call: bool = False) -> None:
         try:
-            self._data = self._perform_load(self._main_file_path)
+            self._data = super().perform_load(self._main_file_path)
             if self._validate_file_structure(self._data, self._default_data) and is_initial_call:
                 self.save_data()
         except JSONDecodeError:
@@ -33,8 +35,7 @@ class JsonDataHandler:
     
     
     def save_data(self) -> None:
-        with open(self._main_file_path, "w") as output:
-            dump(self._data, output, indent=4)
+        return super().perform_save(self._main_file_path, self._data)
     
     
     def ensure_backup(self) -> None:
@@ -71,7 +72,7 @@ class JsonDataHandler:
         try:
             self._main_file_path.unlink(missing_ok=True)
             self._load_backup()
-            self._data = self._perform_load(self._main_file_path)
+            self._data = super().perform_load(self._main_file_path)
             # put message in queue
             if self._validate_file_structure(self._data, self._default_data):
                 self.save_data()
@@ -104,11 +105,6 @@ class JsonDataHandler:
             pass
     
     
-    def _perform_load(self, src_file_path: Path) -> dict:
-        with open(src_file_path, "r") as input:
-            return load(input)
-    
-    
     def _create_main_file(self) -> None:
         if not self._main_file_path.exists():
             self.save_data()
@@ -135,7 +131,7 @@ class JsonDataHandler:
                 # put message in queue
                 continue
             
-            if isinstance(default_value, dict): # checks if the value is a key of a value/values of a lower layer
+            if isinstance(default_value, dict): # checks if the value is a key of value/values of a lower layer
                 if self._validate_file_structure(loaded_config.get(key), parent_dict.get(key), is_first_iteration=False):
                     data_changed = True
             

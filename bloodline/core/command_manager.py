@@ -4,8 +4,10 @@ from re import compile, fullmatch, Match, IGNORECASE
 from tkinter import Event
 
 from core.counter import Counter
+from utils.external_json_handler import ExternalJsonHandler
 from gui.gui_config_manager import GuiConfigManager
 from core.hotkey_manager import HotkeyManager, HotkeyNames
+from utils.json_file_operations import JsonFileOperations
 from core.key_listener import KeyListener
 from core.save_file import SaveFile
 from core.timer import Timer
@@ -86,6 +88,7 @@ class CommandManager:
         self._key_listener.set_observer(self._print_output_func)
         self._save_file: SaveFile = SaveFile()
         self._save_file.setup_db_and_observer(self._print_output_func)
+        self._json_handler: ExternalJsonHandler = ExternalJsonHandler()
         self._config_mananger: GuiConfigManager = GuiConfigManager()
     
     
@@ -333,12 +336,17 @@ class CommandManager:
                 self._reset_ignore_vars()
                 return
             
-            with open(Path(result[0]), "r") as input:
-                imported_preset: dict = load(input)
+            src_file_path: Path = Path(result[0])
+            if not src_file_path.exists():
+                self._print_output_func(f"The path '{src_file_path}' does not exists. Process is beeing canceled", "invalid")
+                self._reset_ignore_vars()
+                return
+            if not JsonFileOperations.check_json_extension(src_file_path):
+                self._print_output_func(f"The file '{src_file_path}' is no .json file. Process is beeing canceled", "invalid")
+                self._reset_ignore_vars()
+                return
             
-            for game, bosses in imported_preset.items():
-                for boss in bosses:
-                    self._save_file.add_boss(boss, game)
+            self._save_file.add_preset(self._json_handler.load_data(src_file_path))
         
         self._check_ignore_inputs_end()
     
