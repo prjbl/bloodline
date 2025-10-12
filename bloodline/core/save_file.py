@@ -216,6 +216,14 @@ class SaveFile:
             self._notify_observer(f"An unexpected error occured while adding the boss '{boss_name}' to '{self._get_specific_game(game_title) if self._get_specific_game_exists(game_title) else game_title}'. Exception: {e}", "error")
     
     
+    def add_preset(self, loaded_preset: dict) -> None:
+        if not loaded_preset:
+            self._notify_observer("The imported preset does not contain any values to be added to the save file", "invalid")
+            return
+        
+        # ...
+    
+    
     def add_unknown(self) -> None:
         self._cursor.execute(f"""SELECT b.name FROM Boss b
                                     JOIN Game g ON b.gameId = g.id

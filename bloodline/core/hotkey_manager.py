@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path
 
 from utils.directory import Directory
-from utils.json_data_handler import JsonDataHandler
+from utils.persistent_json_handler import PersistentJsonHandler
 
 class HotkeyNames(str, Enum):
     COUNTER_INC: str = "hk_counter_increase"
@@ -17,7 +17,7 @@ class HotkeyNames(str, Enum):
 class HotkeyManager:
     
     def __init__(self):
-        self._json_handler: JsonDataHandler = JsonDataHandler(
+        self._json_handler: PersistentJsonHandler = PersistentJsonHandler(
             self._HK_FILE_PATH,
             self._BACKUP_FILE_PATH,
             self._DEFAULT_HOTKEYS
