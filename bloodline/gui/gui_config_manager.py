@@ -154,14 +154,7 @@ class GuiConfigManager:
     
     
     def _load_external_theme(self, src_file_path: Path) -> dict:
-        if not src_file_path.exists():
-            print("Path does not exists. Process is beeing canceled")
-            return None
-        if not JsonFileOperations.check_json_extension(src_file_path):
-            print("File is no .json file. Process is beeing canceled")
-            return None
-        
-        try:
+        try: # ext file check is done in the command manager
             new_theme: dict = JsonFileOperations.perform_load(src_file_path)
             return new_theme
         except JSONDecodeError:

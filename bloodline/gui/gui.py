@@ -35,7 +35,7 @@ class Application:
     _PADDING: int = 5
 
     _PREFIX: chr = ">"
-    _META: str = f"{_dir._APP_NAME} {_dir._VERSION}\nBy {_dir._APP_AUTHOR}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
+    _META: str = f"{_dir._APP_NAME} v{_dir._VERSION}\nBy {_dir._APP_AUTHOR}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
     
     
     def _setup_config_vars(self) -> None:

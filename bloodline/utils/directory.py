@@ -13,7 +13,7 @@ class Directory:
     
     _APP_NAME: str = "Bloodline"
     _APP_AUTHOR: str = "Project Bloodline"
-    _VERSION: str = "v1.0"
+    _VERSION: str = "1.0"
     
     _BACKUPS: str = "backups"
     

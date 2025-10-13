@@ -1,4 +1,3 @@
-from json import load # testing only
 from pathlib import Path
 from re import compile, fullmatch, Match, IGNORECASE
 from tkinter import Event
@@ -337,12 +336,7 @@ class CommandManager:
                 return
             
             src_file_path: Path = Path(result[0])
-            if not src_file_path.exists():
-                self._print_output_func(f"The path '{src_file_path}' does not exists. Process is beeing canceled", "invalid")
-                self._reset_ignore_vars()
-                return
-            if not JsonFileOperations.check_json_extension(src_file_path):
-                self._print_output_func(f"The file '{src_file_path}' is no .json file. Process is beeing canceled", "invalid")
+            if not self._check_external_file_props(src_file_path):
                 self._reset_ignore_vars()
                 return
             
@@ -477,7 +471,12 @@ class CommandManager:
                 self._reset_ignore_vars()
                 return
             
-            self._config_mananger.set_theme(Path(result[0]))
+            src_file_path: Path = Path(result[0])
+            if not self._check_external_file_props(src_file_path):
+                self._reset_ignore_vars()
+                return
+            
+            self._config_mananger.set_theme(src_file_path)
         
         self._check_ignore_inputs_end()
     
@@ -541,6 +540,16 @@ class CommandManager:
         else:
             self._print_output_func("The input does not match the pattern. Please try again", "denied")
             return []
+    
+    
+    def _check_external_file_props(self, src_file_path: Path) -> bool:
+        if not src_file_path.exists():
+            self._print_output_func(f"The path '{src_file_path}' does not exists. Process is beeing canceled", "invalid")
+            return False
+        elif not JsonFileOperations.check_json_extension(src_file_path):
+            self._print_output_func(f"The file '{src_file_path}' is not a .json file. Process is beeing canceled", "invalid")
+            return False
+        return True
     
     
     def _get_boss_meta(self, boss_name: str, game_title: str, max_meta_len: int) -> str:
