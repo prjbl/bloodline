@@ -198,10 +198,10 @@ class SaveFile:
             self._notify_observer(f"An unexpected error occured while adding the game '{game_title}'. Exception: {e}", "error")
     
     
-    def add_boss(self, boss_name: str, game_title: str) -> None:
+    def add_boss(self, boss_name: str, game_title: str, ensure_backup: bool = True) -> bool:
         if self.get_specific_boss_exists(boss_name, game_title):
             self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' already exists in the save file", "invalid")
-            return
+            return False
         
         self._add_game(game_title)
         
@@ -211,9 +211,13 @@ class SaveFile:
             self._conn.commit()
             
             self._notify_observer(f"The boss '{boss_name}' of game '{self._get_specific_game(game_title) if self._get_specific_game_exists(game_title) else game_title}' has been added to the save file", "normal")
-            self._ensure_backup()
+            
+            if ensure_backup:
+                self._ensure_backup()
+            return True
         except Exception as e:
             self._notify_observer(f"An unexpected error occured while adding the boss '{boss_name}' to '{self._get_specific_game(game_title) if self._get_specific_game_exists(game_title) else game_title}'. Exception: {e}", "error")
+            return False
     
     
     def add_preset(self, loaded_preset: dict) -> None:
@@ -221,7 +225,14 @@ class SaveFile:
             self._notify_observer("The imported preset does not contain any values to be added to the save file", "invalid")
             return
         
-        # ...
+        changes_made: bool = False
+        for game_title, list_of_bosses in loaded_preset.items():
+            for boss_name in list_of_bosses:
+                boss_added: bool = self.add_boss(boss_name, game_title, ensure_backup=False)
+                changes_made = changes_made or boss_added # if changed_made is True onces, it keeps the True state even if boss_added is False
+        
+        if changes_made:
+            self._ensure_backup()
     
     
     def add_unknown(self) -> None:
