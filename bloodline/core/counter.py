@@ -1,6 +1,8 @@
 class Counter:
     
-    def __init__(self):
+    def __init__(self, update_overlay_func: any):
+        self._update_overlay_func: any = update_overlay_func
+        
         self._counter: int = None
         self._question_answered: bool = False
         self._observer: any = None
@@ -20,12 +22,14 @@ class Counter:
         
         self._counter += 1
         self._notify_observer(f"Counter increased: {self.get_count()}", "normal")
+        self._update_overlay_func(self._counter)
     
     
     def decrease(self) -> None:
         if self._counter > 0:
             self._counter -= 1
             self._notify_observer(f"Counter decreased: {self.get_count()}", "normal")
+            self._update_overlay_func(self._counter)
     
     
     def reset(self, hard_reset: bool = False) -> None:
@@ -35,6 +39,7 @@ class Counter:
         elif self._counter > 0:
             self._counter = 0
             self._notify_observer("Counter has been reset", "normal")
+            self._update_overlay_func(self._counter)
     
     
     def get_count(self) -> int:
@@ -63,3 +68,4 @@ class Counter:
     def set_count_already_required(self, count: int | None) -> None:
         if count is not None:
             self._counter = count
+            self._update_overlay_func(self._counter)

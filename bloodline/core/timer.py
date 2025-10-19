@@ -1,17 +1,22 @@
-from time import time
+from time import time, sleep
+from threading import Thread
 
 class Timer:
     
-    def __init__(self):
+    def __init__(self, update_overlay_func: any):
+        self._update_overlay_func: any = update_overlay_func
+        
         self._start_time: float = None
         self._end_time: float = None
         self._pause_time: float = 0.0
         self._time_already_required: int = None
         self._total_time: int = 0
+        self._live_count: int = 0
         
         self._timer_active: bool = False
         self._timer_paused: bool = False
         
+        self._worker_thread: Thread = None
         self._observer: any = None
     
     
@@ -27,6 +32,7 @@ class Timer:
         if not self._timer_active:
             self._start_time = time()
             self._timer_active = True
+            self._start_live_timer()
             self._notify_observer("Timer started", "normal")
     
     
@@ -112,3 +118,24 @@ class Timer:
     def set_time_already_required(self, time: int | None) -> None:
         if time is not None:
             self._time_already_required = time
+    
+    
+    def _live_timer(self) -> None:
+        while self._timer_active or self._timer_paused:
+            if self._timer_paused:
+                continue
+            sleep(1)
+            self._live_count += 1
+            seconds: int = self._live_count % 60
+            minutes: int = int(self._live_count / 60) % 60
+            hours: int = int(self._live_count / 3600)
+            self._update_overlay_func(f"{hours:02}:{minutes:02}:{seconds:02}")
+    
+    
+    def _start_live_timer(self) -> None:
+        if self._worker_thread is None or not self._worker_thread.is_alive():
+            self._worker_thread = Thread(target=self._live_timer, daemon=True)
+            self._worker_thread.start()
+            self._notify_observer("Key listener started in seperat thread", "normal")
+        else:
+            self._notify_observer("Key listener already running", "warning")
