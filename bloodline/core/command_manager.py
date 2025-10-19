@@ -83,7 +83,7 @@ class CommandManager:
         self._overlay: Overlay = Overlay()
         self._counter: Counter = Counter(self._overlay.update_counter)
         self._counter.set_observer(self._print_output_func)
-        self._timer: Timer = Timer(self._overlay.add_update_queue)
+        self._timer: Timer = Timer(self._overlay.update_timer, self._overlay.add_mainloop_task)
         self._timer.set_observer(self._print_output_func)
         self._key_listener: KeyListener = KeyListener(self._hk_manager, self._counter, self._timer, self._overlay.destroy)
         self._key_listener.set_observer(self._print_output_func)

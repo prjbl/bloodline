@@ -1,4 +1,3 @@
-from queue import Queue
 from tkinter import Toplevel, Label
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
@@ -8,7 +7,6 @@ from gui.gui_config_manager import GuiConfigManager, RootKeys, ColorKeys, FontKe
 class Overlay:
     
     def __init__(self):
-        self._update_queue: Queue = Queue()
         self._config_manager: GuiConfigManager = GuiConfigManager()
         self._setup_config_vars()
         self._observer: any = None
@@ -66,14 +64,12 @@ class Overlay:
         self._counter_label.config(text=count)
     
     
-    def add_update_queue(self, formated_time: str) -> None:
-        self._update_queue.put_nowait(formated_time)
+    def update_timer(self, formated_time: str) -> None:
+        self._timer_label.config(text=formated_time)
     
     
-    def _update_timer(self) -> None:
-        self._timer_label.config(text=self._update_queue.get_nowait() if not self._update_queue.empty() else None)
-        self._toplevel.after(1000, self._update_timer)
-        print("called")
+    def add_mainloop_task(self, delay: int, task: any) -> None:
+        self._toplevel.after(delay, task)
     
     
     def create(self) -> None:
@@ -81,7 +77,6 @@ class Overlay:
         self._setup_window()
         self._setup_ui_elements()
         self._setup_font()
-        self._update_timer()
     
     
     def destroy(self) -> None:
