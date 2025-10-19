@@ -8,10 +8,12 @@ from core.timer import Timer
 
 class KeyListener:
     
-    def __init__(self, hk_manager: HotkeyManager, counter: Counter, timer: Timer):
+    def __init__(self, hk_manager: HotkeyManager, counter: Counter, timer: Timer, destroy_overlay_func: any):
         self._hk_manager: HotkeyManager = hk_manager
         self._counter: Counter = counter
         self._timer: Timer = timer
+        self._destroy_overlay_func: any = destroy_overlay_func
+        
         self._key_listener: kb.Listener = None
         self._listener_thread: Thread = None
         self._observer: any = None
@@ -61,6 +63,7 @@ class KeyListener:
                 self._key_listener.join()
         self._notify_observer("Key listener stopped", "normal")
         
+        self._destroy_overlay_func()
         self._timer.check_timer_stopped()
         self._notify_observer("Make sure to save the data using the 'stats save' command", "note")
     

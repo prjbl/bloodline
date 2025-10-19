@@ -12,7 +12,7 @@ class Application:
     
     def __init__(self):
         self._main_queue: Queue = Queue()
-        self._config_mananger: GuiConfigManager = GuiConfigManager()
+        self._config_manager: GuiConfigManager = GuiConfigManager()
         self._setup_config_vars()
         
         self._root: Tk = Tk()
@@ -23,7 +23,7 @@ class Application:
         self._setup_console_tags()
         
         self.print_output(self._META, "normal")
-        self._merge_queues(self._main_queue, self._config_mananger.get_error_queue())
+        self._merge_queues(self._main_queue, self._config_manager.get_error_queue())
         self._display_startup_problems() # display call after first print out to prevent the texts from being displayed in the wrong order
         
         self._cmd_manager: CommandManager = CommandManager(self.print_output, self.quit)
@@ -39,9 +39,9 @@ class Application:
     
     
     def _setup_config_vars(self) -> None:
-        self._root_props: dict = self._config_mananger.get_root_props()
-        self._colors: dict = self._config_mananger.get_colors()
-        self._font_props: dict = self._config_mananger.get_font_props()
+        self._root_props: dict = self._config_manager.get_root_props()
+        self._colors: dict = self._config_manager.get_colors()
+        self._font_props: dict = self._config_manager.get_font_props()
     
     
     def _setup_window(self) -> None:
@@ -60,17 +60,17 @@ class Application:
     
     
     def _setup_ui_elements(self) -> None:
-        self._input_section: Frame = Frame(self._root,
+        self._input_section: Frame = Frame(master=self._root,
                                            bg=self._colors.get(ColorKeys.BACKGROUND))
         self._input_section.pack(fill="x", side="bottom", padx=self._PADDING, pady=self._PADDING)
         
-        self._input_prefix: Label = Label(self._input_section,
+        self._input_prefix: Label = Label(master=self._input_section,
                                           fg=self._colors.get(ColorKeys.COMMAND),
                                           bg=self._colors.get(ColorKeys.BACKGROUND),
                                           text=self._PREFIX)
         self._input_prefix.pack(side="left")
         
-        self._input_entry: Entry = Entry(self._input_section,
+        self._input_entry: Entry = Entry(master=self._input_section,
                                          fg=self._colors.get(ColorKeys.COMMAND),
                                          bg=self._colors.get(ColorKeys.BACKGROUND),
                                          insertbackground=self._colors.get(ColorKeys.COMMAND),
@@ -81,7 +81,7 @@ class Application:
         self._input_entry.pack(fill="x", side="left", expand=True)
         self._input_entry.focus()
         
-        self._console: ScrolledText = ScrolledText(self._root,
+        self._console: ScrolledText = ScrolledText(master=self._root,
                                                    fg=self._colors.get(ColorKeys.NORMAL),
                                                    bg=self._colors.get(ColorKeys.BACKGROUND),
                                                    padx=self._PADDING,
@@ -198,5 +198,5 @@ class Application:
     
     
     def quit(self) -> None:
-        self._config_mananger.set_root_props(self._root.winfo_geometry(), True if self._root.state() == "zoomed" else False)
+        self._config_manager.set_root_props(self._root.winfo_geometry(), True if self._root.state() == "zoomed" else False)
         self._root.destroy()

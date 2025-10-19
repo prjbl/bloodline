@@ -8,6 +8,7 @@ from gui.gui_config_manager import GuiConfigManager
 from core.hotkey_manager import HotkeyManager, HotkeyNames
 from utils.json_file_operations import JsonFileOperations
 from core.key_listener import KeyListener
+from gui.overlay import Overlay
 from core.save_file import SaveFile
 from core.timer import Timer
 
@@ -79,11 +80,12 @@ class CommandManager:
     def _setup_instances(self) -> None:
         self._hk_manager: HotkeyManager = HotkeyManager()
         self._hk_manager.setup_keybinds_and_observer(self._print_output_func)
-        self._counter: Counter = Counter()
+        self._overlay: Overlay = Overlay()
+        self._counter: Counter = Counter(self._overlay.update_counter)
         self._counter.set_observer(self._print_output_func)
-        self._timer: Timer = Timer()
+        self._timer: Timer = Timer(self._overlay.add_update_queue)
         self._timer.set_observer(self._print_output_func)
-        self._key_listener: KeyListener = KeyListener(self._hk_manager, self._counter, self._timer)
+        self._key_listener: KeyListener = KeyListener(self._hk_manager, self._counter, self._timer, self._overlay.destroy)
         self._key_listener.set_observer(self._print_output_func)
         self._save_file: SaveFile = SaveFile()
         self._save_file.setup_db_and_observer(self._print_output_func)
@@ -227,6 +229,7 @@ class CommandManager:
     
     def _tracking_new(self) -> None:
         self._save_file.add_unknown()
+        self._overlay.create()
         self._counter.set_count_already_required(None)
         self._timer.set_time_already_required(None)
         self._key_listener.start_key_listener()
@@ -242,6 +245,7 @@ class CommandManager:
             game_title: str = result[1]
             
             if result and self._save_file.get_specific_boss_exists(boss_name, game_title):
+                self._overlay.create()
                 self._counter.set_count_already_required(self._save_file.get_specific_boss_deaths(boss_name, game_title))
                 self._timer.set_time_already_required(self._save_file.get_specific_boss_time(boss_name, game_title))
                 self._key_listener.start_key_listener()
