@@ -2,7 +2,7 @@ from tkinter import Toplevel, Label
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
-from gui.gui_config_manager import GuiConfigManager, RootKeys, ColorKeys, FontKeys
+from gui.gui_config_manager import GuiConfigManager, WindowKeys, ColorKeys, FontKeys
 
 class Overlay:
     
@@ -21,29 +21,33 @@ class Overlay:
     
     
     def _setup_config_vars(self) -> None:
-        self._toplevel_props: dict = None
+        self._toplevel_props: dict = self._config_manager.get_toplevel_props()
         self._colors: dict = self._config_manager.get_colors()
-        self._font_props: dict = self._config_manager.get_font_props()
+        self._font_props: dict = self._config_manager.get_toplevel_font_props()
+        self._offset_x: int = 0
+        self._offset_y: int = 0
     
     
     def _setup_window(self) -> None:
-        self._toplevel.geometry("200x50")
+        self._toplevel.geometry(self._toplevel_props.get(WindowKeys.GEOMETRY))
         self._toplevel.attributes("-topmost", True)
         self._toplevel.overrideredirect(True)
         self._toplevel.config(bg=self._colors.get(ColorKeys.BACKGROUND))
+                              #highlightthickness=2,
+                              #highlightbackground=self._colors.get(ColorKeys.SUCCESS))
     
     
     def _setup_ui_elements(self) -> None:
         self._counter_label: Label = Label(master=self._toplevel,
                                            fg=self._colors.get(ColorKeys.NORMAL),
                                            bg=self._colors.get(ColorKeys.BACKGROUND),
-                                           text="COUNTER")
+                                           text="No value yet")
         self._counter_label.pack()
         
         self._timer_label: Label = Label(master=self._toplevel,
                                          fg=self._colors.get(ColorKeys.NORMAL),
                                          bg=self._colors.get(ColorKeys.BACKGROUND),
-                                         text="TIMER")
+                                         text="No value yet")
         self._timer_label.pack()
     
     
@@ -58,6 +62,28 @@ class Overlay:
         
         self._counter_label.config(font=font_to_use)
         self._timer_label.config(font=font_to_use)
+    
+    
+    def _setup_bindings(self) -> None:
+        self._toplevel.bind("<Button-1>", self._on_lmb_click)
+        self._toplevel.bind("<B1-Motion>", self._on_lmb_drag)
+    
+    
+    def _on_lmb_click(self, event: any) -> None:
+        if self._toplevel_props.get(WindowKeys.LOCKED):
+            return
+        
+        self._offset_x = self._toplevel.winfo_pointerx() - self._toplevel.winfo_rootx()
+        self._offset_y = self._toplevel.winfo_pointery() - self._toplevel.winfo_rooty()
+    
+    
+    def _on_lmb_drag(self, event: any) -> None:
+        if self._toplevel_props.get(WindowKeys.LOCKED):
+            return
+        
+        pos_x: int = self._toplevel.winfo_pointerx() - self._offset_x
+        pos_y: int = self._toplevel.winfo_pointery() - self._offset_y
+        self._toplevel.geometry(f"+{pos_x}+{pos_y}")
     
     
     def update_counter(self, count: int) -> None:
@@ -77,7 +103,9 @@ class Overlay:
         self._setup_window()
         self._setup_ui_elements()
         self._setup_font()
+        self._setup_bindings()
     
     
     def destroy(self) -> None:
+        self._config_manager.set_toplevel_props(self._toplevel.winfo_geometry())
         self._toplevel.destroy()

@@ -5,7 +5,7 @@ from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
 from core.command_manager import CommandManager
-from gui.gui_config_manager import GuiConfigManager, RootKeys, ColorKeys, FontKeys
+from gui.gui_config_manager import GuiConfigManager, WindowKeys, ColorKeys, FontKeys
 from utils.directory import Directory
 
 class Application:
@@ -41,14 +41,14 @@ class Application:
     def _setup_config_vars(self) -> None:
         self._root_props: dict = self._config_manager.get_root_props()
         self._colors: dict = self._config_manager.get_colors()
-        self._font_props: dict = self._config_manager.get_font_props()
+        self._font_props: dict = self._config_manager.get_root_font_props()
     
     
     def _setup_window(self) -> None:
-        if self._root_props.get(RootKeys.MAXIMIZED):
+        if self._root_props.get(WindowKeys.MAXIMIZED):
             self._root.state("zoomed")
         else:
-            self._root.geometry(self._root_props.get(RootKeys.GEOMETRY))
+            self._root.geometry(self._root_props.get(WindowKeys.GEOMETRY))
         self._root.title(self._dir._APP_NAME)
         self._root.iconbitmap("bloodline/assets/bloodline_logo.ico")
         self._root.config(bg=self._colors.get(ColorKeys.BACKGROUND))

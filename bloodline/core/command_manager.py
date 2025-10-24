@@ -69,6 +69,8 @@ class CommandManager:
             f"keybinds config {HotkeyNames.TIMER_RESET.value}": lambda: self._keybinds_config(HotkeyNames.TIMER_RESET),
             f"keybinds config {HotkeyNames.LISTENER_END.value}": lambda: self._keybinds_config(HotkeyNames.LISTENER_END),
             "settings": self._settings,
+            "settings lock overlay": lambda: self._settings_set_overlay_locked(True),
+            "settings unlock overlay": lambda: self._settings_set_overlay_locked(False),
             "settings import theme": self._settings_import_theme,
             "quit": self.quit
         }
@@ -241,10 +243,15 @@ class CommandManager:
             self._print_output_func("Please enter the <\"boss name\", \"game title\"> of the boss you want to continue tracking <...>", "normal")
         else:
             result: list[str] = self._get_result_in_pattern("double")
+            
+            if not result:
+                self._reset_ignore_vars()
+                return
+            
             boss_name: str = result[0]
             game_title: str = result[1]
             
-            if result and self._save_file.get_specific_boss_exists(boss_name, game_title):
+            if self._save_file.get_specific_boss_exists(boss_name, game_title):
                 self._overlay.create()
                 self._counter.set_count_already_required(self._save_file.get_specific_boss_deaths(boss_name, game_title))
                 self._timer.set_time_already_required(self._save_file.get_specific_boss_time(boss_name, game_title))
@@ -461,7 +468,15 @@ class CommandManager:
     
     def _settings(self) -> None:
         self._print_output_func("This is a list of all settings commands:", "normal")
-        self._print_output_func("settings import theme: Imports and changes the programs theme", "list")
+        self._print_output_func("settings unlock|lock overlay: Enable|Disables the ability to move the overlay\n"
+                                +"settings import theme: Imports and changes the programs theme", "list")
+    
+    
+    def _settings_set_overlay_locked(self, lock_state: bool) -> None:
+        if not self._config_mananger.set_toplevel_locked(lock_state):
+            self._print_output_func(f"Overlay already {"locked" if lock_state else "unlocked"}", "normal")
+            return
+        self._print_output_func(f"Overlay {"locked" if lock_state else "unlocked"}", "normal")
     
     
     def _settings_import_theme(self) -> None:
