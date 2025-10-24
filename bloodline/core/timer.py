@@ -138,7 +138,7 @@ class Timer:
             elapsed_time: float = self._pause_time - self._start_time
         else:
             elapsed_time: float = current_time - self._start_time
-        return self._total_time + int(elapsed_time)
+        return self._total_time + int(elapsed_time) + (self._time_already_required if self._time_already_required is not None else 0)
     
     
     def _format_time(self, time: int) -> str:
