@@ -74,7 +74,7 @@ class GuiConfigManager:
                 WindowKeys.MAXIMIZED: False
             },
             _SectionKeys.TOPLEVEL: {
-                WindowKeys.GEOMETRY: "200x50",
+                WindowKeys.GEOMETRY: "+0+0",
                 WindowKeys.LOCKED: False
             }
         },
@@ -108,12 +108,12 @@ class GuiConfigManager:
     
     
     def get_root_props(self) -> dict:
-        self._validate_geometry_pattern(_SectionKeys.ROOT)
+        self._validate_geometry_pattern()
         return self._json_handler.get_data().get(_SectionKeys.WINDOW).get(_SectionKeys.ROOT)
     
     
     def get_toplevel_props(self) -> dict:
-        self._validate_geometry_pattern(_SectionKeys.TOPLEVEL)
+        self._validate_position_pattern()
         return self._json_handler.get_data().get(_SectionKeys.WINDOW).get(_SectionKeys.TOPLEVEL)
     
     
@@ -220,14 +220,28 @@ class GuiConfigManager:
     
     # helper methods below
         
-    def _validate_geometry_pattern(self, window_sub_key: _SectionKeys) -> None:
+    def _validate_geometry_pattern(self) -> None:
         valid_geometry_pattern: str = compile(r"(\d+x\d+)|(\d+x\d+)\+(\-)?\d+\+(\-)?\d+")
         data_changed: bool = False
         
         ui_config: dict = self._json_handler.get_data()
-        if not fullmatch(valid_geometry_pattern, ui_config.get(_SectionKeys.WINDOW).get(window_sub_key).get(WindowKeys.GEOMETRY)):
+        if not fullmatch(valid_geometry_pattern, ui_config.get(_SectionKeys.WINDOW).get(_SectionKeys.ROOT).get(WindowKeys.GEOMETRY)):
             print("Invalid geometry")
-            ui_config[_SectionKeys.WINDOW][window_sub_key][WindowKeys.GEOMETRY] = self._DEFAULT_CONFIG[_SectionKeys.WINDOW][window_sub_key][WindowKeys.GEOMETRY]
+            ui_config[_SectionKeys.WINDOW][_SectionKeys.ROOT][WindowKeys.GEOMETRY] = self._DEFAULT_CONFIG[_SectionKeys.WINDOW][_SectionKeys.ROOT][WindowKeys.GEOMETRY]
+            data_changed = True
+        
+        if data_changed:
+            self._json_handler.set_data(ui_config)
+    
+    
+    def _validate_position_pattern(self) -> None:
+        validate_position_pattern: str = compile(r"^\+(\-)?\d+\+(\-)?\d+$")
+        data_changed: bool = False
+        
+        ui_config: dict = self._json_handler.get_data()
+        if not fullmatch(validate_position_pattern, ui_config.get(_SectionKeys.WINDOW).get(_SectionKeys.TOPLEVEL).get(WindowKeys.GEOMETRY)):
+            print("Invalid position")
+            ui_config[_SectionKeys.WINDOW][_SectionKeys.TOPLEVEL][WindowKeys.GEOMETRY] = self._DEFAULT_CONFIG[_SectionKeys.WINDOW][_SectionKeys.TOPLEVEL][WindowKeys.GEOMETRY]
             data_changed = True
         
         if data_changed:

@@ -1,4 +1,4 @@
-from tkinter import Toplevel, Label
+from tkinter import Toplevel, Frame, Label
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
@@ -10,6 +10,9 @@ class Overlay:
         self._config_manager: GuiConfigManager = GuiConfigManager()
         self._setup_config_vars()
         self._observer: any = None
+    
+    
+    _PADDING: int = 5
     
     
     def set_observer(self, observer: any) -> None:
@@ -24,8 +27,15 @@ class Overlay:
         self._toplevel_props: dict = self._config_manager.get_toplevel_props()
         self._colors: dict = self._config_manager.get_colors()
         self._font_props: dict = self._config_manager.get_toplevel_font_props()
+        
         self._offset_x: int = 0
         self._offset_y: int = 0
+        self._init_width: int = 0
+        self._alignment: dict = {
+            "left": True,
+            "centered": False,
+            "right": False
+        }
     
     
     def _setup_window(self) -> None:
@@ -33,18 +43,20 @@ class Overlay:
         self._toplevel.attributes("-topmost", True)
         self._toplevel.overrideredirect(True)
         self._toplevel.config(bg=self._colors.get(ColorKeys.BACKGROUND))
-                              #highlightthickness=2,
-                              #highlightbackground=self._colors.get(ColorKeys.SUCCESS))
     
     
     def _setup_ui_elements(self) -> None:
-        self._counter_label: Label = Label(master=self._toplevel,
+        self._container: Frame = Frame(master=self._toplevel,
+                                       bg=self._colors.get(ColorKeys.BACKGROUND))
+        self._container.pack(padx=self._PADDING, pady=self._PADDING)
+        
+        self._counter_label: Label = Label(master=self._container,
                                            fg=self._colors.get(ColorKeys.NORMAL),
                                            bg=self._colors.get(ColorKeys.BACKGROUND),
                                            text="No value yet")
         self._counter_label.pack()
         
-        self._timer_label: Label = Label(master=self._toplevel,
+        self._timer_label: Label = Label(master=self._container,
                                          fg=self._colors.get(ColorKeys.NORMAL),
                                          bg=self._colors.get(ColorKeys.BACKGROUND),
                                          text="No value yet")
@@ -67,6 +79,8 @@ class Overlay:
     def _setup_bindings(self) -> None:
         self._toplevel.bind("<Button-1>", self._on_lmb_click)
         self._toplevel.bind("<B1-Motion>", self._on_lmb_drag)
+        
+        self._container.bind("<Configure>", self._on_resize)
     
     
     def _on_lmb_click(self, event: any) -> None:
@@ -86,6 +100,22 @@ class Overlay:
         self._toplevel.geometry(f"+{pos_x}+{pos_y}")
     
     
+    def _on_resize(self, event: any) -> None:
+        self._calc_alignment()
+        
+        if self._alignment.get("left"):
+            return # tkinters default is left aligned
+        
+        difference_width: int = self._init_width - self._toplevel.winfo_width()
+        toplevel_x: int = self._toplevel.winfo_rootx()
+        toplevle_y: int = self._toplevel.winfo_rooty()
+        
+        if self._alignment.get("centered"):
+            self._toplevel.geometry(f"+{toplevel_x + int(difference_width / 2)}+{toplevle_y}")
+        elif self._alignment.get("right"):
+            self._toplevel.geometry(f"+{toplevel_x + difference_width}+{toplevle_y}")
+    
+    
     def update_counter(self, count: int) -> None:
         self._counter_label.config(text=count)
     
@@ -103,9 +133,29 @@ class Overlay:
         self._setup_window()
         self._setup_ui_elements()
         self._setup_font()
+        
+        self._toplevel.update() # makes sure the window init is complete
+        self._init_width = self._toplevel.winfo_width()
+        
         self._setup_bindings()
     
     
     def destroy(self) -> None:
-        self._config_manager.set_toplevel_props(self._toplevel.winfo_geometry())
+        self._config_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx()}+{self._toplevel.winfo_rooty()}")
         self._toplevel.destroy()
+    
+    
+    # helper methods below
+    
+    def _calc_alignment(self) -> None:
+        display_third: int = int(self._toplevel.winfo_screenwidth() / 3)
+        toplevel_center_x: int = self._toplevel.winfo_rootx() + int(self._toplevel.winfo_width() / 2)
+        
+        self._alignment = {key: False for key in self._alignment}
+        
+        if toplevel_center_x <= display_third:
+            self._alignment["left"] = True
+        elif toplevel_center_x <= (display_third * 2):
+            self._alignment["centered"] = True
+        else:
+            self._alignment["right"] = True
