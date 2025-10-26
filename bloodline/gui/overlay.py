@@ -2,7 +2,7 @@ from tkinter import Toplevel, Frame, Label
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
-from gui.gui_config_manager import GuiConfigManager, WindowKeys, ColorKeys, FontKeys
+from gui.gui_config_manager import GuiConfigManager, WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Overlay:
     
@@ -10,9 +10,6 @@ class Overlay:
         self._config_manager: GuiConfigManager = GuiConfigManager()
         self._setup_config_vars()
         self._observer: any = None
-    
-    
-    _PADDING: int = 5
     
     
     def set_observer(self, observer: any) -> None:
@@ -27,6 +24,7 @@ class Overlay:
         self._toplevel_props: dict = self._config_manager.get_toplevel_props()
         self._colors: dict = self._config_manager.get_colors()
         self._font_props: dict = self._config_manager.get_toplevel_font_props()
+        self._widget_props: dict = self._config_manager.get_toplevel_widget_props()
         
         self._offset_x: int = 0
         self._offset_y: int = 0
@@ -42,13 +40,15 @@ class Overlay:
         self._toplevel.geometry(self._toplevel_props.get(WindowKeys.GEOMETRY))
         self._toplevel.attributes("-topmost", True)
         self._toplevel.overrideredirect(True)
-        self._toplevel.config(bg=self._colors.get(ColorKeys.BACKGROUND))
+        self._toplevel.config(bg=self._colors.get(ColorKeys.BACKGROUND),
+                              highlightthickness=self._widget_props.get(WidgetKeys.HIGHLIGHTTHICKNESS),
+                              highlightbackground=self._colors.get(ColorKeys.BACKGROUND))
     
     
     def _setup_ui_elements(self) -> None:
         self._container: Frame = Frame(master=self._toplevel,
                                        bg=self._colors.get(ColorKeys.BACKGROUND))
-        self._container.pack(padx=self._PADDING, pady=self._PADDING)
+        self._container.pack(padx=self._widget_props.get(WidgetKeys.PADDING), pady=self._widget_props.get(WidgetKeys.PADDING))
         
         self._counter_label: Label = Label(master=self._container,
                                            fg=self._colors.get(ColorKeys.NORMAL),
@@ -126,6 +126,11 @@ class Overlay:
     
     def add_mainloop_task(self, delay: int, task: any) -> None:
         self._toplevel.after(delay, task)
+    
+    
+    def display_lock_animation(self, animation_time: int, lock_state: bool) -> None:
+        self._toplevel.config(highlightbackground=self._colors.get(ColorKeys.ERROR) if lock_state else self._colors.get(ColorKeys.SUCCESS))
+        self.add_mainloop_task(animation_time, lambda: self._toplevel.config(highlightbackground=self._colors.get(ColorKeys.BACKGROUND)))
     
     
     def create(self) -> None:

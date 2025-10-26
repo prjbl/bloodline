@@ -477,6 +477,7 @@ class CommandManager:
             self._print_output_func(f"Overlay already {"locked" if lock_state else "unlocked"}", "normal")
             return
         self._print_output_func(f"Overlay {"locked" if lock_state else "unlocked"}", "normal")
+        self._overlay.display_lock_animation(1500, lock_state)
     
     
     def _settings_import_theme(self) -> None:

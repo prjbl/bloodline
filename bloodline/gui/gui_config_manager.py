@@ -17,6 +17,7 @@ class _SectionKeys(str, Enum):
     THEME: str = "theme"
     COLORS: str = "colors"
     FONT: str = "font"
+    WIDGETS: str = "widgets"
 
 class WindowKeys(str, Enum):
     GEOMETRY: str = "geometry"
@@ -37,6 +38,10 @@ class ColorKeys(str, Enum):
 class FontKeys(str, Enum):
     FAMILY: str = "family"
     SIZE: str = "size"
+
+class WidgetKeys(str, Enum):
+    PADDING: str = "padding"
+    HIGHLIGHTTHICKNESS: str = "hightlightthickness"
 
 class GuiConfigManager:
     
@@ -97,6 +102,15 @@ class GuiConfigManager:
                 },
                 _SectionKeys.TOPLEVEL: {
                     FontKeys.SIZE: 9
+                }
+            },
+            _SectionKeys.WIDGETS: {
+                _SectionKeys.ROOT: {
+                    WidgetKeys.PADDING: 5
+                },
+                _SectionKeys.TOPLEVEL: {
+                    WidgetKeys.PADDING: 5,
+                    WidgetKeys.HIGHLIGHTTHICKNESS: 2
                 }
             }
         }
@@ -165,6 +179,14 @@ class GuiConfigManager:
         shared_font_props: dict = self._get_shared_font_props()
         toplevel_specific_props: dict = self._get_font_props().get(_SectionKeys.TOPLEVEL)
         return {**shared_font_props, **toplevel_specific_props}
+    
+    
+    def get_root_widget_props(self) -> dict:
+        return self._get_widget_props().get(_SectionKeys.ROOT)
+    
+    
+    def get_toplevel_widget_props(self) -> dict:
+        return self._get_widget_props().get(_SectionKeys.TOPLEVEL)
     
     
     def set_toplevel_locked(self, new_lock_state: bool) -> bool:
@@ -273,3 +295,7 @@ class GuiConfigManager:
     
     def _get_font_props(self) -> dict:
         return self._json_handler.get_data().get(_SectionKeys.THEME).get(_SectionKeys.FONT)
+    
+    
+    def _get_widget_props(self) -> dict:
+        return self._json_handler.get_data().get(_SectionKeys.THEME).get(_SectionKeys.WIDGETS)

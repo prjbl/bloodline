@@ -5,7 +5,7 @@ from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
 from core.command_manager import CommandManager
-from gui.gui_config_manager import GuiConfigManager, WindowKeys, ColorKeys, FontKeys
+from gui.gui_config_manager import GuiConfigManager, WindowKeys, ColorKeys, FontKeys, WidgetKeys
 from utils.directory import Directory
 
 class Application:
@@ -32,8 +32,6 @@ class Application:
     
     _dir: Directory = Directory()
 
-    _PADDING: int = 5
-
     _PREFIX: chr = ">"
     _META: str = f"{_dir._APP_NAME} v{_dir._VERSION}\nBy {_dir._APP_AUTHOR}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
     
@@ -42,6 +40,7 @@ class Application:
         self._root_props: dict = self._config_manager.get_root_props()
         self._colors: dict = self._config_manager.get_colors()
         self._font_props: dict = self._config_manager.get_root_font_props()
+        self._widget_props: dict = self._config_manager.get_root_widget_props()
     
     
     def _setup_window(self) -> None:
@@ -62,7 +61,7 @@ class Application:
     def _setup_ui_elements(self) -> None:
         self._input_section: Frame = Frame(master=self._root,
                                            bg=self._colors.get(ColorKeys.BACKGROUND))
-        self._input_section.pack(fill="x", side="bottom", padx=self._PADDING, pady=self._PADDING)
+        self._input_section.pack(fill="x", side="bottom", padx=self._widget_props.get(WidgetKeys.PADDING), pady=self._widget_props.get(WidgetKeys.PADDING))
         
         self._input_prefix: Label = Label(master=self._input_section,
                                           fg=self._colors.get(ColorKeys.COMMAND),
@@ -84,8 +83,8 @@ class Application:
         self._console: ScrolledText = ScrolledText(master=self._root,
                                                    fg=self._colors.get(ColorKeys.NORMAL),
                                                    bg=self._colors.get(ColorKeys.BACKGROUND),
-                                                   padx=self._PADDING,
-                                                   pady=self._PADDING,
+                                                   padx=self._widget_props.get(WidgetKeys.PADDING),
+                                                   pady=self._widget_props.get(WidgetKeys.PADDING),
                                                    relief="flat",
                                                    wrap="word",
                                                    state="disabled")
