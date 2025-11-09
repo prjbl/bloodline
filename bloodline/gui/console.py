@@ -5,7 +5,8 @@ from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
 from core.command_manager import CommandManager
-from gui.gui_config_manager import GuiConfigManager, WindowKeys, ColorKeys, FontKeys, WidgetKeys
+from gui.gui_config_manager import GuiConfigManager
+from utils.config_schema import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 from utils.directory import Directory
 
 class Application:

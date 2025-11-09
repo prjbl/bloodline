@@ -1,7 +1,7 @@
 from json import load, dump
 from pathlib import Path
 
-class JsonFileOperations():
+class JsonFileOperations:
     
     @staticmethod
     def check_json_extension(src_file_path: Path) -> bool:

@@ -14,7 +14,7 @@ class SaveFile:
     
     _dir: Directory = Directory()
     
-    _DB_FILE: str = "save_file.db"
+    _DB_FILE: str = "save_file.sqlite"
     _BACKUP_FILE: str = f"{_DB_FILE}.bak"
     _DB_FILE_PATH: Path = _dir.get_persistent_data_path().joinpath(_DB_FILE)
     _BACKUP_FILE_PATH: Path = _dir.get_backup_path().joinpath(_BACKUP_FILE)
