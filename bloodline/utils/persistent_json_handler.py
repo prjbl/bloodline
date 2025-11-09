@@ -1,16 +1,17 @@
 from json import JSONDecodeError
 from pathlib import Path
+from pydantic import BaseModel, ValidationError
 from shutil import copy2
 
 from utils.json_file_operations import JsonFileOperations
 
 class PersistentJsonHandler(JsonFileOperations):
     
-    def __init__(self, main_file_path: Path, backup_file_path: Path, default_data: dict):
+    def __init__(self, main_file_path: Path, backup_file_path: Path, default_data: BaseModel):
         self._main_file_path: Path = main_file_path
         self._backup_file_path: Path = backup_file_path
-        self._default_data: dict = default_data
-        self._data: dict = default_data # is initialized with the default to prevent empty value
+        self._default_data: BaseModel = default_data
+        self._data: dict = default_data.model_dump() # is initialized with the default to prevent empty value
     
     
     def setup_files(self) -> None:
@@ -26,12 +27,16 @@ class PersistentJsonHandler(JsonFileOperations):
     
     def load_data(self, is_initial_call: bool = False) -> None:
         try:
-            self._data = super().perform_load(self._main_file_path)
-            if self._validate_file_structure(self._data, self._default_data) and is_initial_call:
-                self.save_data()
+            raw_json: dict = super().perform_load(self._main_file_path)
+            self._data = self._default_data.model_validate(raw_json).model_dump()
         except JSONDecodeError:
             # put message in queue
             self._handle_file_restore()
+        except ValidationError:
+            print("Du Heuchler")
+            # put message in queue
+            # set defaults
+            pass
     
     
     def save_data(self) -> None:

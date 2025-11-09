@@ -2,7 +2,8 @@ from tkinter import Toplevel, Frame, Label
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
-from gui.gui_config_manager import GuiConfigManager, WindowKeys, ColorKeys, FontKeys, WidgetKeys
+from gui.gui_config_manager import GuiConfigManager
+from utils.config_schema import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Overlay:
     

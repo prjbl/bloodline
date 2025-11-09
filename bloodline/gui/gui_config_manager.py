@@ -1,47 +1,13 @@
 from __future__ import annotations
 
-from enum import Enum # unchangeable vars
 from json import JSONDecodeError
 from pathlib import Path
 from queue import Queue
-from re import compile, fullmatch
 
+from utils.config_schema import GuiConfig, SectionKeys, WindowKeys, ColorKeys, FontKeys
 from utils.directory import Directory
 from utils.json_file_operations import JsonFileOperations
 from utils.persistent_json_handler import PersistentJsonHandler
-
-class _SectionKeys(str, Enum):
-    WINDOW: str = "window"
-    ROOT: str = "root"
-    TOPLEVEL: str = "toplevel"
-    THEME: str = "theme"
-    COLORS: str = "colors"
-    FONT: str = "font"
-    WIDGETS: str = "widgets"
-
-class WindowKeys(str, Enum):
-    GEOMETRY: str = "geometry"
-    MAXIMIZED: str = "maximized"
-    LOCKED: str = "locked"
-
-class ColorKeys(str, Enum):
-    BACKGROUND: str = "background"
-    NORMAL: str = "normal"
-    SUCCESS: str = "success"
-    INVALID: str = "invalid"
-    COMMAND: str = "command"
-    SELECTION: str = "selection"
-    NOTE: str = "note"
-    WARNING: str = "warning"
-    ERROR: str = "error"
-
-class FontKeys(str, Enum):
-    FAMILY: str = "family"
-    SIZE: str = "size"
-
-class WidgetKeys(str, Enum):
-    PADDING: str = "padding"
-    HIGHLIGHTTHICKNESS: str = "hightlightthickness"
 
 class GuiConfigManager:
     
@@ -57,7 +23,7 @@ class GuiConfigManager:
             cls._instance._json_handler = PersistentJsonHandler(
                 cls._instance._CONFIG_FILE_PATH,
                 cls._instance._BACKUP_FILE_PATH,
-                cls._instance._DEFAULT_CONFIG
+                GuiConfig()
             )
             
             cls._instance._json_handler.setup_files()
@@ -72,92 +38,48 @@ class GuiConfigManager:
     _CONFIG_FILE_PATH: Path = _dir.get_persistent_data_path().joinpath(_CONFIG_FILE)
     _BACKUP_FILE_PATH: Path = _dir.get_backup_path().joinpath(_BACKUP_FILE)
     
-    _DEFAULT_CONFIG: dict = {
-        _SectionKeys.WINDOW: {
-            _SectionKeys.ROOT: {
-                WindowKeys.GEOMETRY: "600x350",
-                WindowKeys.MAXIMIZED: False
-            },
-            _SectionKeys.TOPLEVEL: {
-                WindowKeys.GEOMETRY: "+0+0",
-                WindowKeys.LOCKED: False
-            }
-        },
-        _SectionKeys.THEME: {
-            _SectionKeys.COLORS: {
-                ColorKeys.BACKGROUND: "#2a2830",
-                ColorKeys.NORMAL: "#ffffff",
-                ColorKeys.SUCCESS: "#a1e096",
-                ColorKeys.INVALID: "#35a2de",
-                ColorKeys.COMMAND: "#25b354",
-                ColorKeys.SELECTION: "#1d903e",
-                ColorKeys.NOTE: "#a448cf",
-                ColorKeys.WARNING: "#d4a61e",
-                ColorKeys.ERROR: "#cf213e"
-            },
-            _SectionKeys.FONT: {
-                FontKeys.FAMILY: "DM Mono",
-                _SectionKeys.ROOT: {
-                    FontKeys.SIZE: 10
-                },
-                _SectionKeys.TOPLEVEL: {
-                    FontKeys.SIZE: 9
-                }
-            },
-            _SectionKeys.WIDGETS: {
-                _SectionKeys.ROOT: {
-                    WidgetKeys.PADDING: 5
-                },
-                _SectionKeys.TOPLEVEL: {
-                    WidgetKeys.PADDING: 5,
-                    WidgetKeys.HIGHLIGHTTHICKNESS: 2
-                }
-            }
-        }
-    }
-    
     
     def get_error_queue(self) -> Queue:
         return self._error_queue
     
     
     def get_root_props(self) -> dict:
-        self._validate_geometry_pattern()
-        return self._json_handler.get_data().get(_SectionKeys.WINDOW).get(_SectionKeys.ROOT)
+        return self._json_handler.get_data().get(SectionKeys.WINDOW).get(SectionKeys.ROOT)
     
     
     def get_toplevel_props(self) -> dict:
-        self._validate_position_pattern()
-        return self._json_handler.get_data().get(_SectionKeys.WINDOW).get(_SectionKeys.TOPLEVEL)
+        return self._json_handler.get_data().get(SectionKeys.WINDOW).get(SectionKeys.TOPLEVEL)
     
     
+    """Has to be adjusted"""
     def set_root_props(self, new_geometry: str, new_max_state: bool) -> None:
         ui_config: dict = self._json_handler.get_data()
         
-        old_geometry: str = ui_config.get(_SectionKeys.WINDOW).get(_SectionKeys.ROOT).get(WindowKeys.GEOMETRY)
-        old_max_state: bool = ui_config.get(_SectionKeys.WINDOW).get(_SectionKeys.ROOT).get(WindowKeys.MAXIMIZED)
+        old_geometry: str = ui_config.get(SectionKeys.WINDOW).get(SectionKeys.ROOT).get(WindowKeys.GEOMETRY)
+        old_max_state: bool = ui_config.get(SectionKeys.WINDOW).get(SectionKeys.ROOT).get(WindowKeys.MAXIMIZED)
         
         if new_geometry == old_geometry and new_max_state == old_max_state:
             return
         
         if new_max_state != old_max_state:
-            ui_config[_SectionKeys.WINDOW][_SectionKeys.ROOT][WindowKeys.MAXIMIZED] = new_max_state
+            ui_config[SectionKeys.WINDOW][SectionKeys.ROOT][WindowKeys.MAXIMIZED] = new_max_state
         if new_geometry != old_geometry and not new_max_state: # only triggers if geometry changed and state is not maximized
-            ui_config[_SectionKeys.WINDOW][_SectionKeys.ROOT][WindowKeys.GEOMETRY] = new_geometry
+            ui_config[SectionKeys.WINDOW][SectionKeys.ROOT][WindowKeys.GEOMETRY] = new_geometry
         
         self._json_handler.set_data(ui_config)
         self._json_handler.save_data()
         self._json_handler.ensure_backup()
     
     
+    """Has to be adjusted"""
     def set_toplevel_props(self, new_geometry: str) -> None:
         ui_config: dict = self._json_handler.get_data()
         
-        old_geometry: str = ui_config.get(_SectionKeys.WINDOW).get(_SectionKeys.TOPLEVEL).get(WindowKeys.GEOMETRY)
+        old_geometry: str = ui_config.get(SectionKeys.WINDOW).get(SectionKeys.TOPLEVEL).get(WindowKeys.GEOMETRY)
         
         if new_geometry == old_geometry:
             return
-        ui_config[_SectionKeys.WINDOW][_SectionKeys.TOPLEVEL][WindowKeys.GEOMETRY] = new_geometry
+        ui_config[SectionKeys.WINDOW][SectionKeys.TOPLEVEL][WindowKeys.GEOMETRY] = new_geometry
         
         self._json_handler.set_data(ui_config)
         self._json_handler.save_data()
@@ -165,38 +87,38 @@ class GuiConfigManager:
     
     
     def get_colors(self) -> dict:
-        self._validate_hex_pattern()
-        return self._json_handler.get_data().get(_SectionKeys.THEME).get(_SectionKeys.COLORS)
+        return self._json_handler.get_data().get(SectionKeys.THEME).get(SectionKeys.COLORS)
     
     
     def get_root_font_props(self) -> dict:
         shared_font_props: dict = self._get_shared_font_props()
-        root_specific_props: dict = self._get_font_props().get(_SectionKeys.ROOT)
+        root_specific_props: dict = self._get_font_props().get(SectionKeys.ROOT)
         return {**shared_font_props, **root_specific_props} # unpack and merge
     
     
     def get_toplevel_font_props(self) -> dict:
         shared_font_props: dict = self._get_shared_font_props()
-        toplevel_specific_props: dict = self._get_font_props().get(_SectionKeys.TOPLEVEL)
+        toplevel_specific_props: dict = self._get_font_props().get(SectionKeys.TOPLEVEL)
         return {**shared_font_props, **toplevel_specific_props}
     
     
     def get_root_widget_props(self) -> dict:
-        return self._get_widget_props().get(_SectionKeys.ROOT)
+        return self._get_widget_props().get(SectionKeys.ROOT)
     
     
     def get_toplevel_widget_props(self) -> dict:
-        return self._get_widget_props().get(_SectionKeys.TOPLEVEL)
+        return self._get_widget_props().get(SectionKeys.TOPLEVEL)
     
     
+    """Has to be adjusted"""
     def set_toplevel_locked(self, new_lock_state: bool) -> bool:
         ui_config: dict = self._json_handler.get_data()
         
-        old_lock_state: bool = ui_config.get(_SectionKeys.WINDOW).get(_SectionKeys.TOPLEVEL).get(WindowKeys.LOCKED)
+        old_lock_state: bool = ui_config.get(SectionKeys.WINDOW).get(SectionKeys.TOPLEVEL).get(WindowKeys.LOCKED)
         
         if new_lock_state == old_lock_state:
             return False
-        ui_config[_SectionKeys.WINDOW][_SectionKeys.TOPLEVEL][WindowKeys.LOCKED] = new_lock_state
+        ui_config[SectionKeys.WINDOW][SectionKeys.TOPLEVEL][WindowKeys.LOCKED] = new_lock_state
         
         self._json_handler.set_data(ui_config)
         self._json_handler.save_data()
@@ -204,6 +126,7 @@ class GuiConfigManager:
         return True
     
     
+    """Has to be adjusted"""
     def set_theme(self, src_file_path: Path) -> None:
         new_theme: dict = self._load_external_theme(src_file_path)
         if new_theme is None:
@@ -213,24 +136,25 @@ class GuiConfigManager:
         ui_config: dict = self._json_handler.get_data()
         
         valid_colors: set = set(ColorKeys.__members__.values())
-        for color, hex_code in new_theme.get(_SectionKeys.COLORS).items():
+        for color, hex_code in new_theme.get(SectionKeys.COLORS).items():
             if not color in valid_colors:
                 print(f"{color} is an unknown key and will be skipped")
                 continue
-            ui_config[_SectionKeys.THEME][_SectionKeys.COLORS][color] = hex_code
+            ui_config[SectionKeys.THEME][SectionKeys.COLORS][color] = hex_code
         
         valid_font_props: set = set(FontKeys.__members__.values())
-        for key, value in new_theme.get(_SectionKeys.FONT).items():
+        for key, value in new_theme.get(SectionKeys.FONT).items():
             if not key in valid_font_props:
                 print(f"{key} is an unknown key and will be skipped")
                 continue
-            ui_config[_SectionKeys.THEME][_SectionKeys.FONT][key] = value
+            ui_config[SectionKeys.THEME][SectionKeys.FONT][key] = value
         
         self._json_handler.set_data(ui_config)
         self._json_handler.save_data()
         self._json_handler.ensure_backup()
     
     
+    """Has to be adjusted ig"""
     def _load_external_theme(self, src_file_path: Path) -> dict:
         try: # ext file check is done in the command manager
             new_theme: dict = JsonFileOperations.perform_load(src_file_path)
@@ -241,49 +165,6 @@ class GuiConfigManager:
     
     
     # helper methods below
-        
-    def _validate_geometry_pattern(self) -> None:
-        valid_geometry_pattern: str = compile(r"(\d+x\d+)|(\d+x\d+)\+(\-)?\d+\+(\-)?\d+")
-        data_changed: bool = False
-        
-        ui_config: dict = self._json_handler.get_data()
-        if not fullmatch(valid_geometry_pattern, ui_config.get(_SectionKeys.WINDOW).get(_SectionKeys.ROOT).get(WindowKeys.GEOMETRY)):
-            print("Invalid geometry")
-            ui_config[_SectionKeys.WINDOW][_SectionKeys.ROOT][WindowKeys.GEOMETRY] = self._DEFAULT_CONFIG[_SectionKeys.WINDOW][_SectionKeys.ROOT][WindowKeys.GEOMETRY]
-            data_changed = True
-        
-        if data_changed:
-            self._json_handler.set_data(ui_config)
-    
-    
-    def _validate_position_pattern(self) -> None:
-        validate_position_pattern: str = compile(r"^\+(\-)?\d+\+(\-)?\d+$")
-        data_changed: bool = False
-        
-        ui_config: dict = self._json_handler.get_data()
-        if not fullmatch(validate_position_pattern, ui_config.get(_SectionKeys.WINDOW).get(_SectionKeys.TOPLEVEL).get(WindowKeys.GEOMETRY)):
-            print("Invalid position")
-            ui_config[_SectionKeys.WINDOW][_SectionKeys.TOPLEVEL][WindowKeys.GEOMETRY] = self._DEFAULT_CONFIG[_SectionKeys.WINDOW][_SectionKeys.TOPLEVEL][WindowKeys.GEOMETRY]
-            data_changed = True
-        
-        if data_changed:
-            self._json_handler.set_data(ui_config)
-    
-    
-    def _validate_hex_pattern(self) -> None:
-        valid_hex_pattern: str = compile(r"#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})")
-        data_changed: bool = False
-        
-        ui_config: dict = self._json_handler.get_data()
-        for color, hex_code in ui_config.get(_SectionKeys.THEME).get(_SectionKeys.COLORS).items():
-            if not fullmatch(valid_hex_pattern, hex_code):
-                print(f"Invalid hex value for {color}")
-                ui_config[_SectionKeys.THEME][_SectionKeys.COLORS][color] = self._DEFAULT_CONFIG[_SectionKeys.THEME][_SectionKeys.COLORS][color]
-                data_changed = True
-        
-        if data_changed:
-            self._json_handler.set_data(ui_config)
-    
     
     def _get_shared_font_props(self) -> dict:
         font_props: dict = self._get_font_props()
@@ -294,8 +175,8 @@ class GuiConfigManager:
     
     
     def _get_font_props(self) -> dict:
-        return self._json_handler.get_data().get(_SectionKeys.THEME).get(_SectionKeys.FONT)
+        return self._json_handler.get_data().get(SectionKeys.THEME).get(SectionKeys.FONT)
     
     
     def _get_widget_props(self) -> dict:
-        return self._json_handler.get_data().get(_SectionKeys.THEME).get(_SectionKeys.WIDGETS)
+        return self._json_handler.get_data().get(SectionKeys.THEME).get(SectionKeys.WIDGETS)

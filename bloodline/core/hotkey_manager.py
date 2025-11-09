@@ -2,6 +2,7 @@ from enum import Enum
 from pathlib import Path
 
 from utils.directory import Directory
+from utils.hotkeys_schema import HotkeyConfig
 from utils.persistent_json_handler import PersistentJsonHandler
 
 class HotkeyNames(str, Enum):
@@ -20,7 +21,7 @@ class HotkeyManager:
         self._json_handler: PersistentJsonHandler = PersistentJsonHandler(
             self._HK_FILE_PATH,
             self._BACKUP_FILE_PATH,
-            self._DEFAULT_HOTKEYS
+            HotkeyConfig()
         )
         self._observer: any = None
     
