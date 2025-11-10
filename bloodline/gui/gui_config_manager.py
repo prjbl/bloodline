@@ -4,10 +4,8 @@ from json import JSONDecodeError
 from pathlib import Path
 from queue import Queue
 
-from utils.config_schema import GuiConfig, SectionKeys, WindowKeys, ColorKeys, FontKeys
-from utils.directory import Directory
-from utils.json_file_operations import JsonFileOperations
-from utils.persistent_json_handler import PersistentJsonHandler
+from utils import Directory, JsonFileOperations, PersistentJsonHandler
+from utils.validation import GuiConfig, SectionKeys, WindowKeys, ColorKeys, FontKeys
 
 class GuiConfigManager:
     

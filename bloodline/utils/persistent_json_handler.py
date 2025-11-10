@@ -3,7 +3,7 @@ from pathlib import Path
 from pydantic import BaseModel, ValidationError
 from shutil import copy2
 
-from utils.json_file_operations import JsonFileOperations
+from .json_file_operations import JsonFileOperations
 
 class PersistentJsonHandler(JsonFileOperations):
     

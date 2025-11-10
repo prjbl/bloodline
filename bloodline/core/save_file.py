@@ -2,7 +2,7 @@ from pathlib import Path
 from shutil import copy2
 from sqlite3 import Connection, Cursor, connect, DatabaseError
 
-from utils.directory import Directory
+from utils import Directory
 
 class SaveFile:
     

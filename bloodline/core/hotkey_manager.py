@@ -1,19 +1,7 @@
-from enum import Enum
 from pathlib import Path
 
-from utils.directory import Directory
-from utils.hotkeys_schema import HotkeyConfig
-from utils.persistent_json_handler import PersistentJsonHandler
-
-class HotkeyNames(str, Enum):
-    COUNTER_INC: str = "hk_counter_increase"
-    COUNTER_DEC: str = "hk_counter_decrease"
-    COUNTER_RESET: str = "hk_counter_reset"
-    TIMER_START: str = "hk_timer_start"
-    TIMER_PAUSE: str = "hk_timer_pause"
-    TIMER_STOP: str = "hk_timer_stop"
-    TIMER_RESET: str = "hk_timer_reset"
-    LISTENER_END: str = "hk_listener_end"
+from utils import Directory, PersistentJsonHandler
+from utils.validation import HotkeyConfig, HotkeyNames
 
 class HotkeyManager:
     

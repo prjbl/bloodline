@@ -2,15 +2,14 @@ from pathlib import Path
 from re import compile, fullmatch, Match, IGNORECASE
 from tkinter import Event
 
-from core.counter import Counter
-from utils.external_json_handler import ExternalJsonHandler
-from gui.gui_config_manager import GuiConfigManager
-from core.hotkey_manager import HotkeyManager, HotkeyNames
-from utils.json_file_operations import JsonFileOperations
-from core.key_listener import KeyListener
+from .counter import Counter
+from .hotkey_manager import HotkeyManager
+from .key_listener import KeyListener
+from .save_file import SaveFile
+from .timer import Timer
 from gui.overlay import Overlay
-from core.save_file import SaveFile
-from core.timer import Timer
+from utils import ExternalJsonHandler, JsonFileOperations
+from utils.validation import HotkeyNames
 
 class CommandManager:
     
@@ -92,7 +91,6 @@ class CommandManager:
         self._save_file: SaveFile = SaveFile()
         self._save_file.setup_db_and_observer(self._print_output_func)
         self._json_handler: ExternalJsonHandler = ExternalJsonHandler()
-        self._config_mananger: GuiConfigManager = GuiConfigManager()
     
     
     def _setup_input_vars(self) -> None:
