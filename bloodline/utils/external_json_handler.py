@@ -1,7 +1,7 @@
 from json import JSONDecodeError
 from pathlib import Path
 
-from utils.json_file_operations import JsonFileOperations
+from .json_file_operations import JsonFileOperations
 
 class ExternalJsonHandler(JsonFileOperations):
     

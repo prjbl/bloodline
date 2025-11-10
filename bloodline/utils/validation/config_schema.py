@@ -4,7 +4,7 @@ from pydantic.fields import FieldInfo
 from pydantic_core.core_schema import FieldValidationInfo
 from typing import Any
 
-from utils.validation_pattern import ValidationPattern
+from .validation_pattern import ValidationPattern
 
 class SectionKeys(str, Enum):
     WINDOW: str = "window"

@@ -1,4 +1,4 @@
-from gui.console import Application
+from gui import Application
 
 if __name__ == "__main__":
     app: Application = Application()

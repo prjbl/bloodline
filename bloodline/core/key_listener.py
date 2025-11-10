@@ -1,10 +1,11 @@
 from threading import Thread
 
-from pynput import keyboard as kb
+from pynput import keyboard
 
-from core.counter import Counter
-from core.hotkey_manager import HotkeyManager, HotkeyNames
-from core.timer import Timer
+from .counter import Counter
+from .hotkey_manager import HotkeyManager
+from .timer import Timer
+from utils.validation import HotkeyNames
 
 class KeyListener:
     
@@ -14,7 +15,7 @@ class KeyListener:
         self._timer: Timer = timer
         self._destroy_overlay_func: any = destroy_overlay_func
         
-        self._key_listener: kb.Listener = None
+        self._key_listener: keyboard.Listener = None
         self._listener_thread: Thread = None
         self._observer: any = None
     
@@ -58,7 +59,7 @@ class KeyListener:
 
 
     def _run_listener(self) -> None:
-        with kb.Listener(
+        with keyboard.Listener(
             on_press=self._on_press) as self._key_listener:
                 self._key_listener.join()
         self._notify_observer("Key listener stopped", "normal")
@@ -97,7 +98,7 @@ class KeyListener:
     
     
     def _run_listener_for_one_input(self) -> None:
-        with kb.Listener(
+        with keyboard.Listener(
             on_press=self._on_change_keybind) as self._key_listener:
                 self._key_listener.join()
         self._notify_observer("Keyboard listener stopped", "normal")
@@ -114,9 +115,9 @@ class KeyListener:
     
     
     def _check_helper_keys(self, cleaned_key_input: str) -> bool:
-        if cleaned_key_input == str(kb.Key.shift_l):
+        if cleaned_key_input == str(keyboard.Key.shift_l):
             return True
-        elif cleaned_key_input == str(kb.Key.shift_r):
+        elif cleaned_key_input == str(keyboard.Key.shift_r):
             return True
         else:
             return False

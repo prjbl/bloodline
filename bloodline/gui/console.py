@@ -4,10 +4,10 @@ from tkinter import Tk, Frame, Label, Entry, StringVar
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 
-from core.command_manager import CommandManager
-from gui.gui_config_manager import GuiConfigManager
-from utils.config_schema import WindowKeys, ColorKeys, FontKeys, WidgetKeys
-from utils.directory import Directory
+from .gui_config_manager import GuiConfigManager
+from core import CommandManager
+from utils import Directory
+from utils.validation import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Application:
     
