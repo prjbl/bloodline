@@ -11,7 +11,9 @@ class HotkeyManager:
             self._BACKUP_FILE_PATH,
             HotkeyConfig()
         )
-        self._observer: any = None
+        
+        self._json_handler.setup_files()
+        self._json_handler.load_data(is_initial_call=True)
     
     
     _dir: Directory = Directory()
@@ -31,17 +33,6 @@ class HotkeyManager:
         HotkeyNames.TIMER_RESET: "*",
         HotkeyNames.LISTENER_END: "°"
     }
-    
-    
-    def setup_keybinds_and_observer(self, observer: any) -> None:
-        self._observer = observer
-        
-        self._json_handler.setup_files() # setup had to be outsourced to after the observer has been set, as its required for the setup process
-        self._json_handler.load_data(is_initial_call=True)
-    
-    
-    def _notify_observer(self, text: str, text_type: str) -> None:
-        self._observer(text, text_type)
     
     
     def set_new_keybind(self, hotkey: str, new_keybind: str) -> None:
