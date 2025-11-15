@@ -2,14 +2,26 @@ from pathlib import Path
 from shutil import copy2
 from sqlite3 import Connection, Cursor, connect, DatabaseError
 
+from interfaces import IConsole
 from utils import Directory
 
 class SaveFile:
     
-    def __init__(self):
+    def __init__(self, console: IConsole):
+        self._console: IConsole = console
         self._conn: Connection = None
         self._cursor: Cursor = None
-        self._observer: any = None
+        
+        if not self._DB_FILE_PATH.exists() and self._BACKUP_FILE_PATH.exists():
+            self._console.print_output(f"The file '{self._DB_FILE}' could not be found. The last backup will be loaded", "error")
+            self._handle_file_restore()
+        else:
+            self._open_connection()
+            self._setup_db()
+        
+        if not self._BACKUP_FILE_PATH.exists():
+            self._ensure_backup()
+        self._check_for_updates()
     
     
     _dir: Directory = Directory()
@@ -25,26 +37,6 @@ class SaveFile:
     _UNKNOWN_BOSS_NAME: str = "Unknown Boss"
     
     
-    def setup_db_and_observer(self, observer: any) -> None:
-        self._observer = observer
-        
-        # setup had to be outsourced to after the observer has been set, as its required for the setup process
-        if not self._DB_FILE_PATH.exists() and self._BACKUP_FILE_PATH.exists():
-            self._notify_observer(f"The file '{self._DB_FILE}' could not be found. The last backup will be loaded", "error")
-            self._handle_file_restore()
-        else:
-            self._open_connection()
-            self._setup_db()
-        
-        if not self._BACKUP_FILE_PATH.exists():
-            self._ensure_backup()
-        self._check_for_updates()
-    
-    
-    def _notify_observer(self, text: str, text_type: str) -> None:
-        self._observer(text, text_type)
-    
-    
     def _open_connection(self) -> None:
         self._conn = connect(self._dir.get_persistent_data_path().joinpath(self._DB_FILE))
         self._conn.execute("PRAGMA foreign_keys = ON") # activates foreign key restriction
@@ -55,7 +47,7 @@ class SaveFile:
         try:
             self._create_tables()
         except DatabaseError:
-            self._notify_observer(f"The file '{self._DB_FILE}' is corrupted. This save file will be deleted and the last backup file is beeing loaded", "error")
+            self._console.print_output(f"The file '{self._DB_FILE}' is corrupted. This save file will be deleted and the last backup file is beeing loaded", "error")
             self._handle_file_restore()
     
     
@@ -80,10 +72,10 @@ class SaveFile:
     
     def _handle_file_restore(self) -> None:
         if not self._BACKUP_FILE_PATH.exists():
-            self._notify_observer("Backup file could not be found. Both files will be re-initialized", "error")
+            self._console.print_output("Backup file could not be found. Both files will be re-initialized", "error")
             self._reinitialize_db()
             self._reinitialize_backup()
-            self._notify_observer("Both files were successfully re-initilizied", "success")
+            self._console.print_output("Both files were successfully re-initilizied", "success")
             return
         
         try:
@@ -93,13 +85,13 @@ class SaveFile:
             self._DB_FILE_PATH.unlink(missing_ok=True)
             self._load_backup()
             self._open_connection()
-            self._notify_observer("Loading backup was successful", "success")
-            self._notify_observer("Whole backuping process was successful", "success")
+            self._console.print_output("Loading backup was successful", "success")
+            self._console.print_output("Whole backuping process was successful", "success")
         except DatabaseError:
-            self._notify_observer(f"The backup file '{self._BACKUP_FILE}' is corrupted. An attempt is made to re-initialize file", "error")
+            self._console.print_output(f"The backup file '{self._BACKUP_FILE}' is corrupted. An attempt is made to re-initialize file", "error")
             self._reinitialize_db()
             self._reinitialize_backup()
-            self._notify_observer("Both files were re-initialized successfully", "success")
+            self._console.print_output("Both files were re-initialized successfully", "success")
     
     
     def _reinitialize_db(self) -> None:
@@ -108,18 +100,18 @@ class SaveFile:
             self._DB_FILE_PATH.unlink(missing_ok=True)
             self._open_connection()
             self._create_tables()
-            self._notify_observer("Save file was re-initialized successfully", "success")
+            self._console.print_output("Save file was re-initialized successfully", "success")
         except Exception as e:
-            self._notify_observer(f"Failed to re-initilize '{self._DB_FILE}'. Exception: {e}", "error")
+            self._console.print_output(f"Failed to re-initilize '{self._DB_FILE}'. Exception: {e}", "error")
     
     
     def _reinitialize_backup(self) -> None:
         try:
             self._BACKUP_FILE_PATH.unlink(missing_ok=True)
             self._handle_backup_process()
-            self._notify_observer("Backup was re-initialized successfully", "success")
+            self._console.print_output("Backup was re-initialized successfully", "success")
         except Exception as e:
-            self._notify_observer(f"Failed to re-initialize '{self._BACKUP_FILE}'. Exception: {e}", "error")
+            self._console.print_output(f"Failed to re-initialize '{self._BACKUP_FILE}'. Exception: {e}", "error")
     
     
     def _ensure_backup(self) -> None:
@@ -129,9 +121,9 @@ class SaveFile:
             self._handle_backup_process()
             
             if backup_exists:
-                self._notify_observer("Backup was updated", "normal")
+                self._console.print_output("Backup was updated", "normal")
         except DatabaseError:
-            self._notify_observer(f"The backup file '{self._BACKUP_FILE}' is corrupted. An attempt is made to re-initialize file", "error")
+            self._console.print_output(f"The backup file '{self._BACKUP_FILE}' is corrupted. An attempt is made to re-initialize file", "error")
             self._reinitialize_backup()
     
     
@@ -193,14 +185,14 @@ class SaveFile:
                                         VALUES (?)""", (game_title,))
             self._conn.commit()
             
-            self._notify_observer(f"The game '{game_title}' has been added to the save file", "normal")
+            self._console.print_output(f"The game '{game_title}' has been added to the save file", "normal")
         except Exception as e:
-            self._notify_observer(f"An unexpected error occured while adding the game '{game_title}'. Exception: {e}", "error")
+            self._console.print_output(f"An unexpected error occured while adding the game '{game_title}'. Exception: {e}", "error")
     
     
     def add_boss(self, boss_name: str, game_title: str, ensure_backup: bool = True) -> bool:
         if self.get_specific_boss_exists(boss_name, game_title):
-            self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' already exists in the save file", "invalid")
+            self._console.print_output(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' already exists in the save file", "invalid")
             return False
         
         self._add_game(game_title)
@@ -210,19 +202,19 @@ class SaveFile:
                                         VALUES (?, (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE))""", (boss_name, game_title))
             self._conn.commit()
             
-            self._notify_observer(f"The boss '{boss_name}' of game '{self._get_specific_game(game_title) if self._get_specific_game_exists(game_title) else game_title}' has been added to the save file", "normal")
+            self._console.print_output(f"The boss '{boss_name}' of game '{self._get_specific_game(game_title) if self._get_specific_game_exists(game_title) else game_title}' has been added to the save file", "normal")
             
             if ensure_backup:
                 self._ensure_backup()
             return True
         except Exception as e:
-            self._notify_observer(f"An unexpected error occured while adding the boss '{boss_name}' to '{self._get_specific_game(game_title) if self._get_specific_game_exists(game_title) else game_title}'. Exception: {e}", "error")
+            self._console.print_output(f"An unexpected error occured while adding the boss '{boss_name}' to '{self._get_specific_game(game_title) if self._get_specific_game_exists(game_title) else game_title}'. Exception: {e}", "error")
             return False
     
     
     def add_preset(self, loaded_preset: dict) -> None:
         if not loaded_preset:
-            self._notify_observer("The imported preset does not contain any values to be added to the save file", "invalid")
+            self._console.print_output("The imported preset does not contain any values to be added to the save file", "invalid")
             return
         
         changes_made: bool = False
@@ -256,16 +248,16 @@ class SaveFile:
     
     def identify_boss(self, unknown_boss_number: str, new_boss_name: str, new_game_title: str) -> None:
         if not self._get_specific_game_exists(self._UNKNOWN_GAME_TITLE):
-            self._notify_observer(f"The game '{self._UNKNOWN_GAME_TITLE}' you want to identify a boss from does not exists in the save file so far", "invalid")
+            self._console.print_output(f"The game '{self._UNKNOWN_GAME_TITLE}' you want to identify a boss from does not exists in the save file so far", "invalid")
             return
         elif not self.get_specific_boss_exists(f"{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}", self._UNKNOWN_GAME_TITLE):
-            self._notify_observer(f"The boss '{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}' you selected to identify does not exists in the game '{self._UNKNOWN_GAME_TITLE}' in the save file", "invalid")
+            self._console.print_output(f"The boss '{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}' you selected to identify does not exists in the game '{self._UNKNOWN_GAME_TITLE}' in the save file", "invalid")
             return
         elif not self._get_specific_game_exists(new_game_title):
-            self._notify_observer(f"The game '{new_game_title}' you selected to link the boss to does not exists in the save file so far", "invalid")
+            self._console.print_output(f"The game '{new_game_title}' you selected to link the boss to does not exists in the save file so far", "invalid")
             return
         elif self.get_specific_boss_exists(new_boss_name, new_game_title):
-            self._notify_observer(f"The boss '{self._get_specific_boss(new_boss_name, new_game_title)}' already exists in the game '{self._get_specific_game(new_game_title)}'", "invalid")
+            self._console.print_output(f"The boss '{self._get_specific_boss(new_boss_name, new_game_title)}' already exists in the game '{self._get_specific_game(new_game_title)}'", "invalid")
             return
             
         if not self._rename_boss_operation(f"{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}", self._UNKNOWN_GAME_TITLE, new_boss_name):
@@ -274,37 +266,37 @@ class SaveFile:
         if not self._move_boss_operation(new_boss_name, self._UNKNOWN_GAME_TITLE, new_game_title):
             return
         
-        self._notify_observer(f"The boss '{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}' was identified as '{new_boss_name}' from game '{self._get_specific_game(new_game_title)}'", "success")
+        self._console.print_output(f"The boss '{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}' was identified as '{new_boss_name}' from game '{self._get_specific_game(new_game_title)}'", "success")
         self._ensure_backup()
     
     
     def move_boss(self, boss_name: str, game_title: str, new_game_title: str) -> None:
         if not self._get_specific_game_exists(game_title):
-            self._notify_observer(f"The game '{game_title}' you selected to move the boss from does not exists in the save file so far", "indication")
+            self._console.print_output(f"The game '{game_title}' you selected to move the boss from does not exists in the save file so far", "indication")
             return
         elif not self.get_specific_boss_exists(boss_name, game_title):
-            self._notify_observer(f"The boss '{boss_name}' you selected to move does not exists in the game '{self._get_specific_game(game_title)}' in the save file so far", "indication")
+            self._console.print_output(f"The boss '{boss_name}' you selected to move does not exists in the game '{self._get_specific_game(game_title)}' in the save file so far", "indication")
             return
         elif not self._get_specific_game_exists(new_game_title):
-            self._notify_observer(f"The game '{new_game_title}' you selected to be moved to does not exists in the save file so far", "indication")
+            self._console.print_output(f"The game '{new_game_title}' you selected to be moved to does not exists in the save file so far", "indication")
             return
         elif self.get_specific_boss_exists(boss_name, new_game_title):
-            self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' already exists in the game '{self._get_specific_game(new_game_title)}'", "indication")
+            self._console.print_output(f"The boss '{self._get_specific_boss(boss_name, game_title)}' already exists in the game '{self._get_specific_game(new_game_title)}'", "indication")
             return
         
         old_game_title: str = self._get_specific_game(game_title)
         
         if self._move_boss_operation(boss_name, game_title, new_game_title):
-            self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, new_game_title)}' was moved from game '{old_game_title}' to '{self._get_specific_game(new_game_title)}'", "success")
+            self._console.print_output(f"The boss '{self._get_specific_boss(boss_name, new_game_title)}' was moved from game '{old_game_title}' to '{self._get_specific_game(new_game_title)}'", "success")
             self._ensure_backup()
     
     
     def rename_game(self, game_title: str, new_game_title: str) -> None:
         if not self._get_specific_game_exists(game_title):
-            self._notify_observer(f"The game '{game_title}' you wish to rename does not exists in the save file so far", "indication")
+            self._console.print_output(f"The game '{game_title}' you wish to rename does not exists in the save file so far", "indication")
             return
         elif self._get_specific_game_exists(new_game_title, case_insensitive=False):
-            self._notify_observer(f"The game '{new_game_title}' already exists with the same spelling in the save file", "invalid")
+            self._console.print_output(f"The game '{new_game_title}' already exists with the same spelling in the save file", "invalid")
             return
         
         try:
@@ -315,33 +307,33 @@ class SaveFile:
                                         WHERE title = (?) COLLATE NOCASE""", (new_game_title, game_title))
             self._conn.commit()
             
-            self._notify_observer(f"The game '{old_game_title}' was renamed to '{new_game_title}'", "success")
+            self._console.print_output(f"The game '{old_game_title}' was renamed to '{new_game_title}'", "success")
             self._ensure_backup()
         except Exception as e:
-            self._notify_observer(f"An unexpected error occured while renaming the game '{self._get_specific_game(game_title)}' to '{new_game_title}'. Exception: {e}", "error")
+            self._console.print_output(f"An unexpected error occured while renaming the game '{self._get_specific_game(game_title)}' to '{new_game_title}'. Exception: {e}", "error")
     
     
     def rename_boss(self, boss_name: str, game_title: str, new_boss_name: str) -> None:
         if not self._get_specific_game_exists(game_title):
-            self._notify_observer(f"The game '{game_title}' you selected does not exists in the save file", "indication")
+            self._console.print_output(f"The game '{game_title}' you selected does not exists in the save file", "indication")
             return
         elif not self.get_specific_boss_exists(boss_name, game_title):
-            self._notify_observer(f"The boss '{boss_name}' you wish to rename does not exists in in the game '{self._get_specific_game(game_title)}' in the save file so far", "indication")
+            self._console.print_output(f"The boss '{boss_name}' you wish to rename does not exists in in the game '{self._get_specific_game(game_title)}' in the save file so far", "indication")
             return
         elif self.get_specific_boss_exists(new_boss_name, game_title, case_insensitive=False):
-            self._notify_observer(f"The boss '{new_boss_name}' already exists with the same spelling in the game '{self._get_specific_game(game_title)}'", "invalid")
+            self._console.print_output(f"The boss '{new_boss_name}' already exists with the same spelling in the game '{self._get_specific_game(game_title)}'", "invalid")
             return
         
         old_boss_name: str = self._get_specific_boss(boss_name, game_title)
         
         if self._rename_boss_operation(boss_name, game_title, new_boss_name):
-            self._notify_observer(f"The boss '{old_boss_name}' of game '{self._get_specific_game(game_title)}' was renamed to '{new_boss_name}'", "success")
+            self._console.print_output(f"The boss '{old_boss_name}' of game '{self._get_specific_game(game_title)}' was renamed to '{new_boss_name}'", "success")
             self._ensure_backup()
     
     
     def delete_game(self, game_title: str) -> None:
         if not self._get_specific_game_exists(game_title):
-            self._notify_observer(f"The game '{game_title}' you wish to delete does not exists in the save file", "indication")
+            self._console.print_output(f"The game '{game_title}' you wish to delete does not exists in the save file", "indication")
             return
         
         try:
@@ -351,18 +343,18 @@ class SaveFile:
                                         WHERE title = (?) COLLATE NOCASE""", (game_title,))
             self._conn.commit()
             
-            self._notify_observer(f"The game '{removed_game}' has been successfully deleted", "success")
+            self._console.print_output(f"The game '{removed_game}' has been successfully deleted", "success")
             self._ensure_backup()
         except Exception as e:
-            self._notify_observer(f"An unexpected error occured while removing the game '{self._get_specific_game(game_title)}' from the save file. Exception: {e}", "error")
+            self._console.print_output(f"An unexpected error occured while removing the game '{self._get_specific_game(game_title)}' from the save file. Exception: {e}", "error")
     
     
     def delete_boss(self, boss_name: str, game_title: str) -> None:
         if not self._get_specific_game_exists(game_title):
-            self._notify_observer(f"The game '{game_title}' you selected to delete a boss from does not exists in the save file", "indication")
+            self._console.print_output(f"The game '{game_title}' you selected to delete a boss from does not exists in the save file", "indication")
             return
         elif not self.get_specific_boss_exists(boss_name, game_title):
-            self._notify_observer(f"The boss '{boss_name}' you wish to delete does not exists in the game '{self._get_specific_game(game_title)}' in the save file", "indication")
+            self._console.print_output(f"The boss '{boss_name}' you wish to delete does not exists in the game '{self._get_specific_game(game_title)}' in the save file", "indication")
             return
         
         try:
@@ -372,10 +364,10 @@ class SaveFile:
                                         WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (boss_name, game_title))
             self._conn.commit()
             
-            self._notify_observer(f"The boss '{removed_boss}' of game '{self._get_specific_game(game_title)}' was removed", "success")
+            self._console.print_output(f"The boss '{removed_boss}' of game '{self._get_specific_game(game_title)}' was removed", "success")
             self._ensure_backup()
         except Exception as e:
-            self._notify_observer(f"An unexpected error occured while removing the boss '{self._get_specific_boss(boss_name, game_title)}' from game '{self._get_specific_game(game_title)}' the save file. Exception: {e}", "error")
+            self._console.print_output(f"An unexpected error occured while removing the boss '{self._get_specific_boss(boss_name, game_title)}' from game '{self._get_specific_game(game_title)}' the save file. Exception: {e}", "error")
     
     
     def get_bosses_from_game_by(self, game_title: str, sort_filter: str, order_filter: str) -> list[tuple]:
@@ -383,13 +375,13 @@ class SaveFile:
         allowed_order_filters: list[str] = ["desc", "asc"]
         
         if sort_filter not in allowed_sort_filters:
-            self._notify_observer(f"Illegal sort filter '{sort_filter}' used", "indication")
+            self._console.print_output(f"Illegal sort filter '{sort_filter}' used", "indication")
             return
         elif order_filter.lower() not in allowed_order_filters:
-            self._notify_observer(f"Illegal order filter '{order_filter}' used", "indication")
+            self._console.print_output(f"Illegal order filter '{order_filter}' used", "indication")
             return
         elif not self._get_specific_game_exists(game_title):
-            self._notify_observer(f"The game '{game_title}' you selected all bosses from does not exists in the save file", "indication")
+            self._console.print_output(f"The game '{game_title}' you selected all bosses from does not exists in the save file", "indication")
             return
         
         self._cursor.execute(f"""SELECT b.name, b.deaths, b.requiredTime FROM Boss b
@@ -399,7 +391,7 @@ class SaveFile:
         selection: list[tuple] = self._cursor.fetchall()
         
         if not selection:
-            self._notify_observer(f"There are no bosses linked to the game '{self._get_specific_game(game_title)}'", "indication")
+            self._console.print_output(f"There are no bosses linked to the game '{self._get_specific_game(game_title)}'", "indication")
         
         return selection
     
@@ -409,10 +401,10 @@ class SaveFile:
         allowed_order_filters: list[str] = ["desc", "asc"]
         
         if sort_filter not in allowed_sort_filters:
-            self._notify_observer(f"Illegal sort filter '{sort_filter}' used", "indication")
+            self._console.print_output(f"Illegal sort filter '{sort_filter}' used", "indication")
             return
         elif order_filter.lower() not in allowed_order_filters:
-            self._notify_observer(f"Illegal order filter '{order_filter}' used", "indication")
+            self._console.print_output(f"Illegal order filter '{order_filter}' used", "indication")
             return
         
         self._cursor.execute(f"""SELECT b.name, g.title, b.deaths, b.requiredTime FROM Boss b
@@ -421,7 +413,7 @@ class SaveFile:
         selection: list[tuple] = self._cursor.fetchall()
         
         if not selection:
-            self._notify_observer(f"There are no bosses in the save file so far", "indication")
+            self._console.print_output(f"There are no bosses in the save file so far", "indication")
         
         return selection
     
@@ -431,10 +423,10 @@ class SaveFile:
         allowed_order_filters: list[str] = ["desc", "asc"]
         
         if sort_filter not in allowed_sort_filters:
-            self._notify_observer(f"Illegal sort filter '{sort_filter}' used", "indication")
+            self._console.print_output(f"Illegal sort filter '{sort_filter}' used", "indication")
             return
         elif order_filter.lower() not in allowed_order_filters:
-            self._notify_observer(f"Illegal order filter '{order_filter}' used", "indication")
+            self._console.print_output(f"Illegal order filter '{order_filter}' used", "indication")
             return
         
         self._cursor.execute(f"""SELECT g.title, SUM(b.deaths), SUM(b.requiredTime) FROM Game g
@@ -444,17 +436,17 @@ class SaveFile:
         selection: list[tuple] = self._cursor.fetchall()
         
         if not selection:
-            self._notify_observer(f"There are no games in the save file so far", "indication")
+            self._console.print_output(f"There are no games in the save file so far", "indication")
         
         return selection
     
     
     def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> bool:
         if not self._get_specific_game_exists(game_title):
-            self._notify_observer(f"The game '{game_title}' you selected to save the stats to a boss from does not exists in the save file", "indication")
+            self._console.print_output(f"The game '{game_title}' you selected to save the stats to a boss from does not exists in the save file", "indication")
             return False
         elif not self.get_specific_boss_exists(boss_name, game_title):
-            self._notify_observer(f"The boss '{boss_name}' you wish to save the stats to does not exists in the game '{self._get_specific_game(game_title)}' in the save file", "indication")
+            self._console.print_output(f"The boss '{boss_name}' you wish to save the stats to does not exists in the game '{self._get_specific_game(game_title)}' in the save file", "indication")
             return False
         
         try:
@@ -463,11 +455,11 @@ class SaveFile:
                                         WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (deaths, required_time, boss_name, game_title))
             self._conn.commit()
             
-            self._notify_observer(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", "success")
+            self._console.print_output(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", "success")
             self._ensure_backup()
             return True
         except Exception as e:
-            self._notify_observer(f"An unexpected error occured while saving the stats to the boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}'. Exception: {e}", "error")
+            self._console.print_output(f"An unexpected error occured while saving the stats to the boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}'. Exception: {e}", "error")
             return False
     
     
@@ -544,7 +536,7 @@ class SaveFile:
             self._conn.commit()
             return True
         except Exception as e:
-            self._notify_observer(f"An unexpected error occured while moving the boss '{self._get_specific_boss(boss_name, game_title)}' from '{self._get_specific_game(game_title)}' to '{new_game_title}'. Exception: {e}", "error")
+            self._console.print_output(f"An unexpected error occured while moving the boss '{self._get_specific_boss(boss_name, game_title)}' from '{self._get_specific_game(game_title)}' to '{new_game_title}'. Exception: {e}", "error")
             return False
     
     
@@ -556,7 +548,7 @@ class SaveFile:
             self._conn.commit()
             return True
         except Exception as e:
-            self._notify_observer(f"An unexpected error occured while renaming the boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' to '{new_boss_name}'. Exception: {e}", "error")
+            self._console.print_output(f"An unexpected error occured while renaming the boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' to '{new_boss_name}'. Exception: {e}", "error")
             return False
     
     

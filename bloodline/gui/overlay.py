@@ -1,19 +1,61 @@
 from tkinter import Toplevel, Frame, Label
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
+from typing import override, Any
 
-from .gui_config_manager import GuiConfigManager
+from .config_manager import ConfigManager
+from interfaces import IOverlay
 from utils.validation import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
-class Overlay:
+class Overlay(IOverlay):
     
     def __init__(self):
-        self._config_manager: GuiConfigManager = GuiConfigManager()
+        self._config_manager: ConfigManager = ConfigManager()
         self._setup_config_vars()
-        self._observer: any = None
+        self._observer: Any = None
     
     
-    def set_observer(self, observer: any) -> None:
+    @override
+    def update_counter_label(self, count: int) -> None:
+        self._counter_label.config(text=count)
+    
+    
+    @override
+    def update_timer_label(self, formated_time: str) -> None:
+        self._timer_label.config(text=formated_time)
+    
+    
+    @override
+    def add_mainloop_task(self, delay: int, task: Any) -> None:
+        self._toplevel.after(delay, task)
+    
+    
+    @override
+    def display_lock_animation(self, animation_time: int, lock_state: bool) -> None:
+        self._toplevel.config(highlightbackground=self._colors.get(ColorKeys.ERROR) if lock_state else self._colors.get(ColorKeys.SUCCESS))
+        self.add_mainloop_task(animation_time, lambda: self._toplevel.config(highlightbackground=self._colors.get(ColorKeys.BACKGROUND)))
+    
+    
+    @override
+    def create_instance(self) -> None:
+        self._toplevel: Toplevel = Toplevel()
+        self._setup_window()
+        self._setup_ui_elements()
+        self._setup_font()
+        
+        self._toplevel.update() # makes sure the window init is complete
+        self._init_width = self._toplevel.winfo_width()
+        
+        self._setup_bindings()
+    
+    
+    @override
+    def destroy_instance(self) -> None:
+        self._config_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx()}+{self._toplevel.winfo_rooty()}")
+        self._toplevel.destroy()
+    
+    
+    def set_observer(self, observer: Any) -> None:
         self._observer = observer
     
     
@@ -84,7 +126,7 @@ class Overlay:
         self._container.bind("<Configure>", self._on_resize)
     
     
-    def _on_lmb_click(self, event: any) -> None:
+    def _on_lmb_click(self, event: Any) -> None:
         if self._toplevel_props.get(WindowKeys.LOCKED):
             return
         
@@ -92,7 +134,7 @@ class Overlay:
         self._offset_y = self._toplevel.winfo_pointery() - self._toplevel.winfo_rooty()
     
     
-    def _on_lmb_drag(self, event: any) -> None:
+    def _on_lmb_drag(self, event: Any) -> None:
         if self._toplevel_props.get(WindowKeys.LOCKED):
             return
         
@@ -101,7 +143,7 @@ class Overlay:
         self._toplevel.geometry(f"+{pos_x}+{pos_y}")
     
     
-    def _on_resize(self, event: any) -> None:
+    def _on_resize(self, event: Any) -> None:
         self._calc_alignment()
         
         if self._alignment.get("left"):
@@ -115,40 +157,6 @@ class Overlay:
             self._toplevel.geometry(f"+{toplevel_x + int(difference_width / 2)}+{toplevle_y}")
         elif self._alignment.get("right"):
             self._toplevel.geometry(f"+{toplevel_x + difference_width}+{toplevle_y}")
-    
-    
-    def update_counter(self, count: int) -> None:
-        self._counter_label.config(text=count)
-    
-    
-    def update_timer(self, formated_time: str) -> None:
-        self._timer_label.config(text=formated_time)
-    
-    
-    def add_mainloop_task(self, delay: int, task: any) -> None:
-        self._toplevel.after(delay, task)
-    
-    
-    def display_lock_animation(self, animation_time: int, lock_state: bool) -> None:
-        self._toplevel.config(highlightbackground=self._colors.get(ColorKeys.ERROR) if lock_state else self._colors.get(ColorKeys.SUCCESS))
-        self.add_mainloop_task(animation_time, lambda: self._toplevel.config(highlightbackground=self._colors.get(ColorKeys.BACKGROUND)))
-    
-    
-    def create(self) -> None:
-        self._toplevel: Toplevel = Toplevel()
-        self._setup_window()
-        self._setup_ui_elements()
-        self._setup_font()
-        
-        self._toplevel.update() # makes sure the window init is complete
-        self._init_width = self._toplevel.winfo_width()
-        
-        self._setup_bindings()
-    
-    
-    def destroy(self) -> None:
-        self._config_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx()}+{self._toplevel.winfo_rooty()}")
-        self._toplevel.destroy()
     
     
     # helper methods below

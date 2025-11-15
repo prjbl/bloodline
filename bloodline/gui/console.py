@@ -3,17 +3,20 @@ from queue import Queue
 from tkinter import Tk, Frame, Label, Entry, StringVar
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
+from typing import override
 
-from .gui_config_manager import GuiConfigManager
+from .config_manager import ConfigManager
+from .overlay import Overlay
 from core import CommandManager
+from interfaces import IConsole
 from utils import Directory
 from utils.validation import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
-class Application:
+class Application(IConsole):
     
     def __init__(self):
         self._main_queue: Queue = Queue()
-        self._config_manager: GuiConfigManager = GuiConfigManager()
+        self._config_manager: ConfigManager = ConfigManager()
         self._setup_config_vars()
         
         self._root: Tk = Tk()
@@ -27,7 +30,12 @@ class Application:
         self._merge_queues(self._main_queue, self._config_manager.get_error_queue())
         self._display_startup_problems() # display call after first print out to prevent the texts from being displayed in the wrong order
         
-        self._cmd_manager: CommandManager = CommandManager(self.print_output, self.quit)
+        self._cmd_manager: CommandManager = CommandManager(
+            console=self,
+            quit_app_func=self.quit,
+            overlay=Overlay(),
+            config_manager=self._config_manager
+        )
         self._setup_bindings()
     
     
@@ -147,6 +155,7 @@ class Application:
         self._cmd_manager.set_entry_var(self._entry_var.get().strip())
     
     
+    @override
     def print_output(self, text: str, text_type: str) -> None:
         self._input_entry.delete(0, "end")
         

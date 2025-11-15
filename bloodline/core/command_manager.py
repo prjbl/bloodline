@@ -7,15 +7,17 @@ from .hotkey_manager import HotkeyManager
 from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
-from gui.overlay import Overlay
+from interfaces import IConfigManager, IConsole, IOverlay
 from utils import ExternalJsonHandler, JsonFileOperations
 from utils.validation import HotkeyNames
 
 class CommandManager:
     
-    def __init__(self, print_output_func: any, quit_app_func: any):
-        self._print_output_func: any = print_output_func
+    def __init__(self, console: IConsole, quit_app_func: any, overlay: IOverlay, config_manager: IConfigManager):
+        self._console: IConsole = console
         self._quit_app_func: any = quit_app_func
+        self._overlay: IOverlay = overlay
+        self._config_manager: IConfigManager = config_manager
         self._setup_instances()
         self._setup_input_vars()
         self._setup_auto_complete_vars()
@@ -80,16 +82,10 @@ class CommandManager:
     
     def _setup_instances(self) -> None:
         self._hk_manager: HotkeyManager = HotkeyManager()
-        self._hk_manager.setup_keybinds_and_observer(self._print_output_func)
-        self._overlay: Overlay = Overlay()
-        self._counter: Counter = Counter(self._overlay.update_counter)
-        self._counter.set_observer(self._print_output_func)
-        self._timer: Timer = Timer(self._overlay.update_timer, self._overlay.add_mainloop_task)
-        self._timer.set_observer(self._print_output_func)
-        self._key_listener: KeyListener = KeyListener(self._hk_manager, self._counter, self._timer, self._overlay.destroy)
-        self._key_listener.set_observer(self._print_output_func)
-        self._save_file: SaveFile = SaveFile()
-        self._save_file.setup_db_and_observer(self._print_output_func)
+        self._counter: Counter = Counter(self._console, self._overlay)
+        self._timer: Timer = Timer(self._console, self._overlay)
+        self._key_listener: KeyListener = KeyListener(self._hk_manager, self._counter, self._timer, self._console, self._overlay)
+        self._save_file: SaveFile = SaveFile(self._console)
         self._json_handler: ExternalJsonHandler = ExternalJsonHandler()
     
     
@@ -127,16 +123,16 @@ class CommandManager:
                 return
             
             self._console_input = console_input
-            self._print_output_func(console_input, "request")
+            self._console.print_output(console_input, "request")
             self._commands.get(self._last_unignored_input)()
         else:
-            self._print_output_func(console_input, "command")
+            self._console.print_output(console_input, "command")
             self._last_unignored_input: str = cleaned_console_input
             
             if cleaned_console_input in self._commands:
                 self._commands.get(cleaned_console_input)()
             else:
-                self._print_output_func("Unknown input. Please use 'help' to get a list of all working command categories", "invalid")
+                self._console.print_output("Unknown input. Please use 'help' to get a list of all working command categories", "invalid")
     
     
     def _set_ignore_inputs(self, number_of_inputs: int) -> None:
@@ -213,8 +209,8 @@ class CommandManager:
     # command methods below
     
     def _help(self) -> None:
-        self._print_output_func("This is a list of all command categories:", "normal")
-        self._print_output_func("tracking: Lists all tracking actions\n"
+        self._console.print_output("This is a list of all command categories:", "normal")
+        self._console.print_output("tracking: Lists all tracking actions\n"
                                 +"setup: Lists all setup actions\n"
                                 +"stats: Lists all stat actions\n"
                                 +"keybinds: Lists all keybind actions\n"
@@ -222,14 +218,14 @@ class CommandManager:
     
     
     def _tracking(self) -> None:
-        self._print_output_func("This is a list of all tracking commands:", "normal")
-        self._print_output_func("tracking new: Starts a key listener in a new session\n"
+        self._console.print_output("This is a list of all tracking commands:", "normal")
+        self._console.print_output("tracking new: Starts a key listener in a new session\n"
                                 +"tracking continue: Starts a key listener and continues a session", "list")
     
     
     def _tracking_new(self) -> None:
         self._save_file.add_unknown()
-        self._overlay.create()
+        self._overlay.create_instance()
         self._counter.set_count_already_required(None)
         self._timer.set_time_already_required(None)
         self._key_listener.start_key_listener()
@@ -238,7 +234,7 @@ class CommandManager:
     def _tracking_continue(self) -> None:
         if self._ignore_count == 0:
             self._set_ignore_inputs(1)
-            self._print_output_func("Please enter the <\"boss name\", \"game title\"> of the boss you want to continue tracking <...>", "normal")
+            self._console.print_output("Please enter the <\"boss name\", \"game title\"> of the boss you want to continue tracking <...>", "normal")
         else:
             result: list[str] = self._get_result_in_pattern("double")
             
@@ -250,19 +246,19 @@ class CommandManager:
             game_title: str = result[1]
             
             if self._save_file.get_specific_boss_exists(boss_name, game_title):
-                self._overlay.create()
+                self._overlay.create_instance()
                 self._counter.set_count_already_required(self._save_file.get_specific_boss_deaths(boss_name, game_title))
                 self._timer.set_time_already_required(self._save_file.get_specific_boss_time(boss_name, game_title))
                 self._key_listener.start_key_listener()
             else:
-                self._print_output_func(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "invalid")
+                self._console.print_output(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "invalid")
         
         self._check_ignore_inputs_end()
     
     
     def _setup(self) -> None:
-        self._print_output_func("This is a list of all setup commands:", "normal")
-        self._print_output_func("setup add: Adds a boss with the corresponding game to the save file\n"
+        self._console.print_output("This is a list of all setup commands:", "normal")
+        self._console.print_output("setup add: Adds a boss with the corresponding game to the save file\n"
                                 +"setup identify boss: Identifies a unknown boss an updates its meta info\n"
                                 +"setup move boss: Moves a boss to another game\n"
                                 +"setup rename boss|game: Renames a boss|game\n"
@@ -322,8 +318,8 @@ class CommandManager:
     def _setup_delete_game(self) -> None:
         if self._ignore_count == 0:
             self._set_ignore_inputs(1)
-            self._print_output_func("All bosses linked to the game to be deleted will also be removed", "warning")
-            self._print_output_func("Please enter the <\"game title\"> of the game you want to delete <...>", "normal")
+            self._console.print_output("All bosses linked to the game to be deleted will also be removed", "warning")
+            self._console.print_output("Please enter the <\"game title\"> of the game you want to delete <...>", "normal")
         else:
             result: list[str] = self._get_result_in_pattern("single")
             
@@ -336,7 +332,7 @@ class CommandManager:
     def _setup_import_preset(self) -> None:
         if self._ignore_count == 0:
             self._set_ignore_inputs(1)
-            self._print_output_func("Please enter the <\"file path\"> of the preset you want to import <...>", "normal")
+            self._console.print_output("Please enter the <\"file path\"> of the preset you want to import <...>", "normal")
         else:
             result: list[str] = self._get_result_in_pattern("single")
             
@@ -355,8 +351,8 @@ class CommandManager:
     
     
     def _stats(self) -> None:
-        self._print_output_func("This is a list of all stat commands:", "normal")
-        self._print_output_func("stats list bosses [-a] [-s deaths|time -o desc|asc]: Lists bosses by the selected filters. By default all bosses of one selected game will be listed in the order they were added\n"
+        self._console.print_output("This is a list of all stat commands:", "normal")
+        self._console.print_output("stats list bosses [-a] [-s deaths|time -o desc|asc]: Lists bosses by the selected filters. By default all bosses of one selected game will be listed in the order they were added\n"
                                 +"stats list games [-s deaths|time -o desc|asc]: Lists all games by the selected filters. By default they will be listed in the order they were added\n"
                                 +"stats save: Saves the tracking values to the corresponding boss to the save file", "list")
     
@@ -364,7 +360,7 @@ class CommandManager:
     def _stats_list_bosses_by(self, sort_filter: str, order_filter: str) -> None:
         if self._ignore_count == 0:
             self._set_ignore_inputs(1)
-            self._print_output_func("Please enter the <\"game title\"> from which you want all bosses selected from <...>", "normal")
+            self._console.print_output("Please enter the <\"game title\"> from which you want all bosses selected from <...>", "normal")
         else:
             result: list[str] = self._get_result_in_pattern("single")
             
@@ -383,9 +379,9 @@ class CommandManager:
             max_deaths_len: int = max(len(self._format_deaths(deaths[1])) for deaths in list_of_bosses)
                     
             for item in list_of_bosses:
-                self._print_output_func(f"{item[0].ljust(max_name_len, " ")}  {self._get_boss_values(item[1], item[2], max_deaths_len)}", "list")
+                self._console.print_output(f"{item[0].ljust(max_name_len, " ")}  {self._get_boss_values(item[1], item[2], max_deaths_len)}", "list")
             
-            self._print_output_func(f"\n{self._get_calc_values(self._save_file.get_specific_game_avg(game_title), self._save_file.get_specific_game_sum(game_title))}", "list")
+            self._console.print_output(f"\n{self._get_calc_values(self._save_file.get_specific_game_avg(game_title), self._save_file.get_specific_game_sum(game_title))}", "list")
         
         self._check_ignore_inputs_end()
     
@@ -401,9 +397,9 @@ class CommandManager:
         max_deaths_len: int = max(len(self._format_deaths(deaths[2])) for deaths in list_of_bosses)
         
         for item in list_of_bosses:
-            self._print_output_func(f"{self._get_boss_meta(item[0], item[1], max_meta_len)}  {self._get_boss_values(item[2], item[3], max_deaths_len)}", "list")
+            self._console.print_output(f"{self._get_boss_meta(item[0], item[1], max_meta_len)}  {self._get_boss_values(item[2], item[3], max_deaths_len)}", "list")
         
-        self._print_output_func(f"\n{self._get_calc_values(self._save_file.get_all_boss_avg(), self._save_file.get_all_boss_sum())}", "list")
+        self._console.print_output(f"\n{self._get_calc_values(self._save_file.get_all_boss_avg(), self._save_file.get_all_boss_sum())}", "list")
     
     
     def _stats_list_games_by(self, sort_filter: str, order_filter: str) -> None:
@@ -416,14 +412,14 @@ class CommandManager:
         max_deaths_len: int = max(len(self._format_deaths(deaths[1])) for deaths in list_of_games)
         
         for item in list_of_games:
-            self._print_output_func(f"{item[0].ljust(max_title_len, " ")}  ({self._format_sum(self._save_file.get_specific_game_sum(item[0]), max_deaths_len)})", "list")
+            self._console.print_output(f"{item[0].ljust(max_title_len, " ")}  ({self._format_sum(self._save_file.get_specific_game_sum(item[0]), max_deaths_len)})", "list")
         
-        self._print_output_func(f"\n{self._get_calc_values(self._save_file.get_all_game_avg(), self._save_file.get_all_game_sum())}", "list")
+        self._console.print_output(f"\n{self._get_calc_values(self._save_file.get_all_game_avg(), self._save_file.get_all_game_sum())}", "list")
     
     
     def _stats_save(self) -> None:
         if self._counter.get_is_none() and self._timer.get_is_none():
-            self._print_output_func("There are no values to be saved. Make sure to start a tracking session and try saving again afterwards", "invalid")
+            self._console.print_output("There are no values to be saved. Make sure to start a tracking session and try saving again afterwards", "invalid")
             return
         
         execution_trigger: int = self._process_count_value() # also calls _set_ignore_inputs()
@@ -431,7 +427,7 @@ class CommandManager:
             return
         
         if self._ignore_count == execution_trigger:
-            self._print_output_func("Please enter the <\"boss name\", \"game title\"> of the boss you want the stats safed to <...>", "normal")
+            self._console.print_output("Please enter the <\"boss name\", \"game title\"> of the boss you want the stats safed to <...>", "normal")
         elif self._ignore_count > execution_trigger: # should only trigger after the first if statement is called
             result: list[str] = self._get_result_in_pattern("double")
             
@@ -447,8 +443,8 @@ class CommandManager:
     
     
     def _keybinds(self) -> None:
-        self._print_output_func("This is a list of all keybind commands:", "normal")
-        self._print_output_func("keybinds list: Lists all hotkeys with their corresponding keybinds\n"
+        self._console.print_output("This is a list of all keybind commands:", "normal")
+        self._console.print_output("keybinds list: Lists all hotkeys with their corresponding keybinds\n"
                                 +"keybinds config <hotkey>: Changes the keybind of the selected hotkey", "list")
     
     
@@ -456,7 +452,7 @@ class CommandManager:
         dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         
         for hotkey, keybind in dict_of_hotkeys.items():
-            self._print_output_func(f"{hotkey}: {keybind}", "list")
+            self._console.print_output(f"{hotkey}: {keybind}", "list")
     
     
     def _keybinds_config(self, hotkey: str) -> None:
@@ -465,23 +461,23 @@ class CommandManager:
     
     
     def _settings(self) -> None:
-        self._print_output_func("This is a list of all settings commands:", "normal")
-        self._print_output_func("settings unlock|lock overlay: Enable|Disables the ability to move the overlay\n"
+        self._console.print_output("This is a list of all settings commands:", "normal")
+        self._console.print_output("settings unlock|lock overlay: Enable|Disables the ability to move the overlay\n"
                                 +"settings import theme: Imports and changes the programs theme", "list")
     
     
     def _settings_set_overlay_locked(self, lock_state: bool) -> None:
-        if not self._config_mananger.set_toplevel_locked(lock_state):
-            self._print_output_func(f"Overlay already {"locked" if lock_state else "unlocked"}", "normal")
+        if not self._config_manager.set_toplevel_locked(lock_state):
+            self._console.print_output(f"Overlay already {"locked" if lock_state else "unlocked"}", "normal")
             return
-        self._print_output_func(f"Overlay {"locked" if lock_state else "unlocked"}", "normal")
+        self._console.print_output(f"Overlay {"locked" if lock_state else "unlocked"}", "normal")
         self._overlay.display_lock_animation(1500, lock_state)
     
     
     def _settings_import_theme(self) -> None:
         if self._ignore_count == 0:
             self._set_ignore_inputs(1)
-            self._print_output_func("Please enter the <\"file path\"> of the theme you want to import <...>", "normal")
+            self._console.print_output("Please enter the <\"file path\"> of the theme you want to import <...>", "normal")
         else:
             result: list[str] = self._get_result_in_pattern("single")
             
@@ -494,7 +490,7 @@ class CommandManager:
                 self._reset_ignore_vars()
                 return
             
-            self._config_mananger.set_theme(src_file_path)
+            self._config_manager.set_theme(src_file_path)
         
         self._check_ignore_inputs_end()
     
@@ -506,7 +502,7 @@ class CommandManager:
     
     def _cancel(self) -> None:
         self._reset_ignore_vars()
-        self._print_output_func("Process was cancelled", "normal")
+        self._console.print_output("Process was cancelled", "normal")
     
     
     # helper methods below
@@ -525,7 +521,7 @@ class CommandManager:
     def _run_setup_command(self, text: str, pattern_type: str, target_method: any):
         if self._ignore_count == 0:
             self._set_ignore_inputs(1)
-            self._print_output_func(text, "normal")
+            self._console.print_output(text, "normal")
         else:
             result: list[str] = self._get_result_in_pattern(pattern_type)
             
@@ -556,16 +552,16 @@ class CommandManager:
         if result:
             return list[str](result.groups())
         else:
-            self._print_output_func("The input does not match the pattern. Please try again", "denied")
+            self._console.print_output("The input does not match the pattern. Please try again", "denied")
             return []
     
     
     def _check_external_file_props(self, src_file_path: Path) -> bool:
         if not src_file_path.exists():
-            self._print_output_func(f"The path '{src_file_path}' does not exists. Process is beeing canceled", "invalid")
+            self._console.print_output(f"The path '{src_file_path}' does not exists. Process is beeing canceled", "invalid")
             return False
         elif not JsonFileOperations.check_json_extension(src_file_path):
-            self._print_output_func(f"The file '{src_file_path}' is not a .json file. Process is beeing canceled", "invalid")
+            self._console.print_output(f"The file '{src_file_path}' is not a .json file. Process is beeing canceled", "invalid")
             return False
         return True
     
@@ -618,7 +614,7 @@ class CommandManager:
         
         if self._ignore_count == 0:
             self._set_ignore_inputs(2)
-            self._print_output_func("Please enter <y[es]|n[o]> if you tracked deaths <...>", "normal")
+            self._console.print_output("Please enter <y[es]|n[o]> if you tracked deaths <...>", "normal")
         elif self._ignore_count == 1:
             result: list[str] = self._get_result_in_pattern("yes_no")
             

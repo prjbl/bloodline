@@ -1,2 +1,3 @@
-from .console_action_provider import IConsoleActionProvider
-from .overlay_action_provider import IOverlayActionProvider
+from .abc_config_manager import IConfigManager
+from .abc_console import IConsole
+from .abc_overlay import IOverlay

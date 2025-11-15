@@ -1,10 +1,12 @@
 from time import time
 
+from interfaces import IConsole, IOverlay
+
 class Timer:
     
-    def __init__(self, update_overlay_func: any, add_mainloop_task_func: any):
-        self._update_overlay_func: any = update_overlay_func
-        self._add_mainloop_task_func: any = add_mainloop_task_func
+    def __init__(self, console: IConsole, overlay: IOverlay):
+        self._console: IConsole = console
+        self._overlay: IOverlay = overlay
         
         self._start_time: float = None
         self._end_time: float = None
@@ -14,16 +16,6 @@ class Timer:
         
         self._timer_active: bool = False
         self._timer_paused: bool = False
-        
-        self._observer: any = None
-    
-    
-    def set_observer(self, observer: any) -> None:
-        self._observer = observer
-    
-    
-    def _notify_observer(self, text: str, text_type: str) -> None:
-        self._observer(text, text_type)
     
     
     def start(self) -> None:
@@ -31,7 +23,7 @@ class Timer:
             self._start_time = time()
             self._timer_active = True
             self._run_live_timer()
-            self._notify_observer("Timer started", "normal")
+            self._console.print_output("Timer started", "normal")
     
     
     def toggle_pause(self) -> None:
@@ -43,17 +35,17 @@ class Timer:
             else:
                 self._resume()
         else:
-            self._notify_observer("Timer has not started yet", "invalid")
+            self._console.print_output("Timer has not started yet", "invalid")
     
     
     def _pause(self) -> None:
         self._pause_time = time()
-        self._notify_observer("Timer paused", "normal")
+        self._console.print_output("Timer paused", "normal")
     
     
     def _resume(self) -> None:
         self._start_time += time() - self._pause_time
-        self._notify_observer("Timer resumed", "normal")
+        self._console.print_output("Timer resumed", "normal")
     
     
     def stop(self, hard_shutdown: bool = False) -> None:
@@ -68,14 +60,14 @@ class Timer:
         self._timer_active, self._timer_paused = False, False
         
         if hard_shutdown:
-            self._notify_observer("Timer was stopped by the system to prevent data loss", "warning")
+            self._console.print_output("Timer was stopped by the system to prevent data loss", "warning")
         else:
-            self._notify_observer("Timer stopped", "normal")
+            self._console.print_output("Timer stopped", "normal")
     
     
     def reset(self, hard_reset: bool = False) -> None:
         if self._timer_active:
-            self._notify_observer("Timer must be stopped for the reset to work", "indication")
+            self._console.print_output("Timer must be stopped for the reset to work", "indication")
             return
         elif self.get_is_none():
             return
@@ -88,12 +80,12 @@ class Timer:
             self._total_time = 0
             self._time_already_required = None
         else:
-            self._notify_observer("Timer has been reset", "normal")
+            self._console.print_output("Timer has been reset", "normal")
     
     
     def get_end_time(self) -> int:
         if self.get_is_none() and self._time_already_required is None:
-            return # None if timer wasnt started -> req. time == N/A instead of 0
+            return None # None if timer wasnt started -> req. time == N/A instead of 0
         
         if self._time_already_required is None:
             self._time_already_required = 0
@@ -116,7 +108,7 @@ class Timer:
     def set_time_already_required(self, time: int | None) -> None:
         if time is not None:
             self._time_already_required = time
-            self._update_overlay_func(self._format_time(time))
+            self._overlay.update_timer_label(self._format_time(time))
     
     
     # overlay methods below
@@ -127,8 +119,8 @@ class Timer:
         
         live_time: int = self._calc_live_time()
         formated_time: str = self._format_time(live_time)
-        self._update_overlay_func(formated_time)
-        self._add_mainloop_task_func(1000, self._run_live_timer)
+        self._overlay.update_counter_label(formated_time)
+        self._overlay.add_mainloop_task(1000, self._run_live_timer)
     
     
     def _calc_live_time(self) -> int:

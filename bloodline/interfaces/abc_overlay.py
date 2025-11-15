@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-class IOverlayActionProvider(ABC):
+class IOverlay(ABC):
     
     @abstractmethod
     def update_counter_label(self, count: int) -> None:

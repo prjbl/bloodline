@@ -3,13 +3,15 @@ from __future__ import annotations
 from json import JSONDecodeError
 from pathlib import Path
 from queue import Queue
+from typing import override
 
+from interfaces import IConfigManager
 from utils import Directory, JsonFileOperations, PersistentJsonHandler
 from utils.validation import GuiConfig, SectionKeys, WindowKeys, ColorKeys, FontKeys
 
-class GuiConfigManager:
+class ConfigManager(IConfigManager):
     
-    _instance: GuiConfigManager = None
+    _instance: ConfigManager = None
     _error_queue: Queue = None
     _json_handler: PersistentJsonHandler = None
     
@@ -109,6 +111,7 @@ class GuiConfigManager:
     
     
     """Has to be adjusted"""
+    @override
     def set_toplevel_locked(self, new_lock_state: bool) -> bool:
         ui_config: dict = self._json_handler.get_data()
         
@@ -125,6 +128,7 @@ class GuiConfigManager:
     
     
     """Has to be adjusted"""
+    @override
     def set_theme(self, src_file_path: Path) -> None:
         new_theme: dict = self._load_external_theme(src_file_path)
         if new_theme is None:
