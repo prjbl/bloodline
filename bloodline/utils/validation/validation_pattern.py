@@ -1,5 +1,7 @@
 from re import compile, fullmatch
 
+from pynput import keyboard
+
 class ValidationPattern:
     
     @staticmethod
@@ -10,6 +12,7 @@ class ValidationPattern:
             return False
         return True
     
+    
     @staticmethod
     def validate_geometry_pattern(geometry: str) -> bool:
         valid_geometry_pattern: str = compile(r"(\d+x\d+)|(\d+x\d+)\+(\-)?\d+\+(\-)?\d+")
@@ -18,6 +21,7 @@ class ValidationPattern:
             return False
         return True
     
+    
     @staticmethod
     def validate_position_pattern(position: str) -> bool:
         valid_position_pattern: str = compile(r"^\+(\-)?\d+\+(\-)?\d+$")
@@ -25,3 +29,12 @@ class ValidationPattern:
         if not fullmatch(valid_position_pattern, position):
             return False
         return True
+    
+    
+    @staticmethod
+    def validate_keybind_pattern(keybind: str) -> bool:
+        if len(keybind) == 1:
+            return True
+        if keybind in keyboard.Key.__members__.keys():
+            return True
+        return False

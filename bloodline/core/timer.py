@@ -119,7 +119,7 @@ class Timer:
         
         live_time: int = self._calc_live_time()
         formated_time: str = self._format_time(live_time)
-        self._overlay.update_counter_label(formated_time)
+        self._overlay.update_timer_label(formated_time)
         self._overlay.add_mainloop_task(1000, self._run_live_timer)
     
     

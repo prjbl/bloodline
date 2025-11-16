@@ -20,7 +20,7 @@ class ExternalJsonHandler(JsonFileOperations):
     
     # helper methods below
     
-    def _validate_file_structure(self, loaded_data: dict) -> dict:
+    """def _validate_file_structure(self, loaded_data: dict) -> dict:
         keys_to_ignore: set = set()
         
         for key, value in loaded_data.items():
@@ -50,7 +50,7 @@ class ExternalJsonHandler(JsonFileOperations):
                 # put message in queue
         
         for index in sorted(indices_to_ignore, reverse=True): # has to be reversed to prevent all elements to delete from moving while iterating
-            del value[index]
+            del value[index]"""
     
     
     """def _validate_value_type(self, value: list) -> list[str]: # list comprehension alternative
