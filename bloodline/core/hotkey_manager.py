@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from utils import Directory, PersistentJsonHandler
-from utils.validation import HotkeyConfig, HotkeyNames
+from utils.validation import HotkeyConfig
 
 class HotkeyManager:
     
@@ -13,7 +13,7 @@ class HotkeyManager:
         )
         
         self._json_handler.setup_files()
-        self._json_handler.load_data(is_initial_call=True)
+        self._json_handler.load_data()
     
     
     _dir: Directory = Directory()
@@ -23,25 +23,12 @@ class HotkeyManager:
     _HK_FILE_PATH: Path = _dir.get_persistent_data_path().joinpath(_HK_FILE)
     _BACKUP_FILE_PATH: Path = _dir.get_backup_path().joinpath(_BACKUP_FILE)
     
-    _DEFAULT_HOTKEYS: dict = {
-        HotkeyNames.COUNTER_INC: "+",
-        HotkeyNames.COUNTER_DEC: "-",
-        HotkeyNames.COUNTER_RESET: "/",
-        HotkeyNames.TIMER_START: ")",
-        HotkeyNames.TIMER_PAUSE: "=",
-        HotkeyNames.TIMER_STOP: "?",
-        HotkeyNames.TIMER_RESET: "*",
-        HotkeyNames.LISTENER_END: "°"
-    }
-    
     
     def set_new_keybind(self, hotkey: str, new_keybind: str) -> None:
         hotkeys: dict = self._json_handler.get_data()
         hotkeys[hotkey] = new_keybind
         
         self._json_handler.set_data(hotkeys)
-        self._json_handler.save_data()
-        self._json_handler.ensure_backup()
     
     
     def get_current_hotkeys(self) -> dict:

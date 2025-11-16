@@ -46,13 +46,18 @@ class WidgetKeys(str, Enum):
 
 # Models below
 
-class _AllowModel(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    
+class TypeEnforcementMixin:
+    @field_validator("*", mode="before")
     @classmethod
     def enforce_correct_data_type(cls, v: Any, info: FieldValidationInfo) -> Any:
+        """
+        Method is called internally by Pydantic for each class that inherit its characteristics
+        """
         field: FieldInfo = cls.model_fields[info.field_name]
         expected_type: type = field.annotation
+        
+        if isinstance(expected_type, type) and issubclass(expected_type, _AllowModel):
+            return v
         
         if not isinstance(v, expected_type):
             if field.default_factory is not None:
@@ -61,25 +66,19 @@ class _AllowModel(BaseModel):
         return v
 
 
+class _AllowModel(BaseModel, TypeEnforcementMixin):
+    model_config = ConfigDict(extra="ignore")
+
+
 # Widget schema
 
 class _RootWidget(_AllowModel):
     padding: int = Field(default=5, alias=WidgetKeys.PADDING.value)
-    
-    @field_validator("*", mode="before")
-    @classmethod
-    def validate_data_types(cls, v: Any, info: FieldValidationInfo) -> Any:
-        return super(_RootWidget, cls).enforce_correct_data_type(v, info)
 
 
 class _ToplevelWidget(_AllowModel):
     padding: int = Field(default=5, alias=WidgetKeys.PADDING.value)
     highlightthickness: int = Field(default=2, alias=WidgetKeys.HIGHLIGHTTHICKNESS.value)
-    
-    @field_validator("*", mode="before")
-    @classmethod
-    def validate_data_types(cls, v: Any, info: FieldValidationInfo) -> Any:
-        return super(_ToplevelWidget, cls).enforce_correct_data_type(v, info)
 
 
 class _WidgetConfig(_AllowModel):
@@ -91,31 +90,16 @@ class _WidgetConfig(_AllowModel):
 
 class _RootFont(_AllowModel):
     size: int = Field(default=10, alias=FontKeys.SIZE.value)
-    
-    @field_validator("*", mode="before")
-    @classmethod
-    def validate_data_types(cls, v: Any, info: FieldValidationInfo) -> Any:
-        return super(_RootFont, cls).enforce_correct_data_type(v, info)
 
 
 class _ToplevelFont(_AllowModel):
     size: int = Field(default=9, alias=FontKeys.SIZE.value)
-    
-    @field_validator("*", mode="before")
-    @classmethod
-    def validate_data_types(cls, v: Any, info: FieldValidationInfo) -> Any:
-        return super(_ToplevelFont, cls).enforce_correct_data_type(v, info)
 
 
 class _FontConfig(_AllowModel):
     family: str = Field(default="DM Mono", alias=FontKeys.FAMILY.value)
     root: _RootFont = Field(default_factory=_RootFont, alias=SectionKeys.ROOT.value)
     toplevel: _ToplevelFont = Field(default_factory=_ToplevelFont, alias=SectionKeys.TOPLEVEL.value)
-    
-    @field_validator("family", mode="before")
-    @classmethod
-    def validate_data_types(cls, v: Any, info: FieldValidationInfo) -> Any:
-        return super(_FontConfig, cls).enforce_correct_data_type(v, info)
 
 
 # Color schema
@@ -131,14 +115,9 @@ class _ColorConfig(_AllowModel):
     warning: str = Field(default="#d4a61e", alias=ColorKeys.WARNING.value)
     error: str = Field(default="#cf213e", alias=ColorKeys.ERROR.value)
     
-    @field_validator("*", mode="before")
-    @classmethod
-    def validate_data_types(cls, v: Any, info: FieldValidationInfo) -> Any:
-        return super(_ColorConfig, cls).enforce_correct_data_type(v, info)
-    
     @field_validator("*")
     @classmethod
-    def validate_hex_pattern(cls, color: Any, info: FieldValidationInfo) -> Any:
+    def validate_hex_pattern(cls, color: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_hex_pattern(color):
             return cls.model_fields[info.field_name].default
         return color
@@ -158,14 +137,9 @@ class _RootWindow(_AllowModel):
     geometry: str = Field(default="600x350", alias=WindowKeys.GEOMETRY.value)
     maximized: bool = Field(default=False, alias=WindowKeys.MAXIMIZED.value)
     
-    @field_validator("*", mode="before")
-    @classmethod
-    def validate_data_types(cls, v: Any, info: FieldValidationInfo) -> Any:
-        return super(_RootWindow, cls).enforce_correct_data_type(v, info)
-    
     @field_validator("geometry")
     @classmethod
-    def validate_geoemtry_pattern(cls, geometry: Any, info: FieldValidationInfo) -> Any:
+    def validate_geoemtry_pattern(cls, geometry: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_geometry_pattern(geometry):
             return cls.model_fields[info.field_name].default
         return geometry
@@ -175,14 +149,9 @@ class _ToplevelWindow(_AllowModel):
     geometry: str = Field(default="+0+0", alias=WindowKeys.GEOMETRY.value)
     locked: bool = Field(default=False, alias=WindowKeys.LOCKED.value)
     
-    @field_validator("*", mode="before")
-    @classmethod
-    def validate_data_types(cls, v: Any, info: FieldValidationInfo) -> Any:
-        return super(_ToplevelWindow, cls).enforce_correct_data_type(v, info)
-    
     @field_validator("geometry")
     @classmethod
-    def validate_position_pattern(cls, geometry: Any, info: FieldValidationInfo) -> Any:
+    def validate_position_pattern(cls, geometry: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_position_pattern(geometry):
             return cls.model_fields[info.field_name].default
         return geometry
