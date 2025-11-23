@@ -5,8 +5,9 @@ from queue import Queue
 from typing import override
 
 from interfaces import IConfigManager
-from utils import Directory, PersistentJsonHandler
-from utils.validation import GuiConfig, SectionKeys, WindowKeys
+from utils import Directory
+from utils.json import PersistentJsonHandler
+from utils.validation import GuiModel, SectionKeys, WindowKeys
 
 class ConfigManager(IConfigManager):
     
@@ -22,20 +23,17 @@ class ConfigManager(IConfigManager):
             cls._instance._json_handler = PersistentJsonHandler(
                 cls._instance._CONFIG_FILE_PATH,
                 cls._instance._BACKUP_FILE_PATH,
-                GuiConfig()
+                GuiModel()
             )
             
-            cls._instance._json_handler.setup_files()
             cls._instance._json_handler.load_data()
         return cls._instance
     
     
-    _dir: Directory = Directory()
-    
     _CONFIG_FILE: str = "ui_config.json"
     _BACKUP_FILE: str = f"{_CONFIG_FILE}.bak"
-    _CONFIG_FILE_PATH: Path = _dir.get_persistent_data_path().joinpath(_CONFIG_FILE)
-    _BACKUP_FILE_PATH: Path = _dir.get_backup_path().joinpath(_BACKUP_FILE)
+    _CONFIG_FILE_PATH: Path = Directory.get_persistent_data_path().joinpath(_CONFIG_FILE)
+    _BACKUP_FILE_PATH: Path = Directory.get_backup_path().joinpath(_BACKUP_FILE)
     
     
     @override
@@ -53,8 +51,10 @@ class ConfigManager(IConfigManager):
     
     
     @override
-    def set_theme(self, src_file_path: Path) -> None:
-        pass
+    def set_theme(self, loaded_theme: dict) -> None:
+        ui_config: dict = self._json_handler.get_data()
+        ui_config[SectionKeys.THEME] = loaded_theme
+        self._json_handler.set_data(ui_config)
     
     
     def get_error_queue(self) -> Queue:

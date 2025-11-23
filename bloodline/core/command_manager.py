@@ -8,8 +8,9 @@ from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
 from interfaces import IConfigManager, IConsole, IOverlay
-from utils import ExternalJsonHandler, JsonFileOperations
-from utils.validation import HotkeyNames
+from utils import CsvFileOperations
+from utils.json import ExternalJsonHandler, JsonFileOperations
+from utils.validation import HotkeyNames, PresetModel, ThemeModel
 
 class CommandManager:
     
@@ -59,6 +60,7 @@ class CommandManager:
             "stats list games -s time -o desc": lambda: self._stats_list_games_by("requiredTime", "desc"),
             "stats list games -s time -o asc": lambda: self._stats_list_games_by("requiredTime", "asc"),
             "stats save": self._stats_save,
+            "stats export": lambda: self._stats_export_by("id", "asc"),
             "keybinds": self._keybinds,
             "keybinds list": self._keybinds_list,
             f"keybinds config {HotkeyNames.COUNTER_INC.value}": lambda: self._keybinds_config(HotkeyNames.COUNTER_INC),
@@ -345,7 +347,12 @@ class CommandManager:
                 self._reset_ignore_vars()
                 return
             
-            self._save_file.add_preset(self._json_handler.load_data(src_file_path))
+            loaded_preset: dict = self._json_handler.load_data(src_file_path, PresetModel)
+            if not loaded_preset:
+                self._console.print_output("The imported preset does not contain any values to be added to the save file", "invalid")
+                self._reset_ignore_vars()
+                return
+            self._save_file.add_preset(loaded_preset)
         
         self._check_ignore_inputs_end()
     
@@ -442,6 +449,31 @@ class CommandManager:
         self._check_ignore_inputs_end()
     
     
+    def _stats_export_by(self, sort_filter: str, order_filter: str) -> None:
+        if self._ignore_count == 0:
+            self._set_ignore_inputs(1)
+            self._console.print_output("Please enter the <\"game title\"> you want the stats exported from <...>", "normal")
+        else:
+            result: list[str] = self._get_result_in_pattern("single")
+            
+            if not result:
+                self._reset_ignore_vars()
+                return
+            
+            game_title: str = result[0]
+            game_data: list[tuple] = self._save_file.get_bosses_from_game_by(game_title, sort_filter, order_filter)
+            
+            if not game_data:
+                self._reset_ignore_vars()
+                return
+            
+            headers: list[str] = [header[0] for header in self._save_file.get_boss_table_description()]
+            print(self._save_file.get_boss_table_description())
+            CsvFileOperations.perform_save(Path(f"{game_title.lower().replace(" ", "_")}.csv"), headers, game_data)
+        
+        self._check_ignore_inputs_end()
+    
+    
     def _keybinds(self) -> None:
         self._console.print_output("This is a list of all keybind commands:", "normal")
         self._console.print_output("keybinds list: Lists all hotkeys with their corresponding keybinds\n"
@@ -490,7 +522,12 @@ class CommandManager:
                 self._reset_ignore_vars()
                 return
             
-            self._config_manager.set_theme(src_file_path)
+            loaded_theme: dict = self._json_handler.load_data(src_file_path, ThemeModel)
+            if not loaded_theme:
+                self._console.print_output("Theme file is empty", "invalid")
+                self._reset_ignore_vars()
+                return
+            self._config_manager.set_theme(loaded_theme)
         
         self._check_ignore_inputs_end()
     

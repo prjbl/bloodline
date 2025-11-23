@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from utils import Directory, PersistentJsonHandler
-from utils.validation import HotkeyConfig
+from utils import Directory
+from utils.json import PersistentJsonHandler
+from utils.validation import HotkeyModel
 
 class HotkeyManager:
     
@@ -9,19 +10,16 @@ class HotkeyManager:
         self._json_handler: PersistentJsonHandler = PersistentJsonHandler(
             self._HK_FILE_PATH,
             self._BACKUP_FILE_PATH,
-            HotkeyConfig()
+            HotkeyModel()
         )
         
-        self._json_handler.setup_files()
         self._json_handler.load_data()
     
     
-    _dir: Directory = Directory()
-    
     _HK_FILE: str = "hotkeys.json"
     _BACKUP_FILE: str = f"{_HK_FILE}.bak"
-    _HK_FILE_PATH: Path = _dir.get_persistent_data_path().joinpath(_HK_FILE)
-    _BACKUP_FILE_PATH: Path = _dir.get_backup_path().joinpath(_BACKUP_FILE)
+    _HK_FILE_PATH: Path = Directory.get_persistent_data_path().joinpath(_HK_FILE)
+    _BACKUP_FILE_PATH: Path = Directory.get_backup_path().joinpath(_BACKUP_FILE)
     
     
     def set_new_keybind(self, hotkey: str, new_keybind: str) -> None:
