@@ -12,7 +12,7 @@ from interfaces import IConsole
 from utils import Directory
 from utils.validation import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
-class Application(IConsole):
+class Application(IConsole): # inherit from tkinter
     
     def __init__(self):
         self._main_queue: Queue = Queue()
@@ -38,11 +38,9 @@ class Application(IConsole):
         )
         self._setup_bindings()
     
-    
-    _dir: Directory = Directory()
 
     _PREFIX: chr = ">"
-    _META: str = f"{_dir._APP_NAME} v{_dir._VERSION}\nBy {_dir._APP_AUTHOR}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
+    _META: str = f"{Directory.get_app_name()} v{Directory.get_version()}\nBy {Directory.get_author()}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
     
     
     def _setup_config_vars(self) -> None:
@@ -57,7 +55,7 @@ class Application(IConsole):
             self._root.state("zoomed")
         else:
             self._root.geometry(self._root_props.get(WindowKeys.GEOMETRY))
-        self._root.title(self._dir._APP_NAME)
+        self._root.title(Directory.get_app_name())
         self._root.iconbitmap("bloodline/assets/bloodline_logo.ico")
         self._root.config(bg=self._colors.get(ColorKeys.BACKGROUND))
     

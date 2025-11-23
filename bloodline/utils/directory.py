@@ -4,24 +4,39 @@ from appdirs import user_data_dir
 
 class Directory:
     
-    def __init__(self):
-        self._data_path: Path = Path(user_data_dir(self._APP_NAME, self._APP_AUTHOR, self._VERSION))
-        self._data_path.mkdir(parents=True, exist_ok=True)
-        
-        self._backup_path: Path = self._data_path.joinpath(self._BACKUPS)
-        self._backup_path.mkdir(exist_ok=True)
-    
-    
     _APP_NAME: str = "Bloodline"
-    _APP_AUTHOR: str = "Project Bloodline"
+    _AUTHOR: str = "Project Bloodline"
     _VERSION: str = "1.0"
     
-    _BACKUPS: str = "backups"
+    _BACKUP_DIR: str = "backups"
+    
+    _DATA_PATH: Path = Path(user_data_dir(_APP_NAME, _AUTHOR, _VERSION))
+    _BACKUP_PATH: Path = _DATA_PATH.joinpath(_BACKUP_DIR)
+    
+    _DATA_PATH.mkdir(parents=True, exist_ok=True)
+    _BACKUP_PATH.mkdir(exist_ok=True)
     
     
-    def get_persistent_data_path(self) -> Path:
-        return self._data_path
+    @classmethod
+    def get_persistent_data_path(cls) -> Path:
+        return cls._DATA_PATH
     
     
-    def get_backup_path(self) -> Path:
-        return self._backup_path
+    @classmethod
+    def get_backup_path(cls) -> Path:
+        return cls._BACKUP_PATH
+    
+    
+    @classmethod
+    def get_app_name(cls) -> str:
+        return cls._APP_NAME
+    
+    
+    @classmethod
+    def get_author(cls) -> str:
+        return cls._AUTHOR
+    
+    
+    @classmethod
+    def get_version(cls) -> str:
+        return cls._VERSION

@@ -24,12 +24,10 @@ class SaveFile:
         self._check_for_updates()
     
     
-    _dir: Directory = Directory()
-    
     _DB_FILE: str = "save_file.sqlite"
     _BACKUP_FILE: str = f"{_DB_FILE}.bak"
-    _DB_FILE_PATH: Path = _dir.get_persistent_data_path().joinpath(_DB_FILE)
-    _BACKUP_FILE_PATH: Path = _dir.get_backup_path().joinpath(_BACKUP_FILE)
+    _DB_FILE_PATH: Path = Directory.get_persistent_data_path().joinpath(_DB_FILE)
+    _BACKUP_FILE_PATH: Path = Directory.get_backup_path().joinpath(_BACKUP_FILE)
     
     _LATEST_VERSION: int = 1
     
@@ -38,7 +36,7 @@ class SaveFile:
     
     
     def _open_connection(self) -> None:
-        self._conn = connect(self._dir.get_persistent_data_path().joinpath(self._DB_FILE))
+        self._conn = connect(Directory.get_persistent_data_path().joinpath(self._DB_FILE))
         self._conn.execute("PRAGMA foreign_keys = ON") # activates foreign key restriction
         self._cursor = self._conn.cursor()
     
@@ -176,6 +174,10 @@ class SaveFile:
     
     # db manipulation and selection methods below
     
+    def get_boss_table_description(self) -> tuple:
+        return self._cursor.description
+    
+    
     def _add_game(self, game_title: str) -> None:
         if self._get_specific_game_exists(game_title):
             return
@@ -213,10 +215,6 @@ class SaveFile:
     
     
     def add_preset(self, loaded_preset: dict) -> None:
-        if not loaded_preset:
-            self._console.print_output("The imported preset does not contain any values to be added to the save file", "invalid")
-            return
-        
         changes_made: bool = False
         for game_title, list_of_bosses in loaded_preset.items():
             for boss_name in list_of_bosses:

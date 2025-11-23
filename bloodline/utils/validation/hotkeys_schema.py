@@ -19,12 +19,12 @@ class HotkeyNames(str, Enum):
 
 # Models below
 
-class TypeEnforcementMixin:
+class _TypeEnforcementMixin:
     @field_validator("*", mode="before")
     @classmethod
     def enforce_correct_data_type(cls, v: Any, info: FieldValidationInfo) -> Any:
         """
-        Method is called internally by Pydantic for each class that inherit its characteristics
+        Method is called internally by Pydantic for each class that inherit the mixins characteristics
         """
         field: FieldInfo = cls.model_fields[info.field_name]
         expected_type: type = field.annotation
@@ -39,13 +39,13 @@ class TypeEnforcementMixin:
         return v
 
 
-class _AllowModel(BaseModel, TypeEnforcementMixin):
+class _AllowModel(BaseModel, _TypeEnforcementMixin):
     model_config = ConfigDict(extra="ignore")
 
 
 # Hotkey schema
 
-class HotkeyConfig(_AllowModel):
+class HotkeyModel(_AllowModel):
     counter_inc: str = Field(default="+", alias=HotkeyNames.COUNTER_INC.value)
     counter_dec: str = Field(default="-", alias=HotkeyNames.COUNTER_DEC.value)
     counter_reset: str = Field(default="/", alias=HotkeyNames.COUNTER_RESET.value)

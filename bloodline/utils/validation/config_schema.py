@@ -46,12 +46,12 @@ class WidgetKeys(str, Enum):
 
 # Models below
 
-class TypeEnforcementMixin:
+class _TypeEnforcementMixin:
     @field_validator("*", mode="before")
     @classmethod
     def enforce_correct_data_type(cls, v: Any, info: FieldValidationInfo) -> Any:
         """
-        Method is called internally by Pydantic for each class that inherit its characteristics
+        Method is called internally by Pydantic for each class that inherit the mixins characteristics
         """
         field: FieldInfo = cls.model_fields[info.field_name]
         expected_type: type = field.annotation
@@ -66,7 +66,7 @@ class TypeEnforcementMixin:
         return v
 
 
-class _AllowModel(BaseModel, TypeEnforcementMixin):
+class _AllowModel(BaseModel, _TypeEnforcementMixin):
     model_config = ConfigDict(extra="ignore")
 
 
@@ -81,7 +81,7 @@ class _ToplevelWidget(_AllowModel):
     highlightthickness: int = Field(default=2, alias=WidgetKeys.HIGHLIGHTTHICKNESS.value)
 
 
-class _WidgetConfig(_AllowModel):
+class _WidgetModel(_AllowModel):
     root: _RootWidget = Field(default_factory=_RootWidget, alias=SectionKeys.ROOT.value)
     toplevel: _ToplevelWidget = Field(default_factory=_ToplevelWidget, alias=SectionKeys.TOPLEVEL.value)
 
@@ -96,7 +96,7 @@ class _ToplevelFont(_AllowModel):
     size: int = Field(default=9, alias=FontKeys.SIZE.value)
 
 
-class _FontConfig(_AllowModel):
+class _FontModel(_AllowModel):
     family: str = Field(default="DM Mono", alias=FontKeys.FAMILY.value)
     root: _RootFont = Field(default_factory=_RootFont, alias=SectionKeys.ROOT.value)
     toplevel: _ToplevelFont = Field(default_factory=_ToplevelFont, alias=SectionKeys.TOPLEVEL.value)
@@ -104,7 +104,7 @@ class _FontConfig(_AllowModel):
 
 # Color schema
 
-class _ColorConfig(_AllowModel):
+class _ColorModel(_AllowModel):
     background: str = Field(default="#2a2830", alias=ColorKeys.BACKGROUND.value)
     normal: str = Field(default="#ffffff", alias=ColorKeys.NORMAL)
     success: str = Field(default="#a1e096", alias=ColorKeys.SUCCESS.value)
@@ -125,10 +125,10 @@ class _ColorConfig(_AllowModel):
 
 # Theme schema
 
-class ThemeConfig(_AllowModel):
-    colors: _ColorConfig = Field(default_factory=_ColorConfig, alias=SectionKeys.COLORS.value)
-    font: _FontConfig = Field(default_factory=_FontConfig, alias=SectionKeys.FONT.value)
-    widgets: _WidgetConfig = Field(default_factory=_WidgetConfig, alias=SectionKeys.WIDGETS.value)
+class ThemeModel(_AllowModel):
+    colors: _ColorModel = Field(default_factory=_ColorModel, alias=SectionKeys.COLORS.value)
+    font: _FontModel = Field(default_factory=_FontModel, alias=SectionKeys.FONT.value)
+    widgets: _WidgetModel = Field(default_factory=_WidgetModel, alias=SectionKeys.WIDGETS.value)
 
 
 # Window schema
@@ -157,13 +157,13 @@ class _ToplevelWindow(_AllowModel):
         return geometry
 
 
-class _WindowConfig(_AllowModel):
+class _WindowModel(_AllowModel):
     root: _RootWindow = Field(default_factory=_RootWindow, alias=SectionKeys.ROOT.value)
     toplevel: _ToplevelWindow = Field(default_factory=_ToplevelWindow, alias=SectionKeys.TOPLEVEL.value)
 
 
 # Main Config
 
-class GuiConfig(_AllowModel):
-    window: _WindowConfig = Field(default_factory=_WindowConfig, alias=SectionKeys.WINDOW.value)
-    theme: ThemeConfig = Field(default_factory=ThemeConfig, alias=SectionKeys.THEME.value)
+class GuiModel(_AllowModel):
+    window: _WindowModel = Field(default_factory=_WindowModel, alias=SectionKeys.WINDOW.value)
+    theme: ThemeModel = Field(default_factory=ThemeModel, alias=SectionKeys.THEME.value)
