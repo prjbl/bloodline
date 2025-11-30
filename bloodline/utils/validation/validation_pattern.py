@@ -35,6 +35,6 @@ class ValidationPattern:
     def validate_keybind_pattern(keybind: str) -> bool:
         if len(keybind) == 1:
             return True
-        if keybind in keyboard.Key.__members__.keys():
+        elif keybind in keyboard.Key.__members__.keys():
             return True
         return False

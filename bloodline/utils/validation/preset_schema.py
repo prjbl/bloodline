@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 _PRESET_STRUCTURE = Dict[str, List[str]]
 
 class PresetModel(RootModel[_PRESET_STRUCTURE]):
+    
     @model_validator(mode="before")
     @classmethod
     def enforce_correct_data_type(cls, raw_json: Any) -> Any:

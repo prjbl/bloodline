@@ -47,6 +47,7 @@ class WidgetKeys(str, Enum):
 # Models below
 
 class _TypeEnforcementMixin:
+    
     @field_validator("*", mode="before")
     @classmethod
     def enforce_correct_data_type(cls, v: Any, info: FieldValidationInfo) -> Any:
