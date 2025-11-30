@@ -1,18 +1,18 @@
 from tkinter import Toplevel, Frame, Label
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
-from typing import override, Any
+from typing import Any, override
 
 from .config_manager import ConfigManager
-from interfaces import IOverlay
+from interfaces import IConsole, IOverlay
 from utils.validation import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Overlay(IOverlay):
     
-    def __init__(self):
+    def __init__(self, console: IConsole):
+        self._console: IConsole = console
         self._config_manager: ConfigManager = ConfigManager()
         self._setup_config_vars()
-        self._observer: Any = None
     
     
     @override
@@ -55,14 +55,6 @@ class Overlay(IOverlay):
         self._toplevel.destroy()
     
     
-    def set_observer(self, observer: Any) -> None:
-        self._observer = observer
-    
-    
-    def _notify_observer(self, text: str, text_type: str) -> None:
-        self._observer(text, text_type)
-    
-    
     def _setup_config_vars(self) -> None:
         self._toplevel_props: dict = self._config_manager.get_toplevel_props()
         self._colors: dict = self._config_manager.get_colors()
@@ -83,26 +75,37 @@ class Overlay(IOverlay):
         self._toplevel.geometry(self._toplevel_props.get(WindowKeys.GEOMETRY))
         self._toplevel.attributes("-topmost", True)
         self._toplevel.overrideredirect(True)
-        self._toplevel.config(bg=self._colors.get(ColorKeys.BACKGROUND),
-                              highlightthickness=self._widget_props.get(WidgetKeys.HIGHLIGHTTHICKNESS),
-                              highlightbackground=self._colors.get(ColorKeys.BACKGROUND))
+        self._toplevel.config(
+            bg=self._colors.get(ColorKeys.BACKGROUND),
+            highlightthickness=self._widget_props.get(WidgetKeys.HIGHLIGHTTHICKNESS),
+            highlightbackground=self._colors.get(ColorKeys.BACKGROUND)
+        )
     
     
     def _setup_ui_elements(self) -> None:
-        self._container: Frame = Frame(master=self._toplevel,
-                                       bg=self._colors.get(ColorKeys.BACKGROUND))
-        self._container.pack(padx=self._widget_props.get(WidgetKeys.PADDING), pady=self._widget_props.get(WidgetKeys.PADDING))
+        self._container: Frame = Frame(
+            master=self._toplevel,
+            bg=self._colors.get(ColorKeys.BACKGROUND)
+        )
+        self._container.pack(
+            padx=self._widget_props.get(WidgetKeys.PADDING),
+            pady=self._widget_props.get(WidgetKeys.PADDING)
+        )
         
-        self._counter_label: Label = Label(master=self._container,
-                                           fg=self._colors.get(ColorKeys.NORMAL),
-                                           bg=self._colors.get(ColorKeys.BACKGROUND),
-                                           text="No value yet")
+        self._counter_label: Label = Label(
+            master=self._container,
+            fg=self._colors.get(ColorKeys.NORMAL),
+            bg=self._colors.get(ColorKeys.BACKGROUND),
+            text="No value yet"
+        )
         self._counter_label.pack()
         
-        self._timer_label: Label = Label(master=self._container,
-                                         fg=self._colors.get(ColorKeys.NORMAL),
-                                         bg=self._colors.get(ColorKeys.BACKGROUND),
-                                         text="No value yet")
+        self._timer_label: Label = Label(
+            master=self._container,
+            fg=self._colors.get(ColorKeys.NORMAL),
+            bg=self._colors.get(ColorKeys.BACKGROUND),
+            text="No value yet"
+        )
         self._timer_label.pack()
     
     
@@ -110,10 +113,14 @@ class Overlay(IOverlay):
         desired_font_family: str = self._font_props.get(FontKeys.FAMILY)
         
         if desired_font_family in families():
-            font_to_use: Font = Font(family=desired_font_family, size=self._font_props.get(FontKeys.SIZE), weight="normal")
+            font_to_use: Font = Font(
+                                    family=desired_font_family,
+                                    size=self._font_props.get(FontKeys.SIZE),
+                                    weight="normal"
+                                )
         else:
             font_to_use: Font = nametofont(ScrolledText.cget("font"))
-            self._notify_observer(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
+            self._console.print_output(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
         
         self._counter_label.config(font=font_to_use)
         self._timer_label.config(font=font_to_use)
