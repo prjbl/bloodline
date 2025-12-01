@@ -86,7 +86,13 @@ class CommandManager:
         self._hk_manager: HotkeyManager = HotkeyManager()
         self._counter: Counter = Counter(self._console, self._overlay)
         self._timer: Timer = Timer(self._console, self._overlay)
-        self._key_listener: KeyListener = KeyListener(self._hk_manager, self._counter, self._timer, self._console, self._overlay)
+        self._key_listener: KeyListener = KeyListener(
+            hk_manager=self._hk_manager,
+            counter=self._counter,
+            timer=self._timer,
+            console=self._console,
+            overlay=self._overlay
+        )
         self._save_file: SaveFile = SaveFile(self._console)
         self._json_handler: ExternalJsonHandler = ExternalJsonHandler()
     
@@ -489,7 +495,7 @@ class CommandManager:
     
     def _keybinds_config(self, hotkey: str) -> None:
         self._key_listener.set_new_keybind(hotkey)
-        self._key_listener.start_key_listener_for_one_input()
+        self._key_listener.start_hotkey_config_listener()
     
     
     def _settings(self) -> None:
