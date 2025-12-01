@@ -7,10 +7,10 @@ from utils.validation import HotkeyModel
 class HotkeyManager:
     
     def __init__(self):
-        self._json_handler: PersistentJsonHandler = PersistentJsonHandler(
-            self._HK_FILE_PATH,
-            self._BACKUP_FILE_PATH,
-            HotkeyModel()
+        self._pers_json_handler: PersistentJsonHandler = PersistentJsonHandler(
+            main_file_path=self._HK_FILE_PATH,
+            backup_file_path=self._BACKUP_FILE_PATH,
+            default_data=HotkeyModel()
         )
         
         self._json_handler.load_data()
@@ -23,11 +23,11 @@ class HotkeyManager:
     
     
     def set_new_keybind(self, hotkey: str, new_keybind: str) -> None:
-        hotkeys: dict = self._json_handler.get_data()
+        hotkeys: dict = self._pers_json_handler.get_data()
         hotkeys[hotkey] = new_keybind
         
-        self._json_handler.set_data(hotkeys)
+        self._pers_json_handler.set_data(hotkeys)
     
     
     def get_current_hotkeys(self) -> dict:
-        return self._json_handler.get_data()
+        return self._pers_json_handler.get_data()

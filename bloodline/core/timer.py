@@ -8,14 +8,20 @@ class Timer:
         self._console: IConsole = console
         self._overlay: IOverlay = overlay
         
-        self._start_time: float = None
-        self._end_time: float = None
+        self._time_already_required: int | None = None
+        self._start_time: float | None = None
+        self._end_time: float | None = None
         self._pause_time: float = 0.0
-        self._time_already_required: int = None
         self._total_time: int = 0
         
         self._timer_active: bool = False
         self._timer_paused: bool = False
+    
+    
+    def set_time_already_required(self, time: int | None) -> None:
+        if time is not None:
+            self._time_already_required = time
+            self._overlay.update_timer_label(self._format_time(time))
     
     
     def start(self) -> None:
@@ -74,23 +80,20 @@ class Timer:
         
         self._start_time, self._end_time = None, None
         self._pause_time = 0.0
+        self._total_time = 0
         self._timer_active, self._timer_paused = False, False
         
         if hard_reset:
-            self._total_time = 0
             self._time_already_required = None
         else:
             self._console.print_output("Timer has been reset", "normal")
     
     
-    def get_end_time(self) -> int:
+    def get_end_time(self) -> int | None:
         if self.get_is_none() and self._time_already_required is None:
             return None # None if timer wasnt started -> req. time == N/A instead of 0
         
-        if self._time_already_required is None:
-            self._time_already_required = 0
-        
-        return self._total_time + self._time_already_required
+        return self._total_time + (self._time_already_required if self._time_already_required is not None else 0)
     
     
     def check_timer_stopped(self) -> None:
@@ -99,16 +102,7 @@ class Timer:
     
     
     def get_is_none(self) -> bool:
-        if self._start_time is None:
-            return True
-        else:
-            return False
-    
-    
-    def set_time_already_required(self, time: int | None) -> None:
-        if time is not None:
-            self._time_already_required = time
-            self._overlay.update_timer_label(self._format_time(time))
+        return self._start_time is None
     
     
     # overlay methods below
@@ -133,7 +127,10 @@ class Timer:
         return self._total_time + int(elapsed_time) + (self._time_already_required if self._time_already_required is not None else 0)
     
     
-    def _format_time(self, time: int) -> str:
+    # helper methods below
+    
+    @staticmethod
+    def _format_time(time: int) -> str:
         seconds: int = time % 60
         minutes: int = int(time / 60) % 60
         hours: int = int(time / 3600)

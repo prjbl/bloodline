@@ -11,9 +11,9 @@ from utils.validation import GuiModel, SectionKeys, WindowKeys
 
 class ConfigManager(IConfigManager):
     
-    _instance: ConfigManager = None
-    _error_queue: Queue = None
-    _pers_json_handler: PersistentJsonHandler = None
+    _instance: ConfigManager | None = None
+    _error_queue: Queue | None = None
+    _pers_json_handler: PersistentJsonHandler | None = None
     
     def __new__(cls):
         if cls._instance is None:

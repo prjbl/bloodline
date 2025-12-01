@@ -6,8 +6,14 @@ class Counter:
         self._console: IConsole = console
         self._overlay: IOverlay = overlay
         
-        self._counter: int = None
+        self._counter: int | None = None
         self._question_answered: bool = False
+    
+    
+    def set_count_already_required(self, count: int | None) -> None:
+        if count is not None:
+            self._counter = count
+            self._overlay.update_counter_label(self._counter)
     
     
     def increase(self) -> None:
@@ -36,7 +42,7 @@ class Counter:
             self._overlay.update_counter_label(self._counter)
     
     
-    def get_count(self) -> int:
+    def get_count(self) -> int | None:
         return self._counter
     
     
@@ -53,13 +59,4 @@ class Counter:
     
     
     def get_is_none(self) -> bool:
-        if self._counter is None:
-            return True
-        else:
-            return False
-    
-    
-    def set_count_already_required(self, count: int | None) -> None:
-        if count is not None:
-            self._counter = count
-            self._overlay.update_counter_label(self._counter)
+        return self._counter is None
