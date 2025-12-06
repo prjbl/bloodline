@@ -13,7 +13,7 @@ class HotkeyManager:
             default_data=HotkeyModel()
         )
         
-        self._json_handler.load_data()
+        self._pers_json_handler.load_data()
     
     
     _HK_FILE: str = "hotkeys.json"

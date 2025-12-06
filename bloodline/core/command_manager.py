@@ -253,7 +253,7 @@ class CommandManager:
             boss_name: str = result[0]
             game_title: str = result[1]
             
-            if self._save_file.get_specific_boss_exists(boss_name, game_title):
+            if self._save_file.get_boss_exists(boss_name, game_title):
                 self._overlay.create_instance()
                 self._counter.set_count_already_required(self._save_file.get_specific_boss_deaths(boss_name, game_title))
                 self._timer.set_time_already_required(self._save_file.get_specific_boss_time(boss_name, game_title))
