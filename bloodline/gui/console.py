@@ -208,13 +208,6 @@ class Application(IConsole):
         self._cmd_manager.set_entry_var(self._entry_var.get().strip())
     
     
-    @staticmethod
-    def _merge_queues(main_queue: Queue, source_queue: Queue) -> None:
-        while not source_queue.empty():
-            text, text_type = source_queue.get_nowait()
-            main_queue.put_nowait((text, text_type))
-    
-    
     def _display_startup_problems(self) -> None:
         while not self._main_queue.empty():
             text, text_type = self._main_queue.get_nowait()
@@ -240,3 +233,10 @@ class Application(IConsole):
                 self._console.insert("end", "\n")
                 continue
             self._console.insert("end", f"• {line}\n", "list")
+    
+    
+    @staticmethod
+    def _merge_queues(main_queue: Queue, source_queue: Queue) -> None:
+        while not source_queue.empty():
+            text, text_type = source_queue.get_nowait()
+            main_queue.put_nowait((text, text_type))
