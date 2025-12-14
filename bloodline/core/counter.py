@@ -26,6 +26,9 @@ class Counter:
     
     
     def decrease(self) -> None:
+        if self._counter is None:
+            return
+        
         if self._counter > 0:
             self._counter -= 1
             self._console.print_output(f"Counter decreased: {self.get_count()}", "normal")

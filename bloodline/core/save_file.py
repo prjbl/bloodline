@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, List
+from typing import List
 
 from interfaces import IConsole
 from utils import DatabaseHandler, Directory
@@ -39,7 +39,7 @@ class SaveFile:
                                         
             UNIQUE (name, gameId),
             FOREIGN KEY (gameId) REFERENCES Game (id) ON DELETE CASCADE
-        )"""
+        );"""
     
     _UNKNOWN_GAME_TITLE: str = "Unknown Game"
     _UNKNOWN_BOSS_NAME: str = "Unknown Boss"
@@ -85,8 +85,8 @@ class SaveFile:
     
     
     def add_boss(self, boss_name: str, game_title: str, ensure_backup: bool = True) -> bool:
-        if self.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' already exists in the save file", "invalid")
+        if self._get_boss_exists(boss_name, game_title):
+            self._console.print_output(f"The boss '{self._get_boss_name(boss_name, game_title)}' of game '{self._get_game_title(game_title)}' already exists in the save file", "invalid")
             return False
         
         self._add_game(game_title)
@@ -98,8 +98,8 @@ class SaveFile:
         return self._execute_and_report_dml(
             sql=sql,
             params=(boss_name, game_title),
-            success_msg=f"The boss '{boss_name}' has been added to the game '{self._get_specific_game(game_title) if self._get_game_exists(game_title) else game_title}'",
-            error_msg=f"An unexpected error occured while adding the boss '{boss_name}' to '{self._get_specific_game(game_title) if self._get_game_exists(game_title) else game_title}'",
+            success_msg=f"The boss '{boss_name}' has been added to the game '{self._get_game_title(game_title) if self._get_game_exists(game_title) else game_title}'",
+            error_msg=f"An unexpected error occured while adding the boss '{boss_name}' to '{self._get_game_title(game_title) if self._get_game_exists(game_title) else game_title}'",
             ensure_backup=ensure_backup
         )
     
@@ -117,13 +117,13 @@ class SaveFile:
     
     
     def add_unknown(self) -> None:
-        sql: str = f"""
+        sql: str = """
             SELECT b.name FROM Boss b
                 JOIN Game g ON b.gameId = g.id
-                WHERE b.name LIKE (?) || '%' and g.title = (?)"""
+                WHERE b.name LIKE (?) || '%' AND g.title = (?)"""
         
         list_of_unknown_bosses: List[tuple] = self._db_handler.fetch(sql, SaveFile._UNKNOWN_BOSS_NAME, SaveFile._UNKNOWN_GAME_TITLE)
-        unknown_boss_nums: List[int] = self._get_unknown_boss_numbers(list_of_unknown_bosses)
+        unknown_boss_nums: List[int] = self._get_unknown_boss_nums(list_of_unknown_bosses)
         
         boss_name_exists: bool = True
         iterator: int = 0
@@ -138,12 +138,55 @@ class SaveFile:
             self.add_boss(f"{SaveFile._UNKNOWN_BOSS_NAME} {iterator}", SaveFile._UNKNOWN_GAME_TITLE)
     
     
+    def identify_boss(self, unknown_boss_num: str, new_boss_name: str, new_game_title: str) -> None:
+        if not self._get_game_exists(SaveFile._UNKNOWN_GAME_TITLE):
+            self._console.print_output(f"The game '{SaveFile._UNKNOWN_GAME_TITLE}' you want to identify a boss from does not exist in the save file so far", "invalid")
+            return
+        elif not self._get_boss_exists(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE):
+            self._console.print_output(f"The boss '{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}' you selected to identify does not exist in the game {SaveFile._UNKNOWN_GAME_TITLE}", "invalid")
+            return
+        elif not self._get_game_exists(new_game_title):
+            self._console.print_output(f"The game '{new_game_title}' you selected to link the boss to does not exist in the save file so far", "invalid")
+            return
+        elif self._get_boss_exists(new_boss_name, new_game_title):
+            self._console.print_output(f"The boss '{self._get_boss_name(new_boss_name, new_game_title)}' already exists in the game '{self._get_game_title(new_game_title)}'", "invalid")
+            return
+        
+        if not self._rename_boss_operation(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE, new_boss_name, False):
+            return
+        if not self._move_boss_operation(new_boss_name, SaveFile._UNKNOWN_GAME_TITLE, new_game_title, True):
+            return
+        
+        self._console.print_output(f"The boss '{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}' was identified as '{new_boss_name}' from game '{self._get_game_title(new_game_title)}'", "success")
+    
+    
+    def rename_boss(self, boss_name: str, game_title: str, new_boss_name: str) -> None:
+        if not self._get_game_exists(game_title):
+            self._console.print_output(f"The game '{game_title}' you selected does not exist in the save file", "invalid")
+            return
+        elif not self._get_boss_exists(boss_name, game_title):
+            self._console.print_output(f"The boss '{boss_name}' you wish to rename does not exist in the game '{self._get_game_title(game_title)}' in the save file so far", "invalid")
+            return
+        elif self._get_boss_exists(new_boss_name, game_title):
+            self._console.print_output(f"The boss '{self._get_boss_name(new_boss_name, game_title)}' already exists in the game '{self._get_game_title(game_title)}'", "invalid")
+            return
+        
+        old_boss_name: str = self._get_boss_name(boss_name, game_title)
+        
+        if not self._rename_boss_operation(boss_name, game_title, new_boss_name):
+            return
+        
+        self._console.print_output(f"The boss '{old_boss_name}' of game '{self._get_game_title(game_title)}' was renamed to '{new_boss_name}'", "success")
+    
+    
     # helper methods below
     
-    def _execute_and_report_dml(self, sql: str, params: tuple, success_msg: str, error_msg: str, ensure_backup: bool = True) -> bool:
+    def _execute_and_report_dml(self, sql: str, params: tuple, success_msg: str | None, error_msg: str, ensure_backup: bool = True) -> bool:
         try:
             self._db_handler.execute_dml(sql, *params)
-            self._console.print_output(success_msg, "success")
+            
+            if success_msg:
+                self._console.print_output(success_msg, "success")
             
             if ensure_backup:
                 self._db_handler.ensure_backup()
@@ -153,42 +196,122 @@ class SaveFile:
             return False
     
     
+    def _get_game_exists(self, game_title: str, case_insensitive: bool = True) -> bool:
+        fetched_game_title: str = self._get_game_title(game_title, case_insensitive)
+        
+        if fetched_game_title is None:
+            return False
+        return True
     
     
+    def _get_game_title(self, game_title: str, case_insensitive: bool = True) -> str | None:
+        sql: str = """
+            SELECT title FROM Game
+                WHERE title = (?)"""
+        
+        if case_insensitive:
+            sql += " COLLATE NOCASE"
+        
+        fetched_game_title: List[tuple] = self._db_handler.fetch(sql, game_title)
+        
+        if not fetched_game_title:
+            return None
+        return fetched_game_title[0][0]
     
     
+    def _get_boss_exists(self, boss_name: str, game_title: str, case_insensitive: bool = True) -> bool:
+        fetched_boss_name: str = self._get_boss_name(boss_name, game_title, case_insensitive)
+        
+        if fetched_boss_name is None:
+            return False
+        return True
     
     
+    def _get_boss_name(self, boss_name: str, game_title: str, case_insensitive: bool = True) -> str | None:
+        boss_condition: str = "b.name = (?)"
+        game_condition: str = "g.title = (?)"
+        
+        if case_insensitive:
+            boss_condition += " COLLATE NOCASE"
+            game_condition += " COLLATE NOCASE"
+        
+        sql: str = f"""
+            SELECT b.name FROM Boss b
+                JOIN Game g ON b.gameId = g.id
+                WHERE {boss_condition} AND {game_condition}"""
+        
+        fetched_boss_name: List[tuple] = self._db_handler.fetch(sql, boss_name, game_title)
+        
+        if not fetched_boss_name:
+            return None
+        return fetched_boss_name[0][0]
     
     
-    
-    
-    
-    
-    
-    def identify_boss(self, unknown_boss_number: str, new_boss_name: str, new_game_title: str) -> None:
-        if not self._get_game_exists(self._UNKNOWN_GAME_TITLE):
-            self._console.print_output(f"The game '{self._UNKNOWN_GAME_TITLE}' you want to identify a boss from does not exists in the save file so far", "invalid")
-            return
-        elif not self.get_boss_exists(f"{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}", self._UNKNOWN_GAME_TITLE):
-            self._console.print_output(f"The boss '{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}' you selected to identify does not exists in the game '{self._UNKNOWN_GAME_TITLE}' in the save file", "invalid")
-            return
-        elif not self._get_game_exists(new_game_title):
-            self._console.print_output(f"The game '{new_game_title}' you selected to link the boss to does not exists in the save file so far", "invalid")
-            return
-        elif self.get_boss_exists(new_boss_name, new_game_title):
-            self._console.print_output(f"The boss '{self._get_specific_boss(new_boss_name, new_game_title)}' already exists in the game '{self._get_specific_game(new_game_title)}'", "invalid")
-            return
+    @classmethod
+    def _get_unknown_boss_nums(cls, list_of_unknown_bosses: List[tuple]) -> List[int]:
+        unknown_boss_nums: List[int] = []
+        
+        for boss_name in list_of_unknown_bosses:
+            parts_of_name: List[str] = str(boss_name[0]).split(cls._UNKNOWN_BOSS_NAME)
+            name_index: str = parts_of_name[1].strip()
             
-        if not self._rename_boss_operation(f"{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}", self._UNKNOWN_GAME_TITLE, new_boss_name):
-            return
-        
-        if not self._move_boss_operation(new_boss_name, self._UNKNOWN_GAME_TITLE, new_game_title):
-            return
-        
-        self._console.print_output(f"The boss '{self._UNKNOWN_BOSS_NAME} {unknown_boss_number}' was identified as '{new_boss_name}' from game '{self._get_specific_game(new_game_title)}'", "success")
-        self._ensure_backup()
+            if not name_index or not name_index.isdigit():
+                continue
+            
+            unknown_boss_nums.append(int(name_index))
+        return unknown_boss_nums
     
+    
+    def _rename_boss_operation(self, boss_name: str, game_title: str, new_boss_name: str, ensure_backup: bool = True) -> bool:
+        sql: str = """
+            UPDATE Boss
+                SET name = (?)
+                WHERE name = (?) COLLATE NOCASE AND gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)"""
+        
+        return self._execute_and_report_dml(
+            sql=sql,
+            params=(new_boss_name, boss_name, game_title),
+            success_msg=None,
+            error_msg=f"An unexpected error occured while renaming the boss '{self._get_boss_name(boss_name, game_title)}' of game '{self._get_game_title(game_title)}' to {new_boss_name}.",
+            ensure_backup=ensure_backup
+        )
+    
+    
+    def _move_boss_operation(self, boss_name: str, game_title: str, new_game_title: str, ensure_backup: bool = True) -> bool:
+        sql: str = """
+            UPDATE Boss
+                SET gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)
+                WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)"""
+        
+        return self._execute_and_report_dml(
+            sql=sql,
+            params=(new_game_title, boss_name, game_title),
+            success_msg=None,
+            error_msg=f"An unexpected error occured while moving the boss '{self._get_boss_name(boss_name, game_title)}' from '{self._get_game_title(game_title)}' to '{new_game_title}'.",
+            ensure_backup=ensure_backup
+        )
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
     
     def move_boss(self, boss_name: str, game_title: str, new_game_title: str) -> None:
         if not self._get_game_exists(game_title):
@@ -231,24 +354,6 @@ class SaveFile:
             self._ensure_backup()
         except Exception as e:
             self._console.print_output(f"An unexpected error occured while renaming the game '{self._get_specific_game(game_title)}' to '{new_game_title}'. Exception: {e}", "error")
-    
-    
-    def rename_boss(self, boss_name: str, game_title: str, new_boss_name: str) -> None:
-        if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you selected does not exists in the save file", "indication")
-            return
-        elif not self.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you wish to rename does not exists in in the game '{self._get_specific_game(game_title)}' in the save file so far", "indication")
-            return
-        elif self.get_boss_exists(new_boss_name, game_title, case_insensitive=False):
-            self._console.print_output(f"The boss '{new_boss_name}' already exists with the same spelling in the game '{self._get_specific_game(game_title)}'", "invalid")
-            return
-        
-        old_boss_name: str = self._get_specific_boss(boss_name, game_title)
-        
-        if self._rename_boss_operation(boss_name, game_title, new_boss_name):
-            self._console.print_output(f"The boss '{old_boss_name}' of game '{self._get_specific_game(game_title)}' was renamed to '{new_boss_name}'", "success")
-            self._ensure_backup()
     
     
     def delete_game(self, game_title: str) -> None:
@@ -385,98 +490,6 @@ class SaveFile:
     
     
     # helper methods below
-    
-    def _get_specific_game(self, game_title: str, case_insensitive: bool = True) -> str:
-        sql: str = ""
-        
-        if case_insensitive:
-            sql = """
-                SELECT title FROM Game
-                    WHERE title = (?) COLLATE NOCASE"""
-        else:
-            sql = """
-                SELECT title FROM Game
-                    WHERE title = (?)"""
-        selection: List[tuple] = self._db_handler.fetch(sql, game_title)
-        
-        if not selection:
-            return
-        else:
-            return selection[0][0]
-    
-    
-    def _get_game_exists(self, game_title: str, case_insensitive: bool = True) -> bool:
-        selection: str = self._get_specific_game(game_title, case_insensitive)
-        
-        if selection is None:
-            return False
-        else:
-            return True
-    
-    
-    def _get_specific_boss(self, boss_name: str, game_title: str, case_insensitive: bool = True) -> str:
-        sql: str = ""
-        
-        if case_insensitive:
-            sql = """
-                SELECT b.name FROM Boss b
-                    JOIN Game g ON b.gameId = g.id
-                    WHERE b.name = (?) COLLATE NOCASE and g.title = (?) COLLATE NOCASE"""
-        else:
-            sql = """
-                SELECT b.name FROM Boss b
-                    JOIN Game g ON b.gameId = g.id
-                    WHERE b.name = (?) and g.title = (?) COLLATE NOCASE"""
-        selection: List[tuple] = self._db_handler.fetch(sql, boss_name, game_title)
-        
-        if not selection:
-            return
-        else:
-            return selection[0]
-    
-    
-    def get_boss_exists(self, boss_name: str, game_title: str, case_insensitive: bool = True) -> bool:
-        selection: str = self._get_specific_boss(boss_name, game_title, case_insensitive)
-        
-        if selection is None:
-            return False
-        else:
-            return True
-    
-    
-    def _get_unknown_boss_numbers(self, list_of_unknown_bosses: List[tuple]) -> List[int]:
-        unknown_boss_nums: List[int] = []
-        
-        for boss_name in list_of_unknown_bosses:
-            for num in str(boss_name[0]).split():
-                if num.isdigit():
-                    unknown_boss_nums.append(int(num))
-        return unknown_boss_nums
-    
-    
-    def _move_boss_operation(self, boss_name: str, game_title: str, new_game_title: str) -> bool:
-        try:
-            self._cursor.execute("""UPDATE Boss
-                                        SET gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)
-                                        WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (new_game_title, boss_name, game_title))
-            self._conn.commit()
-            return True
-        except Exception as e:
-            self._console.print_output(f"An unexpected error occured while moving the boss '{self._get_specific_boss(boss_name, game_title)}' from '{self._get_specific_game(game_title)}' to '{new_game_title}'. Exception: {e}", "error")
-            return False
-    
-    
-    def _rename_boss_operation(self, boss_name: str, game_title: str, new_boss_name: str) -> bool:
-        try:
-            self._cursor.execute("""UPDATE Boss
-                                        SET name = (?)
-                                        WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (new_boss_name, boss_name, game_title))
-            self._conn.commit()
-            return True
-        except Exception as e:
-            self._console.print_output(f"An unexpected error occured while renaming the boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' to '{new_boss_name}'. Exception: {e}", "error")
-            return False
-    
     
     def get_specific_boss_deaths(self, boss_name: str, game_title: str) -> int:
         self._cursor.execute("""SELECT b.deaths FROM Boss b
