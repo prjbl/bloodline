@@ -416,7 +416,7 @@ class CommandManager:
     
     
     def _stats_list_games_by(self, sort_filter: str, order_filter: str) -> None:
-        list_of_games: list[tuple] = self._save_file.get_all_games(sort_filter, order_filter)
+        list_of_games: list[tuple] = self._save_file.get_all_games_by(sort_filter, order_filter)
         
         if not list_of_games:
             return

@@ -61,7 +61,7 @@ class SaveFile:
         self._db_handler.close_connection()
     
     
-    # db manipulation and selection methods below
+    # db manipulation methods below
     
     def get_boss_table_description(self) -> tuple:
         return self._db_handler.get_table_description()
@@ -154,7 +154,7 @@ class SaveFile:
         
         if not self._rename_boss_operation(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE, new_boss_name, False):
             return
-        if not self._move_boss_operation(new_boss_name, SaveFile._UNKNOWN_GAME_TITLE, new_game_title, True):
+        if not self._move_boss_operation(new_boss_name, SaveFile._UNKNOWN_GAME_TITLE, new_game_title):
             return
         
         self._console.print_output(f"The boss '{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}' was identified as '{new_boss_name}' from game '{self._get_game_title(new_game_title)}'", "success")
@@ -177,6 +177,174 @@ class SaveFile:
             return
         
         self._console.print_output(f"The boss '{old_boss_name}' of game '{self._get_game_title(game_title)}' was renamed to '{new_boss_name}'", "success")
+    
+    
+    def rename_game(self, game_title: str, new_game_title: str) -> None:
+        if not self._get_game_exists(game_title):
+            self._console.print_output(f"The game '{game_title}' you wish to rename does not exist in the save file so far", "invalid")
+            return
+        elif self._get_game_exists(new_game_title):
+            self._console.print_output(f"The game '{self._get_game_title(new_game_title)}' already exist in the save file", "invalid")
+            return
+        
+        sql: str = """
+            UPDATE Game
+                SET title = (?)
+                WHERE title = (?) COLLATE NOCASE"""
+        
+        old_game_title: str = self._get_game_title(game_title)
+        
+        self._execute_and_report_dml(
+            sql=sql,
+            params=(new_game_title, game_title),
+            success_msg=f"The game '{old_game_title}' was renamed to '{new_game_title}'",
+            error_msg=f"An unexpected error occured while renaming the game '{old_game_title}' to '{new_game_title}'."
+        )
+    
+    
+    def move_boss(self, boss_name: str, game_title: str, new_game_title: str) -> None:
+        if not self._get_game_exists(game_title):
+            self._console.print_output(f"The game '{game_title}' you selected to move the boss from does not exist in the save file so far", "invalid")
+            return
+        elif not self._get_boss_exists(boss_name, game_title):
+            self._console.print_output(f"The boss '{boss_name}' you selected to move does not exist in the game '{self._get_game_title(game_title)}'", "invalid")
+            return
+        elif not self._get_game_exists(new_game_title):
+            self._console.print_output(f"The game '{new_game_title}' you selected to be moved to does not exist in the save file so far", "invalid")
+            return
+        elif self._get_boss_exists(boss_name, new_game_title):
+            self._console.print_output(f"The boss '{self._get_boss_name(boss_name, game_title)}' already exist in the game '{self._get_game_title(new_game_title)}'", "invalid")
+            return
+        
+        old_game_title: str = self._get_game_title(game_title)
+        
+        if not self._move_boss_operation(boss_name, game_title, new_game_title):
+            return
+        
+        self._console.print_output(f"The boss '{self._get_boss_name(boss_name, new_game_title)}' was moved from game '{old_game_title}' to '{self._get_game_title(new_game_title)}'", "success")
+    
+    
+    def delete_game(self, game_title: str) -> None:
+        if not self._get_game_exists(game_title):
+            self._console.print_output(f"The game '{game_title}' you wish to delete does not exist in the save file", "invalid")
+            return
+        
+        sql: str = """
+            DELETE FROM Game
+                WHERE title = (?) COLLATE NOCASE"""
+        
+        removed_game: str = self._get_game_title(game_title)
+        
+        self._execute_and_report_dml(
+            sql=sql,
+            params=(game_title,),
+            success_msg=f"The game '{removed_game}' has been successfully deleted",
+            error_msg=f"An unexpected error occured while removing the game '{self._get_game_title(game_title)}' from the save file."
+        )
+    
+    
+    def delete_boss(self, boss_name: str, game_title: str) -> None:
+        if not self._get_game_exists(game_title):
+            self._console.print_output(f"The game '{game_title}' you selected to delete a boss from does not exist in the save file", "invalid")
+            return
+        elif not self._get_boss_exists(boss_name, game_title):
+            self._console.print_output(f"The boss '{boss_name}' you wish to delete does not exist in the game '{self._get_game_title(game_title)}'", "invalid")
+            return
+        
+        sql: str = """
+            DELETE FROM Boss
+                WHERE name = (?) COLLATE NOCASE AND gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)"""
+        
+        removed_boss: str = self._get_boss_name(boss_name, game_title)
+        
+        self._execute_and_report_dml(
+            sql=sql,
+            params=(boss_name, game_title),
+            success_msg=f"The boss '{removed_boss}' of game '{self._get_game_title(game_title)}' was removed",
+            error_msg=f"An unexpected error occured while removing the boss '{self._get_boss_name(boss_name, game_title)}' from game '{self._get_game_title(game_title)}'."
+        )
+    
+    
+    def update_boss(self, boss_name: str, game_title: str, deaths: int | None, required_time: int | None) -> bool:
+        if not self._get_game_exists(game_title):
+            self._console.print_output(f"The game '{game_title}' you selected to save the stats to a boss from does not exist in the save file", "invalid")
+            return False
+        elif not self._get_boss_exists(boss_name, game_title):
+            self._console.print_output(f"The boss '{boss_name}' you wish to save the stats to does not exist in the game '{self._get_game_title(game_title)}'", "invalid")
+            return False
+        
+        sql: str = """
+            UPDATE Boss
+                SET deaths = (?), requiredTime = (?)
+                WHERE name = (?) COLLATE NOCASE AND gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)"""
+        
+        return self._execute_and_report_dml(
+            sql=sql,
+            params=(deaths, required_time, boss_name, game_title),
+            success_msg=f"The boss '{self._get_boss_name(boss_name, game_title)}' of game '{self._get_game_title(game_title)}' was updated with the following values: Deaths {deaths}, Req. time {required_time}",
+            error_msg=f"An unexpected error occured while saving the stats to the boss '{self._get_boss_name(boss_name, game_title)}' of game '{self._get_game_title(game_title)}'."
+        )
+    
+    
+    # db selection methods below
+    
+    def get_all_games_by(self, sort_filter: str, order_filter: str) -> List[tuple]:
+        allowed_sort_filters: List[str] = ["gameId", "deaths", "requiredTime"]
+        
+        if not self._validate_filters(sort_filter, order_filter, allowed_sort_filters):
+            return []
+        
+        sql: str = f"""
+            SELECT g.title, SUM(b.deaths), SUM(b.requiredTime) FROM Game g
+                JOIN Boss b ON b.gameId = g.id
+                GROUP BY g.title
+                ORDER BY b.{sort_filter} {order_filter}"""
+        
+        fetched_list_of_games: List[tuple] = self._db_handler.fetch(sql)
+        
+        if not fetched_list_of_games:
+            self._console.print_output("There are no games in the save file so far", "invalid")
+        return fetched_list_of_games
+    
+    
+    def get_all_bosses_by(self, sort_filter: str, order_filter: str) -> List[tuple]:
+        allowed_sort_filters: List[str] = ["id", "deaths", "requiredTime"]
+        
+        if not self._validate_filters(sort_filter, order_filter, allowed_sort_filters):
+            return []
+        
+        sql: str = f"""
+            SELECT b.name, g.title, b.deaths, b.requiredTime FROM Boss b
+                JOIN Game g ON b.gameId = g.id
+                ORDER BY b.{sort_filter} {order_filter}"""
+        
+        fetched_list_of_bosses: List[tuple] = self._db_handler.fetch(sql)
+        
+        if not fetched_list_of_bosses:
+            self._console.print_output("There are no bosses in the save file so far", "invalid")
+        return fetched_list_of_bosses
+    
+    
+    def get_bosses_from_game_by(self, game_title: str, sort_filter: str, order_filter: str) -> List[tuple]:
+        allowed_sort_filters: List[str] = ["id", "deaths", "requiredTime"]
+        
+        if not self._validate_filters(sort_filter, order_filter, allowed_sort_filters):
+            return []
+        elif not self._get_game_exists(game_title):
+            self._console.print_output(f"The game '{game_title}' you selected all the bosses from does not exists in the save file", "invalid")
+            return []
+        
+        sql: str = f"""
+            SELECT b.name, b.deaths, b.requiredTime FROM Boss b
+                JOIN Game g ON b.gameId = g.id
+                WHERE g.title = (?) COLLATE NOCASE
+                ORDER BY b.{sort_filter} {order_filter}"""
+        
+        fetched_list_of_bosses: List[tuple] = self._db_handler.fetch(sql, game_title)
+        
+        if not fetched_list_of_bosses:
+            self._console.print_output(f"There are no bosses linked to the game '{self._get_game_title(game_title)}'", "invalid")
+        return fetched_list_of_bosses
     
     
     # helper methods below
@@ -272,7 +440,7 @@ class SaveFile:
             sql=sql,
             params=(new_boss_name, boss_name, game_title),
             success_msg=None,
-            error_msg=f"An unexpected error occured while renaming the boss '{self._get_boss_name(boss_name, game_title)}' of game '{self._get_game_title(game_title)}' to {new_boss_name}.",
+            error_msg=f"An unexpected error occured while renaming the boss '{self._get_boss_name(boss_name, game_title)}' of game '{self._get_game_title(game_title)}' to '{new_boss_name}'.",
             ensure_backup=ensure_backup
         )
     
@@ -292,201 +460,34 @@ class SaveFile:
         )
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-    
-    def move_boss(self, boss_name: str, game_title: str, new_game_title: str) -> None:
-        if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you selected to move the boss from does not exists in the save file so far", "indication")
-            return
-        elif not self.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you selected to move does not exists in the game '{self._get_specific_game(game_title)}' in the save file so far", "indication")
-            return
-        elif not self._get_game_exists(new_game_title):
-            self._console.print_output(f"The game '{new_game_title}' you selected to be moved to does not exists in the save file so far", "indication")
-            return
-        elif self.get_boss_exists(boss_name, new_game_title):
-            self._console.print_output(f"The boss '{self._get_specific_boss(boss_name, game_title)}' already exists in the game '{self._get_specific_game(new_game_title)}'", "indication")
-            return
-        
-        old_game_title: str = self._get_specific_game(game_title)
-        
-        if self._move_boss_operation(boss_name, game_title, new_game_title):
-            self._console.print_output(f"The boss '{self._get_specific_boss(boss_name, new_game_title)}' was moved from game '{old_game_title}' to '{self._get_specific_game(new_game_title)}'", "success")
-            self._ensure_backup()
-    
-    
-    def rename_game(self, game_title: str, new_game_title: str) -> None:
-        if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you wish to rename does not exists in the save file so far", "indication")
-            return
-        elif self._get_game_exists(new_game_title, case_insensitive=False):
-            self._console.print_output(f"The game '{new_game_title}' already exists with the same spelling in the save file", "invalid")
-            return
-        
-        try:
-            old_game_title: str = self._get_specific_game(game_title)
-            
-            self._cursor.execute("""UPDATE Game
-                                        SET title = (?)
-                                        WHERE title = (?) COLLATE NOCASE""", (new_game_title, game_title))
-            self._conn.commit()
-            
-            self._console.print_output(f"The game '{old_game_title}' was renamed to '{new_game_title}'", "success")
-            self._ensure_backup()
-        except Exception as e:
-            self._console.print_output(f"An unexpected error occured while renaming the game '{self._get_specific_game(game_title)}' to '{new_game_title}'. Exception: {e}", "error")
-    
-    
-    def delete_game(self, game_title: str) -> None:
-        if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you wish to delete does not exists in the save file", "indication")
-            return
-        
-        try:
-            removed_game: str = self._get_specific_game(game_title)
-            
-            self._cursor.execute("""DELETE FROM Game
-                                        WHERE title = (?) COLLATE NOCASE""", (game_title,))
-            self._conn.commit()
-            
-            self._console.print_output(f"The game '{removed_game}' has been successfully deleted", "success")
-            self._ensure_backup()
-        except Exception as e:
-            self._console.print_output(f"An unexpected error occured while removing the game '{self._get_specific_game(game_title)}' from the save file. Exception: {e}", "error")
-    
-    
-    def delete_boss(self, boss_name: str, game_title: str) -> None:
-        if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you selected to delete a boss from does not exists in the save file", "indication")
-            return
-        elif not self.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you wish to delete does not exists in the game '{self._get_specific_game(game_title)}' in the save file", "indication")
-            return
-        
-        try:
-            removed_boss: str = self._get_specific_boss(boss_name, game_title)
-            
-            self._cursor.execute("""DELETE FROM Boss
-                                        WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (boss_name, game_title))
-            self._conn.commit()
-            
-            self._console.print_output(f"The boss '{removed_boss}' of game '{self._get_specific_game(game_title)}' was removed", "success")
-            self._ensure_backup()
-        except Exception as e:
-            self._console.print_output(f"An unexpected error occured while removing the boss '{self._get_specific_boss(boss_name, game_title)}' from game '{self._get_specific_game(game_title)}' the save file. Exception: {e}", "error")
-    
-    
-    def get_bosses_from_game_by(self, game_title: str, sort_filter: str, order_filter: str) -> list[tuple]:
-        allowed_sort_filters: list[str] = ["id", "deaths", "requiredTime"]
-        allowed_order_filters: list[str] = ["desc", "asc"]
+    def _validate_filters(self, sort_filter: str, order_filter: str, allowed_sort_filters: List[str]) -> bool:
+        allowed_order_filters: List[str] = ["desc", "asc"]
         
         if sort_filter not in allowed_sort_filters:
-            self._console.print_output(f"Illegal sort filter '{sort_filter}' used", "indication")
-            return
-        elif order_filter.lower() not in allowed_order_filters:
-            self._console.print_output(f"Illegal order filter '{order_filter}' used", "indication")
-            return
-        elif not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you selected all bosses from does not exists in the save file", "indication")
-            return
-        
-        self._cursor.execute(f"""SELECT b.name, b.deaths, b.requiredTime FROM Boss b
-                                    JOIN Game g on b.gameId = g.id
-                                    WHERE g.title = (?) COLLATE NOCASE
-                                    ORDER BY b.{sort_filter} {order_filter}""", (game_title,))
-        selection: list[tuple] = self._cursor.fetchall()
-        
-        if not selection:
-            self._console.print_output(f"There are no bosses linked to the game '{self._get_specific_game(game_title)}'", "indication")
-        
-        return selection
-    
-    
-    def get_all_bosses_by(self, sort_filter: str, order_filter: str) -> list[tuple]:
-        allowed_sort_filters: list[str] = ["id", "deaths", "requiredTime"]
-        allowed_order_filters: list[str] = ["desc", "asc"]
-        
-        if sort_filter not in allowed_sort_filters:
-            self._console.print_output(f"Illegal sort filter '{sort_filter}' used", "indication")
-            return
-        elif order_filter.lower() not in allowed_order_filters:
-            self._console.print_output(f"Illegal order filter '{order_filter}' used", "indication")
-            return
-        
-        sql: str = f"""
-            SELECT b.name, g.title, b.deaths, b.requiredTime FROM Boss b
-                JOIN Game g ON b.gameId = g.id
-                ORDER BY b.{sort_filter} {order_filter}"""
-        selection: List[tuple] = self._db_handler.fetch(sql)
-        
-        if not selection:
-            self._console.print_output(f"There are no bosses in the save file so far", "indication")
-        
-        return selection
-    
-    
-    def get_all_games(self, sort_filter: str, order_filter: str) -> list[tuple]:
-        allowed_sort_filters: list[str] = ["gameId", "deaths", "requiredTime"]
-        allowed_order_filters: list[str] = ["desc", "asc"]
-        
-        if sort_filter not in allowed_sort_filters:
-            self._console.print_output(f"Illegal sort filter '{sort_filter}' used", "indication")
-            return
-        elif order_filter.lower() not in allowed_order_filters:
-            self._console.print_output(f"Illegal order filter '{order_filter}' used", "indication")
-            return
-        
-        self._cursor.execute(f"""SELECT g.title, SUM(b.deaths), SUM(b.requiredTime) FROM Game g
-                                    JOIN Boss b ON b.gameId = g.id
-                                    GROUP BY g.title
-                                    ORDER BY b.{sort_filter} {order_filter}""")
-        selection: list[tuple] = self._cursor.fetchall()
-        
-        if not selection:
-            self._console.print_output(f"There are no games in the save file so far", "indication")
-        
-        return selection
-    
-    
-    def update_boss(self, boss_name: str, game_title: str, deaths: int, required_time: int) -> bool:
-        if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you selected to save the stats to a boss from does not exists in the save file", "indication")
+            self._console.print_output(f"Illegal sort filter '{sort_filter}' used", "invalid")
             return False
-        elif not self.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you wish to save the stats to does not exists in the game '{self._get_specific_game(game_title)}' in the save file", "indication")
+        elif order_filter.lower() not in allowed_order_filters:
+            self._console.print_output(f"Illegal order filter '{order_filter}' used", "invalid")
             return False
-        
-        try:
-            self._cursor.execute("""UPDATE Boss
-                                        SET deaths = (?), requiredTime = (?)
-                                        WHERE name = (?) COLLATE NOCASE and gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)""", (deaths, required_time, boss_name, game_title))
-            self._conn.commit()
-            
-            self._console.print_output(f"The boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}' was updated with the following values: Deaths {deaths}, Req. time {required_time}", "success")
-            self._ensure_backup()
-            return True
-        except Exception as e:
-            self._console.print_output(f"An unexpected error occured while saving the stats to the boss '{self._get_specific_boss(boss_name, game_title)}' of game '{self._get_specific_game(game_title)}'. Exception: {e}", "error")
-            return False
+        return True
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     # helper methods below
