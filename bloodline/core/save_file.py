@@ -86,7 +86,7 @@ class SaveFile:
     
     def add_boss(self, boss_name: str, game_title: str, ensure_backup: bool = True) -> bool:
         if self._get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{self._get_boss_name(boss_name, game_title)}' of game '{self._get_game_title(game_title)}' already exists in the save file", "invalid")
+            self._console.print_output(f"The boss '{self._get_cased_boss_name(boss_name, game_title)}' of game '{self._get_cased_game_title(game_title)}' already exists in the save file", "invalid")
             return False
         
         self._add_game(game_title)
@@ -98,8 +98,8 @@ class SaveFile:
         return self._execute_and_report_dml(
             sql=sql,
             params=(boss_name, game_title),
-            success_msg=f"The boss '{boss_name}' has been added to the game '{self._get_game_title(game_title) if self._get_game_exists(game_title) else game_title}'",
-            error_msg=f"An unexpected error occured while adding the boss '{boss_name}' to '{self._get_game_title(game_title) if self._get_game_exists(game_title) else game_title}'",
+            success_msg=f"The boss '{boss_name}' has been added to the game '{self._get_cased_game_title(game_title) if self._get_game_exists(game_title) else game_title}'",
+            error_msg=f"An unexpected error occured while adding the boss '{boss_name}' to '{self._get_cased_game_title(game_title) if self._get_game_exists(game_title) else game_title}'",
             ensure_backup=ensure_backup
         )
     
@@ -149,7 +149,7 @@ class SaveFile:
             self._console.print_output(f"The game '{new_game_title}' you selected to link the boss to does not exist in the save file so far", "invalid")
             return
         elif self._get_boss_exists(new_boss_name, new_game_title):
-            self._console.print_output(f"The boss '{self._get_boss_name(new_boss_name, new_game_title)}' already exists in the game '{self._get_game_title(new_game_title)}'", "invalid")
+            self._console.print_output(f"The boss '{self._get_cased_boss_name(new_boss_name, new_game_title)}' already exists in the game '{self._get_cased_game_title(new_game_title)}'", "invalid")
             return
         
         if not self._rename_boss_operation(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE, new_boss_name, False):
@@ -157,7 +157,7 @@ class SaveFile:
         if not self._move_boss_operation(new_boss_name, SaveFile._UNKNOWN_GAME_TITLE, new_game_title):
             return
         
-        self._console.print_output(f"The boss '{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}' was identified as '{new_boss_name}' from game '{self._get_game_title(new_game_title)}'", "success")
+        self._console.print_output(f"The boss '{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}' was identified as '{new_boss_name}' from game '{self._get_cased_game_title(new_game_title)}'", "success")
     
     
     def rename_boss(self, boss_name: str, game_title: str, new_boss_name: str) -> None:
@@ -165,18 +165,18 @@ class SaveFile:
             self._console.print_output(f"The game '{game_title}' you selected does not exist in the save file", "invalid")
             return
         elif not self._get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you wish to rename does not exist in the game '{self._get_game_title(game_title)}' in the save file so far", "invalid")
+            self._console.print_output(f"The boss '{boss_name}' you wish to rename does not exist in the game '{self._get_cased_game_title(game_title)}' in the save file so far", "invalid")
             return
         elif self._get_boss_exists(new_boss_name, game_title):
-            self._console.print_output(f"The boss '{self._get_boss_name(new_boss_name, game_title)}' already exists in the game '{self._get_game_title(game_title)}'", "invalid")
+            self._console.print_output(f"The boss '{self._get_cased_boss_name(new_boss_name, game_title)}' already exists in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return
         
-        old_boss_name: str = self._get_boss_name(boss_name, game_title)
+        old_boss_name: str = self._get_cased_boss_name(boss_name, game_title)
         
         if not self._rename_boss_operation(boss_name, game_title, new_boss_name):
             return
         
-        self._console.print_output(f"The boss '{old_boss_name}' of game '{self._get_game_title(game_title)}' was renamed to '{new_boss_name}'", "success")
+        self._console.print_output(f"The boss '{old_boss_name}' of game '{self._get_cased_game_title(game_title)}' was renamed to '{new_boss_name}'", "success")
     
     
     def rename_game(self, game_title: str, new_game_title: str) -> None:
@@ -184,7 +184,7 @@ class SaveFile:
             self._console.print_output(f"The game '{game_title}' you wish to rename does not exist in the save file so far", "invalid")
             return
         elif self._get_game_exists(new_game_title):
-            self._console.print_output(f"The game '{self._get_game_title(new_game_title)}' already exist in the save file", "invalid")
+            self._console.print_output(f"The game '{self._get_cased_game_title(new_game_title)}' already exist in the save file", "invalid")
             return
         
         sql: str = """
@@ -192,7 +192,7 @@ class SaveFile:
                 SET title = (?)
                 WHERE title = (?) COLLATE NOCASE"""
         
-        old_game_title: str = self._get_game_title(game_title)
+        old_game_title: str = self._get_cased_game_title(game_title)
         
         self._execute_and_report_dml(
             sql=sql,
@@ -207,21 +207,21 @@ class SaveFile:
             self._console.print_output(f"The game '{game_title}' you selected to move the boss from does not exist in the save file so far", "invalid")
             return
         elif not self._get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you selected to move does not exist in the game '{self._get_game_title(game_title)}'", "invalid")
+            self._console.print_output(f"The boss '{boss_name}' you selected to move does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return
         elif not self._get_game_exists(new_game_title):
             self._console.print_output(f"The game '{new_game_title}' you selected to be moved to does not exist in the save file so far", "invalid")
             return
         elif self._get_boss_exists(boss_name, new_game_title):
-            self._console.print_output(f"The boss '{self._get_boss_name(boss_name, game_title)}' already exist in the game '{self._get_game_title(new_game_title)}'", "invalid")
+            self._console.print_output(f"The boss '{self._get_cased_boss_name(boss_name, game_title)}' already exist in the game '{self._get_cased_game_title(new_game_title)}'", "invalid")
             return
         
-        old_game_title: str = self._get_game_title(game_title)
+        old_game_title: str = self._get_cased_game_title(game_title)
         
         if not self._move_boss_operation(boss_name, game_title, new_game_title):
             return
         
-        self._console.print_output(f"The boss '{self._get_boss_name(boss_name, new_game_title)}' was moved from game '{old_game_title}' to '{self._get_game_title(new_game_title)}'", "success")
+        self._console.print_output(f"The boss '{self._get_cased_boss_name(boss_name, new_game_title)}' was moved from game '{old_game_title}' to '{self._get_cased_game_title(new_game_title)}'", "success")
     
     
     def delete_game(self, game_title: str) -> None:
@@ -233,13 +233,13 @@ class SaveFile:
             DELETE FROM Game
                 WHERE title = (?) COLLATE NOCASE"""
         
-        removed_game: str = self._get_game_title(game_title)
+        removed_game: str = self._get_cased_game_title(game_title)
         
         self._execute_and_report_dml(
             sql=sql,
             params=(game_title,),
             success_msg=f"The game '{removed_game}' has been successfully deleted",
-            error_msg=f"An unexpected error occured while removing the game '{self._get_game_title(game_title)}' from the save file."
+            error_msg=f"An unexpected error occured while removing the game '{self._get_cased_game_title(game_title)}' from the save file."
         )
     
     
@@ -248,20 +248,20 @@ class SaveFile:
             self._console.print_output(f"The game '{game_title}' you selected to delete a boss from does not exist in the save file", "invalid")
             return
         elif not self._get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you wish to delete does not exist in the game '{self._get_game_title(game_title)}'", "invalid")
+            self._console.print_output(f"The boss '{boss_name}' you wish to delete does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return
         
         sql: str = """
             DELETE FROM Boss
                 WHERE name = (?) COLLATE NOCASE AND gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)"""
         
-        removed_boss: str = self._get_boss_name(boss_name, game_title)
+        removed_boss: str = self._get_cased_boss_name(boss_name, game_title)
         
         self._execute_and_report_dml(
             sql=sql,
             params=(boss_name, game_title),
-            success_msg=f"The boss '{removed_boss}' of game '{self._get_game_title(game_title)}' was removed",
-            error_msg=f"An unexpected error occured while removing the boss '{self._get_boss_name(boss_name, game_title)}' from game '{self._get_game_title(game_title)}'."
+            success_msg=f"The boss '{removed_boss}' of game '{self._get_cased_game_title(game_title)}' was removed",
+            error_msg=f"An unexpected error occured while removing the boss '{self._get_cased_boss_name(boss_name, game_title)}' from game '{self._get_cased_game_title(game_title)}'."
         )
     
     
@@ -270,7 +270,7 @@ class SaveFile:
             self._console.print_output(f"The game '{game_title}' you selected to save the stats to a boss from does not exist in the save file", "invalid")
             return False
         elif not self._get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you wish to save the stats to does not exist in the game '{self._get_game_title(game_title)}'", "invalid")
+            self._console.print_output(f"The boss '{boss_name}' you wish to save the stats to does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return False
         
         sql: str = """
@@ -281,8 +281,8 @@ class SaveFile:
         return self._execute_and_report_dml(
             sql=sql,
             params=(deaths, required_time, boss_name, game_title),
-            success_msg=f"The boss '{self._get_boss_name(boss_name, game_title)}' of game '{self._get_game_title(game_title)}' was updated with the following values: Deaths {deaths}, Req. time {required_time}",
-            error_msg=f"An unexpected error occured while saving the stats to the boss '{self._get_boss_name(boss_name, game_title)}' of game '{self._get_game_title(game_title)}'."
+            success_msg=f"The boss '{self._get_cased_boss_name(boss_name, game_title)}' of game '{self._get_cased_game_title(game_title)}' was updated with the following values: Deaths {deaths}, Req. time {required_time}",
+            error_msg=f"An unexpected error occured while saving the stats to the boss '{self._get_cased_boss_name(boss_name, game_title)}' of game '{self._get_cased_game_title(game_title)}'."
         )
     
     
@@ -343,8 +343,103 @@ class SaveFile:
         fetched_list_of_bosses: List[tuple] = self._db_handler.fetch(sql, game_title)
         
         if not fetched_list_of_bosses:
-            self._console.print_output(f"There are no bosses linked to the game '{self._get_game_title(game_title)}'", "invalid")
+            self._console.print_output(f"There are no bosses linked to the game '{self._get_cased_game_title(game_title)}'", "invalid")
         return fetched_list_of_bosses
+    
+    
+    def get_boss_deaths(self, boss_name: str, game_title: str) -> int | None:
+        sql: str = """
+            SELECT b.deaths FROM Boss b
+                JOIN Game g ON b.gameId = g.id
+                WHERE b.name = (?) COLLATE NOCASE and g.title = (?) COLLATE NOCASE"""
+        
+        fetched_boss_deaths: List[tuple] = self._db_handler.fetch(sql, boss_name, game_title)
+        
+        if not fetched_boss_deaths:
+            return None
+        return fetched_boss_deaths[0][0]
+    
+    
+    def get_boss_time(self, boss_name: str, game_title: str) -> int | None:
+        sql: str = """
+            SELECT b.requiredTime FROM Boss b
+                JOIN Game g ON b.gameId = g.id
+                WHERE b.name = (?) COLLATE NOCASE and g.title = (?) COLLATE NOCASE"""
+        
+        fetched_boss_time: List[tuple] = self._db_handler.fetch(sql, boss_name, game_title)
+        
+        if not fetched_boss_time:
+            return None
+        return fetched_boss_time[0][0]
+    
+    
+    def get_all_games_sum(self) -> List[tuple]:
+        return self.get_all_bosses_sum()
+    
+    
+    def get_all_games_avg(self) -> List[tuple]:
+        # CTE (common table expression): tmp selection to use more than one aggregate function on the selection
+        sql: str = """
+            WITH GameTotal AS (
+                SELECT SUM(b.deaths) AS totalDeaths, SUM(b.requiredTime) AS totalTime FROM Boss b
+                    JOIN Game g ON b.gameId = g.id
+                    GROUP BY g.title
+                )
+                SELECT
+                    CASE
+                        WHEN ROUND(AVG(totalDeaths), 2) = CAST(AVG(totalDeaths) AS INTEGER) THEN CAST(AVG(totalDeaths) AS INTEGER)
+                        ELSE ROUND(AVG(totalDeaths), 2)
+                    END,
+                    CAST(AVG(totalTime) + 0.5 AS INTEGER) FROM GameTotal"""
+        
+        fetched_all_game_avg: List[tuple] = self._db_handler.fetch(sql)
+        return fetched_all_game_avg
+    
+    
+    def get_game_sum(self, game_title: str) -> List[tuple]:
+        sql: str = """
+            SELECT SUM(b.deaths), SUM(b.requiredTime) FROM Boss b
+                JOIN Game g ON b.gameId = g.id
+                WHERE g.title = (?) COLLATE NOCASE"""
+        
+        fetched_game_sum: List[tuple] = self._db_handler.fetch(sql, game_title)
+        return fetched_game_sum
+    
+    
+    def get_game_avg(self, game_title: str) -> List[tuple]:
+        sql: str = """
+            SELECT
+                CASE
+                    WHEN ROUND(AVG(b.deaths), 2) = CAST(AVG(b.deaths) AS INTEGER) THEN CAST(AVG(b.deaths) AS INTEGER)
+                    ELSE ROUND(AVG(b.deaths), 2)
+                END,
+                CAST(AVG(b.requiredTime) + 0.5 AS INTEGER) FROM Boss b
+                    JOIN Game g ON b.gameId = g.id
+                    WHERE g.title = (?) COLLATE NOCASE"""
+        
+        fetched_game_avg: List[tuple] = self._db_handler.fetch(sql, game_title)
+        return fetched_game_avg
+    
+    
+    def get_all_bosses_sum(self) -> List[tuple]:
+        sql: str = """
+            SELECT SUM(deaths), SUM(requiredTime) FROM Boss"""
+        
+        fetched_all_bosses_sum: List[tuple] = self._db_handler.fetch(sql)
+        return fetched_all_bosses_sum
+    
+    
+    def get_all_bosses_avg(self) -> List[tuple]:
+        sql: str = """
+            SELECT
+                CASE
+                    WHEN ROUND(AVG(deaths), 2) = CAST(AVG(deaths) AS INTEGER) THEN CAST(AVG(deaths) AS INTEGER)
+                    ELSE ROUND(AVG(deaths), 2)
+                END,
+                CAST(AVG(requiredTime) + 0.5 AS INTEGER) FROM Boss"""
+        
+        fetched_all_bosses_avg: List[tuple] = self._db_handler.fetch(sql)
+        return fetched_all_bosses_avg
     
     
     # helper methods below
@@ -364,21 +459,18 @@ class SaveFile:
             return False
     
     
-    def _get_game_exists(self, game_title: str, case_insensitive: bool = True) -> bool:
-        fetched_game_title: str = self._get_game_title(game_title, case_insensitive)
+    def _get_game_exists(self, game_title: str) -> bool:
+        fetched_game_title: str = self._get_cased_game_title(game_title)
         
         if fetched_game_title is None:
             return False
         return True
     
     
-    def _get_game_title(self, game_title: str, case_insensitive: bool = True) -> str | None:
+    def _get_cased_game_title(self, game_title: str) -> str | None:
         sql: str = """
             SELECT title FROM Game
-                WHERE title = (?)"""
-        
-        if case_insensitive:
-            sql += " COLLATE NOCASE"
+                WHERE title = (?) COLLATE NOCASE"""
         
         fetched_game_title: List[tuple] = self._db_handler.fetch(sql, game_title)
         
@@ -387,26 +479,19 @@ class SaveFile:
         return fetched_game_title[0][0]
     
     
-    def _get_boss_exists(self, boss_name: str, game_title: str, case_insensitive: bool = True) -> bool:
-        fetched_boss_name: str = self._get_boss_name(boss_name, game_title, case_insensitive)
+    def _get_boss_exists(self, boss_name: str, game_title: str) -> bool:
+        fetched_boss_name: str = self._get_cased_boss_name(boss_name, game_title)
         
         if fetched_boss_name is None:
             return False
         return True
     
     
-    def _get_boss_name(self, boss_name: str, game_title: str, case_insensitive: bool = True) -> str | None:
-        boss_condition: str = "b.name = (?)"
-        game_condition: str = "g.title = (?)"
-        
-        if case_insensitive:
-            boss_condition += " COLLATE NOCASE"
-            game_condition += " COLLATE NOCASE"
-        
-        sql: str = f"""
+    def _get_cased_boss_name(self, boss_name: str, game_title: str) -> str | None:
+        sql: str = """
             SELECT b.name FROM Boss b
                 JOIN Game g ON b.gameId = g.id
-                WHERE {boss_condition} AND {game_condition}"""
+                WHERE b.name = (?) COLLATE NOCASE AND g.title = (?) COLLATE NOCASE"""
         
         fetched_boss_name: List[tuple] = self._db_handler.fetch(sql, boss_name, game_title)
         
@@ -440,7 +525,7 @@ class SaveFile:
             sql=sql,
             params=(new_boss_name, boss_name, game_title),
             success_msg=None,
-            error_msg=f"An unexpected error occured while renaming the boss '{self._get_boss_name(boss_name, game_title)}' of game '{self._get_game_title(game_title)}' to '{new_boss_name}'.",
+            error_msg=f"An unexpected error occured while renaming the boss '{self._get_cased_boss_name(boss_name, game_title)}' of game '{self._get_cased_game_title(game_title)}' to '{new_boss_name}'.",
             ensure_backup=ensure_backup
         )
     
@@ -455,7 +540,7 @@ class SaveFile:
             sql=sql,
             params=(new_game_title, boss_name, game_title),
             success_msg=None,
-            error_msg=f"An unexpected error occured while moving the boss '{self._get_boss_name(boss_name, game_title)}' from '{self._get_game_title(game_title)}' to '{new_game_title}'.",
+            error_msg=f"An unexpected error occured while moving the boss '{self._get_cased_boss_name(boss_name, game_title)}' from '{self._get_cased_game_title(game_title)}' to '{new_game_title}'.",
             ensure_backup=ensure_backup
         )
     
@@ -470,95 +555,3 @@ class SaveFile:
             self._console.print_output(f"Illegal order filter '{order_filter}' used", "invalid")
             return False
         return True
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    # helper methods below
-    
-    def get_specific_boss_deaths(self, boss_name: str, game_title: str) -> int:
-        self._cursor.execute("""SELECT b.deaths FROM Boss b
-                                    JOIN Game g ON b.gameId = g.id
-                                    WHERE b.name = (?) COLLATE NOCASE and g.title = (?) COLLATE NOCASE""", (boss_name, game_title))
-        selection: list[tuple] = self._cursor.fetchone()
-        
-        return selection[0]
-    
-    
-    def get_specific_boss_time(self, boss_name: str, game_title: str) -> int:
-        self._cursor.execute("""SELECT b.requiredTime FROM Boss b
-                                    JOIN Game g ON b.gameId = g.id
-                                    WHERE b.name = (?) COLLATE NOCASE and g.title = (?) COLLATE NOCASE""", (boss_name, game_title))
-        selection: list[tuple] = self._cursor.fetchone()
-        
-        return selection[0]
-    
-    
-    def get_specific_game_avg(self, game_title: str) -> list[tuple]:
-        self._cursor.execute("""SELECT 
-                                    CASE
-                                        WHEN ROUND(AVG(b.deaths), 2) = CAST(AVG(b.deaths) AS INTEGER) THEN CAST(AVG(b.deaths) AS INTEGER)
-                                        ELSE ROUND(AVG(b.deaths), 2)
-                                    END,
-                                    CAST(AVG(b.requiredTime) + 0.5 AS INTEGER) FROM Boss b
-                                        JOIN Game g ON b.gameId = g.id
-                                        WHERE g.title = (?) COLLATE NOCASE""", (game_title,))
-        return self._cursor.fetchall()
-    
-    
-    def get_specific_game_sum(self, game_title: str) -> list[tuple]:
-        self._cursor.execute("""SELECT SUM(b.deaths), SUM(b.requiredTime) FROM Boss b
-                                    JOIN Game g ON b.gameId = g.id
-                                    WHERE g.title = (?) COLLATE NOCASE""", (game_title,))
-        return self._cursor.fetchall()
-    
-    
-    def get_all_game_avg(self) -> list[tuple]:
-        # CTE (common table expression): tmp selection to use more than one aggregate function on the selection
-        self._cursor.execute("""WITH GameTotal AS (
-                                    SELECT SUM(b.deaths) AS totalDeaths, SUM(b.requiredTime) AS totalTime FROM Boss b
-                                        JOIN Game g on b.gameId = g.id
-                                        GROUP BY g.title
-                                )
-                                SELECT
-                                    CASE
-                                        WHEN ROUND(AVG(totalDeaths), 2) = CAST(AVG(totalDeaths) AS INTEGER) THEN CAST(AVG(totalDeaths) AS INTEGER)
-                                        ELSE ROUND(AVG(totalDeaths), 2)
-                                    END,
-                                    CAST(AVG(totalTime) + 0.5 AS INTEGER) FROM GameTotal""")
-        return self._cursor.fetchall()
-    
-    
-    def get_all_game_sum(self) -> list[tuple]:
-        return self.get_all_boss_sum()
-    
-    
-    def get_all_boss_avg(self) -> list[tuple]:
-        self._cursor.execute("""SELECT
-                                    CASE
-                                        WHEN ROUND(AVG(deaths), 2) = CAST(AVG(deaths) AS INTEGER) THEN CAST(AVG(deaths) AS INTEGER)
-                                        ELSE ROUND(AVG(deaths), 2)
-                                    END,
-                                    CAST(AVG(requiredTime) + 0.5 AS INTEGER) FROM Boss""")
-        return self._cursor.fetchall()
-    
-    
-    def get_all_boss_sum(self) -> list[tuple]:
-        self._cursor.execute("""SELECT SUM(deaths), SUM(requiredTime) FROM Boss""")
-        return self._cursor.fetchall()
