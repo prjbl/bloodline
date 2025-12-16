@@ -255,8 +255,8 @@ class CommandManager:
             
             if self._save_file.get_boss_exists(boss_name, game_title):
                 self._overlay.create_instance()
-                self._counter.set_count_already_required(self._save_file.get_specific_boss_deaths(boss_name, game_title))
-                self._timer.set_time_already_required(self._save_file.get_specific_boss_time(boss_name, game_title))
+                self._counter.set_count_already_required(self._save_file.get_boss_deaths(boss_name, game_title))
+                self._timer.set_time_already_required(self._save_file.get_boss_time(boss_name, game_title))
                 self._key_listener.start_key_listener()
             else:
                 self._console.print_output(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "invalid")
@@ -427,7 +427,7 @@ class CommandManager:
         for item in list_of_games:
             self._console.print_output(f"{item[0].ljust(max_title_len, " ")}  ({self._format_sum(self._save_file.get_specific_game_sum(item[0]), max_deaths_len)})", "list")
         
-        self._console.print_output(f"\n{self._get_calc_values(self._save_file.get_all_game_avg(), self._save_file.get_all_game_sum())}", "list")
+        self._console.print_output(f"\n{self._get_calc_values(self._save_file.get_all_games_avg(), self._save_file.get_all_games_sum())}", "list")
     
     
     def _stats_save(self) -> None:
