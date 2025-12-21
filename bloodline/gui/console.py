@@ -1,12 +1,13 @@
 from datetime import datetime
 from queue import Queue
-from tkinter import Tk, Frame, Label, Entry, StringVar
+from tkinter import Tk, Frame, Label, Entry, StringVar, Event
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
-from typing import Any, List, override
+from typing import List, override
 
 from .config_manager import ConfigManager
 from .overlay import Overlay
+from .shell_mechanics import ShellMechanics
 from core import CommandManager
 from interfaces import IConsole
 from utils import Directory
@@ -32,10 +33,10 @@ class Application(IConsole):
         
         self._cmd_manager: CommandManager = CommandManager(
             console=self,
-            quit_app_func=self._quit,
             overlay=Overlay(self),
             config_manager=self._config_manager
         )
+        self._shell_mechanics: ShellMechanics = ShellMechanics(self._cmd_manager.get_list_of_commands)
         self._setup_bindings()
     
 
@@ -73,6 +74,17 @@ class Application(IConsole):
             
         self._console.config(state="disabled")
         self._console.see("end")
+    
+    
+    @override
+    def add_to_input_history(self, console_input: str):
+        self._shell_mechanics.add_input_to_history(console_input)
+    
+    
+    @override
+    def quit(self):
+        self._config_manager.set_root_props(self._root.winfo_geometry(), True if self._root.state() == "zoomed" else False)
+        self._root.destroy()
     
     
     def _setup_config_vars(self) -> None:
@@ -186,17 +198,18 @@ class Application(IConsole):
         self._input_entry.bind("<FocusIn>", self._on_focus_in)
         self._input_entry.bind("<FocusOut>", self._on_focus_out)
         
-        self._input_entry.bind("<Return>", lambda event: self._cmd_manager.execute_input(event, self._input_entry.get().strip()))
-        self._input_entry.bind("<Tab>", lambda event: self._cmd_manager.auto_complete(event, self._input_entry))
-        self._input_entry.bind("<Up>", lambda event: self._cmd_manager.get_last_input(event, self._input_entry))
-        self._input_entry.bind("<Down>", lambda event: self._cmd_manager.get_prev_input(event, self._input_entry))
+        self._input_entry.bind("<Return>", lambda event: self._cmd_manager.execute_input(self._input_entry.get().strip()))
+        
+        self._input_entry.bind("<Tab>", lambda event: self._shell_mechanics.auto_complete(self._input_entry))
+        self._input_entry.bind("<Up>", lambda event: self._shell_mechanics.get_last_input(self._input_entry))
+        self._input_entry.bind("<Down>", lambda event: self._shell_mechanics.get_prev_input(self._input_entry))
     
     
-    def _on_focus_in(self, event: Any) -> None:
+    def _on_focus_in(self, event: Event) -> None:
         self._entry_var.set("")
     
     
-    def _on_focus_out(self, event: Any) -> None:
+    def _on_focus_out(self, event: Event) -> None:
         self._entry_var.set("_")
     
     
@@ -205,7 +218,8 @@ class Application(IConsole):
     
     
     def _on_entry_change(self, *args: tuple) -> None:
-        self._cmd_manager.set_entry_var(self._entry_var.get().strip())
+        cleaned_entry_var: str = self._entry_var.get().strip()
+        self._shell_mechanics.set_entry_var(cleaned_entry_var)
     
     
     def _display_startup_problems(self) -> None:
@@ -216,11 +230,6 @@ class Application(IConsole):
     
     def run(self) -> None:
         self._root.mainloop()
-    
-    
-    def _quit(self) -> None:
-        self._config_manager.set_root_props(self._root.winfo_geometry(), True if self._root.state() == "zoomed" else False)
-        self._root.destroy()
     
     
     # helper methods below

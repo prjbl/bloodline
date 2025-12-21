@@ -1,6 +1,6 @@
 from pathlib import Path
 from re import compile, fullmatch, Match, IGNORECASE
-from tkinter import Event
+from typing import List
 
 from .counter import Counter
 from .hotkey_manager import HotkeyManager
@@ -14,20 +14,14 @@ from utils.validation import HotkeyNames, PresetModel, ThemeModel
 
 class CommandManager:
     
-    def __init__(self, console: IConsole, quit_app_func: any, overlay: IOverlay, config_manager: IConfigManager):
+    def __init__(self, console: IConsole, overlay: IOverlay, config_manager: IConfigManager):
         self._console: IConsole = console
-        self._quit_app_func: any = quit_app_func
         self._overlay: IOverlay = overlay
         self._config_manager: IConfigManager = config_manager
+        
         self._setup_instances()
         self._setup_input_vars()
-        self._setup_auto_complete_vars()
-        self._setup_input_history_vars()
         
-        # category
-        # category action
-        # category action -scope-filter arg1
-        # category action -scope-filter arg1 -sort-filter arg2
         # category action -scope-filter arg1 -sort-filter arg2 -order-filter arg3
         self._commands: dict = { # const that is only changed when cancel commands are added/deleted to/from itself
             "help": self._help,
@@ -77,9 +71,9 @@ class CommandManager:
             "settings import theme": self._settings_import_theme,
             "quit": self.quit
         }
-        self._CANCEL_COMMANDS: dict = {"cancel": self._cancel}
+        self._cancel_commands: dict = {"cancel": self._cancel}
         
-        self._commands_list: list[str] = list(self._commands.keys()) # const that is only changed when cancel commands are added/deleted from _commands
+        self._list_of_commands: List[str] = list(self._commands.keys()) # const that is only changed when cancel commands are added/deleted from _commands
     
     
     def _setup_instances(self) -> None:
@@ -97,6 +91,25 @@ class CommandManager:
         self._json_handler: ExternalJsonHandler = ExternalJsonHandler()
     
     
+    def get_list_of_commands(self) -> List[str]:
+        return self._list_of_commands
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     def _setup_input_vars(self) -> None:
         self._console_input: str = ""
         self._last_unignored_input: str = ""
@@ -105,29 +118,16 @@ class CommandManager:
         self._ignore_count: int = 0
     
     
-    def _setup_auto_complete_vars(self) -> None:
-        self._commands_match: list[str] = []
-        self._match_index: int = 0
-        self._entry_var: str = ""
-        self._entry_has_changed: bool = False
-        self._programmatic_update: bool = False
-    
-    
-    def _setup_input_history_vars(self) -> None:
-        self._input_history: list[str] = []
-        self._history_index: int = 0
-    
-    
-    def execute_input(self, event: Event, console_input: str) -> None:
+    def execute_input(self, console_input: str) -> None:
         if console_input == "":
             return
         
-        self._add_input_to_history(console_input)
+        self._console.add_to_input_history(console_input)
         cleaned_console_input: str = console_input.lower()
         
         if self._ignore_input:
-            if cleaned_console_input in self._CANCEL_COMMANDS:
-                self._CANCEL_COMMANDS.get(cleaned_console_input)()
+            if cleaned_console_input in self._cancel_commands:
+                self._cancel_commands.get(cleaned_console_input)()
                 return
             
             self._console_input = console_input
@@ -146,8 +146,8 @@ class CommandManager:
     def _set_ignore_inputs(self, number_of_inputs: int) -> None:
         self._ignore_input = True
         self._inputs_to_ignore = number_of_inputs
-        self._commands.update(self._CANCEL_COMMANDS)
-        self._commands_list = list(self._commands.keys())
+        self._commands.update(self._cancel_commands)
+        self._list_of_commands = list(self._commands.keys())
     
     
     def _check_ignore_inputs_end(self) -> None:
@@ -156,62 +156,6 @@ class CommandManager:
             return
         
         self._ignore_count += 1
-    
-    
-    def set_entry_var(self, entry_var: str) -> None:
-        if not self._programmatic_update:
-            self._entry_var = entry_var
-            self._entry_has_changed = True
-    
-    
-    def auto_complete(self, event: Event, input_entry: any) -> None:
-        self._programmatic_update = True
-        
-        if self._entry_has_changed:
-            self._entry_has_changed = False
-            self._commands_match.clear()
-            self._match_index = 0
-            
-            for item in self._commands_list:
-                if self._entry_var in item:
-                    self._commands_match.append(item)
-        elif self._match_index < len(self._commands_match) - 1:
-            self._match_index += 1
-        else:
-            self._match_index = 0
-        
-        if self._commands_match:
-            input_entry.delete(0, "end")
-            input_entry.insert(0, self._commands_match[self._match_index])
-        
-        self._programmatic_update = False
-    
-    
-    def _add_input_to_history(self, console_input: str) -> None:
-        if not self._input_history or console_input != self._input_history[len(self._input_history) - 1]:
-            self._input_history.append(console_input)
-        
-        self._history_index = len(self._input_history)
-    
-    
-    def get_last_input(self, event: Event, input_entry: any) -> None:
-        if self._input_history and self._history_index > 0:
-            self._history_index -= 1
-            input_entry.delete(0, "end")
-            input_entry.insert(0, self._input_history[self._history_index])
-        elif self._input_history and self._history_index == 0:
-            input_entry.delete(0, "end")
-            input_entry.insert(0, self._input_history[self._history_index])
-    
-    
-    def get_prev_input(self, event: Event, input_entry: any) -> None:
-        if self._input_history and self._history_index < len(self._input_history) - 1:
-            self._history_index += 1
-            input_entry.delete(0, "end")
-            input_entry.insert(0, self._input_history[self._history_index])
-        elif self._history_index == len(self._input_history) - 1:
-            self._history_index += 1
-            input_entry.delete(0, "end")
     
     
     # command methods below
@@ -540,7 +484,7 @@ class CommandManager:
     
     def quit(self) -> None:
         self._save_file.close_connection()
-        self._quit_app_func()
+        self._console.quit()
     
     
     def _cancel(self) -> None:
@@ -555,10 +499,10 @@ class CommandManager:
         self._ignore_count = 0
         self._boss_info = []
         
-        for command in self._CANCEL_COMMANDS:
+        for command in self._cancel_commands:
             self._commands.pop(command)
         
-        self._commands_list = list(self._commands.keys())
+        self._list_of_commands = list(self._commands.keys())
     
     
     def _run_setup_command(self, text: str, pattern_type: str, target_method: any):
