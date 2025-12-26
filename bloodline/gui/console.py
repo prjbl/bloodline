@@ -198,7 +198,7 @@ class Application(IConsole):
         self._input_entry.bind("<FocusIn>", self._on_focus_in)
         self._input_entry.bind("<FocusOut>", self._on_focus_out)
         
-        self._input_entry.bind("<Return>", lambda event: self._cmd_manager.execute_input(self._input_entry.get().strip()))
+        self._input_entry.bind("<Return>", lambda event: self._cmd_manager.process_input(self._input_entry.get().strip()))
         
         self._input_entry.bind("<Tab>", lambda event: self._shell_mechanics.auto_complete(self._input_entry))
         self._input_entry.bind("<Up>", lambda event: self._shell_mechanics.get_last_input(self._input_entry))
