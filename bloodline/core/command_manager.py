@@ -7,9 +7,10 @@ from .hotkey_manager import HotkeyManager
 from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
+from .commands import TrackingCommands
 from interfaces import IConfigManager, IConsole, IOverlay
 from utils import CsvFileOperations
-from utils.json import ExternalJsonHandler, JsonFileOperations
+from utils.json import JsonFileOperations
 from utils.validation import HotkeyNames, PresetModel, ThemeModel
 
 class CommandManager:
@@ -19,15 +20,20 @@ class CommandManager:
         self._overlay: IOverlay = overlay
         self._config_manager: IConfigManager = config_manager
         
-        self._setup_instances()
+        self._setup_core_instances()
+        self._setup_command_instances()
         self._setup_input_vars()
         
         # category action -scope-filter arg1 -sort-filter arg2 -order-filter arg3
         self._commands: dict = { # const that is only changed when cancel commands are added/deleted to/from itself
             "help": self._help,
-            "tracking": self._tracking,
-            "tracking new": self._tracking_new,
-            "tracking continue": self._tracking_continue,
+            "tracking": self._tracking_cmds.tracking,
+            "tracking new": self._tracking_cmds.tracking_new,
+            "tracking continue": self._tracking_cmds.tracking_continue,
+            
+            
+            
+            
             "setup": self._setup,
             "setup add": self._setup_add,
             "setup identify boss": self._setup_identify_boss,
@@ -76,7 +82,7 @@ class CommandManager:
         self._list_of_commands: List[str] = list(self._commands.keys()) # const that is only changed when cancel commands are added/deleted from _commands
     
     
-    def _setup_instances(self) -> None:
+    def _setup_core_instances(self) -> None:
         self._hk_manager: HotkeyManager = HotkeyManager()
         self._counter: Counter = Counter(self._console, self._overlay)
         self._timer: Timer = Timer(self._console, self._overlay)
@@ -88,99 +94,127 @@ class CommandManager:
             overlay=self._overlay
         )
         self._save_file: SaveFile = SaveFile(self._console)
-        self._json_handler: ExternalJsonHandler = ExternalJsonHandler()
+    
+    
+    def _setup_command_instances(self) -> None:
+        core_instances: dict = {
+            "console": self._console,
+            "overlay": self._overlay,
+            "hk_manager": self._hk_manager,
+            "counter": self._counter,
+            "timer": self._timer,
+            "key_listener": self._key_listener,
+            "save_file": self._save_file
+        }
+        
+        self._tracking_cmds: TrackingCommands = TrackingCommands(core_instances)
+    
+    
+    def _setup_input_vars(self) -> None:
+        self._intercept_next_input: bool = False
+        self._last_command_executed: str = ""
     
     
     def get_list_of_commands(self) -> List[str]:
         return self._list_of_commands
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    def _setup_input_vars(self) -> None:
-        self._console_input: str = ""
-        self._last_unignored_input: str = ""
-        self._ignore_input: bool = False
-        self._inputs_to_ignore: int = 0
-        self._ignore_count: int = 0
-    
-    
-    def execute_input(self, console_input: str) -> None:
-        if console_input == "":
+    def process_input(self, console_input: str) -> None:
+        if not console_input:
             return
         
         self._console.add_to_input_history(console_input)
         cleaned_console_input: str = console_input.lower()
         
-        if self._ignore_input:
-            if cleaned_console_input in self._cancel_commands:
-                self._cancel_commands.get(cleaned_console_input)()
-                return
-            
-            self._console_input = console_input
-            self._console.print_output(console_input, "request")
-            self._commands.get(self._last_unignored_input)()
-        else:
-            self._console.print_output(console_input, "command")
-            self._last_unignored_input: str = cleaned_console_input
-            
-            if cleaned_console_input in self._commands:
-                self._commands.get(cleaned_console_input)()
-            else:
-                self._console.print_output("Unknown input. Please use 'help' to get a list of all working command categories", "invalid")
+        if self._intercept_next_input:
+            self._intercept_next_input = self._handle_intercepted_input(console_input, cleaned_console_input)
+            return
+        
+        self._handle_standard_input(console_input, cleaned_console_input)
     
     
-    def _set_ignore_inputs(self, number_of_inputs: int) -> None:
-        self._ignore_input = True
-        self._inputs_to_ignore = number_of_inputs
+    # process helper methods below
+    
+    def _handle_intercepted_input(self, console_input: str, cleaned_console_input: str) -> bool:
+        if cleaned_console_input in self._cancel_commands:
+            self._cancel_commands.get(cleaned_console_input)()
+            return False
+        
+        self._console.print_output(console_input, "request")
+        return self._commands.get(self._last_command_executed)()
+    
+    
+    def _handle_standard_input(self, console_input: str, cleaned_console_input: str) -> None:
+        self._console.print_output(console_input, "command")
+        
+        if not cleaned_console_input in self._commands:
+            self._console.print_output("Unknown input. Please use 'help' to get a list of all working command categories", "invalid")
+            return
+        
+        self._last_command_executed: str = cleaned_console_input
+        isInterceptMethod: bool = self._commands.get(cleaned_console_input)()
+        
+        if isInterceptMethod:
+            self._intercept_next_input = True
+            self._activate_cancel_commands()
+    
+    
+    def _activate_cancel_commands(self) -> None:
         self._commands.update(self._cancel_commands)
         self._list_of_commands = list(self._commands.keys())
     
     
-    def _check_ignore_inputs_end(self) -> None:
-        if self._ignore_count >= self._inputs_to_ignore:
-            self._reset_ignore_vars()
-            return
+    def _deactivate_cancel_commands(self) -> None:
+        for command in self._cancel_commands:
+            del self._commands[command]
         
-        self._ignore_count += 1
+        self._list_of_commands = list(self._commands.keys())
     
     
     # command methods below
     
     def _help(self) -> None:
         self._console.print_output("This is a list of all command categories:", "normal")
-        self._console.print_output("tracking: Lists all tracking actions\n"
-                                +"setup: Lists all setup actions\n"
-                                +"stats: Lists all stat actions\n"
-                                +"keybinds: Lists all keybind actions\n"
-                                +"quit: Quits the application", "list")
+        self._console.print_output(
+            "tracking: Lists all tracking actions\n"
+            +"setup: Lists all setup actions\n"
+            +"stats: Lists all stat actions\n"
+            +"keybinds: Lists all keybind actions\n"
+            +"settings: Lists all setting actions\n"
+            +"quit: Quits the application", "list"
+        )
     
     
-    def _tracking(self) -> None:
-        self._console.print_output("This is a list of all tracking commands:", "normal")
-        self._console.print_output("tracking new: Starts a key listener in a new session\n"
-                                +"tracking continue: Starts a key listener and continues a session", "list")
+    def quit(self) -> None:
+        self._save_file.close_connection()
+        self._console.quit()
     
     
-    def _tracking_new(self) -> None:
-        self._save_file.add_unknown()
-        self._overlay.create_instance()
-        self._counter.set_count_already_required(None)
-        self._timer.set_time_already_required(None)
-        self._key_listener.start_key_listener()
+    def _cancel(self) -> None:
+        # call reset method from activ command categorie
+        self._deactivate_cancel_commands()
+        self._console.print_output("Process was cancelled", "normal")
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    # command methods below
     
     
     def _tracking_continue(self) -> None:
@@ -482,14 +516,10 @@ class CommandManager:
         self._check_ignore_inputs_end()
     
     
-    def quit(self) -> None:
-        self._save_file.close_connection()
-        self._console.quit()
     
     
-    def _cancel(self) -> None:
-        self._reset_ignore_vars()
-        self._console.print_output("Process was cancelled", "normal")
+    
+    
     
     
     # helper methods below
