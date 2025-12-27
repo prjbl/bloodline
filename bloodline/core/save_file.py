@@ -85,7 +85,7 @@ class SaveFile:
     
     
     def add_boss(self, boss_name: str, game_title: str, ensure_backup: bool = True) -> bool:
-        if self._get_boss_exists(boss_name, game_title):
+        if self.get_boss_exists(boss_name, game_title):
             self._console.print_output(f"The boss '{self._get_cased_boss_name(boss_name, game_title)}' of game '{self._get_cased_game_title(game_title)}' already exists in the save file", "invalid")
             return False
         
@@ -142,13 +142,13 @@ class SaveFile:
         if not self._get_game_exists(SaveFile._UNKNOWN_GAME_TITLE):
             self._console.print_output(f"The game '{SaveFile._UNKNOWN_GAME_TITLE}' you want to identify a boss from does not exist in the save file so far", "invalid")
             return
-        elif not self._get_boss_exists(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE):
+        elif not self.get_boss_exists(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE):
             self._console.print_output(f"The boss '{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}' you selected to identify does not exist in the game {SaveFile._UNKNOWN_GAME_TITLE}", "invalid")
             return
         elif not self._get_game_exists(new_game_title):
             self._console.print_output(f"The game '{new_game_title}' you selected to link the boss to does not exist in the save file so far", "invalid")
             return
-        elif self._get_boss_exists(new_boss_name, new_game_title):
+        elif self.get_boss_exists(new_boss_name, new_game_title):
             self._console.print_output(f"The boss '{self._get_cased_boss_name(new_boss_name, new_game_title)}' already exists in the game '{self._get_cased_game_title(new_game_title)}'", "invalid")
             return
         
@@ -164,10 +164,10 @@ class SaveFile:
         if not self._get_game_exists(game_title):
             self._console.print_output(f"The game '{game_title}' you selected does not exist in the save file", "invalid")
             return
-        elif not self._get_boss_exists(boss_name, game_title):
+        elif not self.get_boss_exists(boss_name, game_title):
             self._console.print_output(f"The boss '{boss_name}' you wish to rename does not exist in the game '{self._get_cased_game_title(game_title)}' in the save file so far", "invalid")
             return
-        elif self._get_boss_exists(new_boss_name, game_title):
+        elif self.get_boss_exists(new_boss_name, game_title):
             self._console.print_output(f"The boss '{self._get_cased_boss_name(new_boss_name, game_title)}' already exists in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return
         
@@ -206,13 +206,13 @@ class SaveFile:
         if not self._get_game_exists(game_title):
             self._console.print_output(f"The game '{game_title}' you selected to move the boss from does not exist in the save file so far", "invalid")
             return
-        elif not self._get_boss_exists(boss_name, game_title):
+        elif not self.get_boss_exists(boss_name, game_title):
             self._console.print_output(f"The boss '{boss_name}' you selected to move does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return
         elif not self._get_game_exists(new_game_title):
             self._console.print_output(f"The game '{new_game_title}' you selected to be moved to does not exist in the save file so far", "invalid")
             return
-        elif self._get_boss_exists(boss_name, new_game_title):
+        elif self.get_boss_exists(boss_name, new_game_title):
             self._console.print_output(f"The boss '{self._get_cased_boss_name(boss_name, game_title)}' already exist in the game '{self._get_cased_game_title(new_game_title)}'", "invalid")
             return
         
@@ -247,7 +247,7 @@ class SaveFile:
         if not self._get_game_exists(game_title):
             self._console.print_output(f"The game '{game_title}' you selected to delete a boss from does not exist in the save file", "invalid")
             return
-        elif not self._get_boss_exists(boss_name, game_title):
+        elif not self.get_boss_exists(boss_name, game_title):
             self._console.print_output(f"The boss '{boss_name}' you wish to delete does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return
         
@@ -269,7 +269,7 @@ class SaveFile:
         if not self._get_game_exists(game_title):
             self._console.print_output(f"The game '{game_title}' you selected to save the stats to a boss from does not exist in the save file", "invalid")
             return False
-        elif not self._get_boss_exists(boss_name, game_title):
+        elif not self.get_boss_exists(boss_name, game_title):
             self._console.print_output(f"The boss '{boss_name}' you wish to save the stats to does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return False
         
@@ -479,7 +479,7 @@ class SaveFile:
         return fetched_game_title[0][0]
     
     
-    def _get_boss_exists(self, boss_name: str, game_title: str) -> bool:
+    def get_boss_exists(self, boss_name: str, game_title: str) -> bool:
         fetched_boss_name: str = self._get_cased_boss_name(boss_name, game_title)
         
         if fetched_boss_name is None:

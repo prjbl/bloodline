@@ -1,1 +1,2 @@
+from .setup_commands import SetupCommands
 from .tracking_commands import TrackingCommands

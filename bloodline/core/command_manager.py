@@ -1,14 +1,14 @@
 from pathlib import Path
 from re import compile, fullmatch, Match, IGNORECASE
-from typing import List
+from typing import List, Callable
 
 from .counter import Counter
 from .hotkey_manager import HotkeyManager
 from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
-from .commands import TrackingCommands
-from interfaces import IConfigManager, IConsole, IOverlay
+from .commands import TrackingCommands, SetupCommands
+from interfaces import IConfigManager, IConsole, IInterceptCommand, IOverlay
 from utils import CsvFileOperations
 from utils.json import JsonFileOperations
 from utils.validation import HotkeyNames, PresetModel, ThemeModel
@@ -27,22 +27,26 @@ class CommandManager:
         # category action -scope-filter arg1 -sort-filter arg2 -order-filter arg3
         self._commands: dict = { # const that is only changed when cancel commands are added/deleted to/from itself
             "help": self._help,
-            "tracking": self._tracking_cmds.tracking,
-            "tracking new": self._tracking_cmds.tracking_new,
-            "tracking continue": self._tracking_cmds.tracking_continue,
+            "tracking": self._tracking_cmds.info,
+            "tracking new": self._tracking_cmds.new,
+            "tracking continue": self._tracking_cmds.carry_on,
+            "setup": self._setup_cmds.info,
+            "setup add": self._setup_cmds.add,
+            "setup identify boss": self._setup_cmds.identify_boss,
+            "setup move boss": self._setup_cmds.move_boss,
+            "setup rename boss": self._setup_cmds.rename_boss,
+            "setup rename game": self._setup_cmds.rename_game,
+            "setup delete boss": self._setup_cmds.delete_boss,
+            "setup delete game": self._setup_cmds.delete_game,
+            "setup import preset": self._setup_cmds.import_preset,
             
             
             
             
-            "setup": self._setup,
-            "setup add": self._setup_add,
-            "setup identify boss": self._setup_identify_boss,
-            "setup move boss": self._setup_move_boss,
-            "setup rename boss": self._setup_rename_boss,
-            "setup rename game": self._setup_rename_game,
-            "setup delete boss": self._setup_delete_boss,
-            "setup delete game": self._setup_delete_game,
-            "setup import preset": self._setup_import_preset,
+            
+            
+            
+            
             "stats": self._stats,
             "stats list bosses": lambda: self._stats_list_bosses_by("id", "asc"),
             "stats list bosses -s deaths -o desc": lambda: self._stats_list_bosses_by("deaths", "desc"),
@@ -108,11 +112,13 @@ class CommandManager:
         }
         
         self._tracking_cmds: TrackingCommands = TrackingCommands(core_instances)
+        self._setup_cmds: SetupCommands = SetupCommands(core_instances)
     
     
     def _setup_input_vars(self) -> None:
         self._intercept_next_input: bool = False
         self._last_command_executed: str = ""
+        self._active_category: IInterceptCommand | None = None
     
     
     def get_list_of_commands(self) -> List[str]:
@@ -127,7 +133,12 @@ class CommandManager:
         cleaned_console_input: str = console_input.lower()
         
         if self._intercept_next_input:
-            self._intercept_next_input = self._handle_intercepted_input(console_input, cleaned_console_input)
+            still_intercepting: bool = self._handle_intercepted_input(console_input, cleaned_console_input)
+            
+            if not still_intercepting:
+                self._intercept_next_input = False
+                self._active_category.reset_step_count()
+                self._active_category = None
             return
         
         self._handle_standard_input(console_input, cleaned_console_input)
@@ -140,6 +151,8 @@ class CommandManager:
             self._cancel_commands.get(cleaned_console_input)()
             return False
         
+        self._active_category.set_console_input(console_input)
+        self._active_category.increase_step_count()
         self._console.print_output(console_input, "request")
         return self._commands.get(self._last_command_executed)()
     
@@ -152,10 +165,12 @@ class CommandManager:
             return
         
         self._last_command_executed: str = cleaned_console_input
-        isInterceptMethod: bool = self._commands.get(cleaned_console_input)()
+        command_method: Callable[..., bool | None] = self._commands.get(cleaned_console_input)
+        isInterceptMethod: bool | None = command_method()
         
         if isInterceptMethod:
             self._intercept_next_input = True
+            self._active_category = command_method.__self__
             self._activate_cancel_commands()
     
     
@@ -191,7 +206,6 @@ class CommandManager:
     
     
     def _cancel(self) -> None:
-        # call reset method from activ command categorie
         self._deactivate_cancel_commands()
         self._console.print_output("Process was cancelled", "normal")
     
@@ -215,131 +229,6 @@ class CommandManager:
     
     
     # command methods below
-    
-    
-    def _tracking_continue(self) -> None:
-        if self._ignore_count == 0:
-            self._set_ignore_inputs(1)
-            self._console.print_output("Please enter the <\"boss name\", \"game title\"> of the boss you want to continue tracking <...>", "normal")
-        else:
-            result: list[str] = self._get_result_in_pattern("double")
-            
-            if not result:
-                self._reset_ignore_vars()
-                return
-            
-            boss_name: str = result[0]
-            game_title: str = result[1]
-            
-            if self._save_file.get_boss_exists(boss_name, game_title):
-                self._overlay.create_instance()
-                self._counter.set_count_already_required(self._save_file.get_boss_deaths(boss_name, game_title))
-                self._timer.set_time_already_required(self._save_file.get_boss_time(boss_name, game_title))
-                self._key_listener.start_key_listener()
-            else:
-                self._console.print_output(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "invalid")
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _setup(self) -> None:
-        self._console.print_output("This is a list of all setup commands:", "normal")
-        self._console.print_output("setup add: Adds a boss with the corresponding game to the save file\n"
-                                +"setup identify boss: Identifies a unknown boss an updates its meta info\n"
-                                +"setup move boss: Moves a boss to another game\n"
-                                +"setup rename boss|game: Renames a boss|game\n"
-                                +"setup delete boss|game: Deletes a boss|game\n"
-                                +"setup import preset: Imports and adds game data", "list")
-    
-    
-    def _setup_add(self) -> None:
-        self._run_setup_command(
-            text="Please enter the <\"boss name\", \"game title\"> of the boss you want to add <...>",
-            pattern_type="double",
-            target_method=self._save_file.add_boss
-        )
-    
-    
-    def _setup_identify_boss(self) -> None:
-        self._run_setup_command(
-            text="Please enter the <\"unknown boss number\" -> \"new boss name\", \"new game title\"> of the boss you want to identify <...>",
-            pattern_type="single_double",
-            target_method=self._save_file.identify_boss
-        )
-    
-    
-    def _setup_move_boss(self) -> None:
-        self._run_setup_command(
-            text="Please enter the <\"boss name\", \"game title\" -> \"new game title\"> of the boss you want to move <...>",
-            pattern_type="double_single",
-            target_method=self._save_file.move_boss
-        )
-    
-    
-    def _setup_rename_boss(self) -> None:
-        self._run_setup_command(
-            text="Please enter the <\"boss name\", \"game title\" -> \"new boss name\"> of the boss you want to rename <...>",
-            pattern_type="double_single",
-            target_method=self._save_file.rename_boss
-        )
-    
-    
-    def _setup_rename_game(self) -> None:
-        self._run_setup_command(
-            text="Please enter the <\"game title\" -> \"new game title\"> of the game you want to rename <...>",
-            pattern_type="single_single",
-            target_method=self._save_file.rename_game
-        )
-    
-    
-    def _setup_delete_boss(self) -> None:
-        self._run_setup_command(
-            text="Please enter the <\"boss name\", \"game title\"> of the boss you want to delete <...>",
-            pattern_type="double",
-            target_method=self._save_file.delete_boss
-        )
-    
-    
-    # has to be written manually because its a special case and needs a seconds print out
-    def _setup_delete_game(self) -> None:
-        if self._ignore_count == 0:
-            self._set_ignore_inputs(1)
-            self._console.print_output("All bosses linked to the game to be deleted will also be removed", "warning")
-            self._console.print_output("Please enter the <\"game title\"> of the game you want to delete <...>", "normal")
-        else:
-            result: list[str] = self._get_result_in_pattern("single")
-            
-            if result:
-                self._save_file.delete_game(result[0])
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _setup_import_preset(self) -> None:
-        if self._ignore_count == 0:
-            self._set_ignore_inputs(1)
-            self._console.print_output("Please enter the <\"file path\"> of the preset you want to import <...>", "normal")
-        else:
-            result: list[str] = self._get_result_in_pattern("single")
-            
-            if not result:
-                self._reset_ignore_vars()
-                return
-            
-            src_file_path: Path = Path(result[0])
-            if not self._check_external_file_props(src_file_path):
-                self._reset_ignore_vars()
-                return
-            
-            loaded_preset: dict = self._json_handler.load_data(src_file_path, PresetModel)
-            if not loaded_preset:
-                self._console.print_output("The imported preset does not contain any values to be added to the save file", "invalid")
-                self._reset_ignore_vars()
-                return
-            self._save_file.add_preset(loaded_preset)
-        
-        self._check_ignore_inputs_end()
-    
     
     def _stats(self) -> None:
         self._console.print_output("This is a list of all stat commands:", "normal")
