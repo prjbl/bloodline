@@ -1,5 +1,4 @@
 from pathlib import Path
-from re import compile, fullmatch, Match, IGNORECASE
 from typing import List, Callable
 
 from .counter import Counter
@@ -7,11 +6,10 @@ from .hotkey_manager import HotkeyManager
 from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
-from .commands import TrackingCommands, SetupCommands
+from .commands import TrackingCommands, SetupCommands, StatsCommands
 from interfaces import IConfigManager, IConsole, IInterceptCommand, IOverlay
 from utils import CsvFileOperations
-from utils.json import JsonFileOperations
-from utils.validation import HotkeyNames, PresetModel, ThemeModel
+from utils.validation import HotkeyNames, ThemeModel
 
 class CommandManager:
     
@@ -39,6 +37,7 @@ class CommandManager:
             "setup delete boss": self._setup_cmds.delete_boss,
             "setup delete game": self._setup_cmds.delete_game,
             "setup import preset": self._setup_cmds.import_preset,
+            "stats": self._stats_cmds.info,
             
             
             
@@ -47,7 +46,6 @@ class CommandManager:
             
             
             
-            "stats": self._stats,
             "stats list bosses": lambda: self._stats_list_bosses_by("id", "asc"),
             "stats list bosses -s deaths -o desc": lambda: self._stats_list_bosses_by("deaths", "desc"),
             "stats list bosses -s deaths -o asc": lambda: self._stats_list_bosses_by("deaths", "asc"),
@@ -113,6 +111,7 @@ class CommandManager:
         
         self._tracking_cmds: TrackingCommands = TrackingCommands(core_instances)
         self._setup_cmds: SetupCommands = SetupCommands(core_instances)
+        self._stats_cmds: StatsCommands = StatsCommands(core_instances)
     
     
     def _setup_input_vars(self) -> None:
@@ -229,12 +228,6 @@ class CommandManager:
     
     
     # command methods below
-    
-    def _stats(self) -> None:
-        self._console.print_output("This is a list of all stat commands:", "normal")
-        self._console.print_output("stats list bosses [-a] [-s deaths|time -o desc|asc]: Lists bosses by the selected filters. By default all bosses of one selected game will be listed in the order they were added\n"
-                                +"stats list games [-s deaths|time -o desc|asc]: Lists all games by the selected filters. By default they will be listed in the order they were added\n"
-                                +"stats save: Saves the tracking values to the corresponding boss to the save file", "list")
     
     
     def _stats_list_bosses_by(self, sort_filter: str, order_filter: str) -> None:
@@ -412,64 +405,6 @@ class CommandManager:
     
     
     # helper methods below
-    
-    def _reset_ignore_vars(self) -> None:
-        self._ignore_input = False
-        self._ignore_count = 0
-        self._boss_info = []
-        
-        for command in self._cancel_commands:
-            self._commands.pop(command)
-        
-        self._list_of_commands = list(self._commands.keys())
-    
-    
-    def _run_setup_command(self, text: str, pattern_type: str, target_method: any):
-        if self._ignore_count == 0:
-            self._set_ignore_inputs(1)
-            self._console.print_output(text, "normal")
-        else:
-            result: list[str] = self._get_result_in_pattern(pattern_type)
-            
-            if result:
-                target_method(*result)
-        
-        self._check_ignore_inputs_end()
-    
-    
-    def _get_result_in_pattern(self, pattern_type: str) -> list[str]:
-        pattern: str = ""
-        
-        if pattern_type == "single":
-            pattern = compile(r"\"([^\"]+)\"$")
-        elif pattern_type == "double":
-            pattern = compile(r"\"([^\"]+)\", \"([^\"]+)\"$")
-        elif pattern_type == "single_single":
-            pattern = compile(r"\"([^\"]+)\" -> \"([^\"]+)\"$")
-        elif pattern_type == "single_double":
-            pattern = compile(r"\"([^\"]+)\" -> \"([^\"]+)\", \"([^\"]+)\"$")
-        elif pattern_type == "double_single":
-            pattern = compile(r"\"([^\"]+)\", \"([^\"]+)\" -> \"([^\"]+)\"$")
-        elif pattern_type == "yes_no":
-            pattern = compile(r"((?:y(?:es)?)|(?:n(?:o)?))", IGNORECASE) # ?: ignores group so only one group is returning
-            
-        result: Match = fullmatch(pattern, self._console_input)
-        
-        if result:
-            return list[str](result.groups())
-        else:
-            self._console.print_output("The input does not match the pattern. Please try again", "denied")
-            return []
-    
-    
-    def _check_external_file_props(self, src_file_path: Path) -> bool:
-        if not src_file_path.exists():
-            self._console.print_output(f"The path '{src_file_path}' does not exists. Process is beeing canceled", "invalid")
-            return False
-        elif not JsonFileOperations.check_json_extension(src_file_path):
-            self._console.print_output(f"The file '{src_file_path}' is not a .json file. Process is beeing canceled", "invalid")
-            return False
-        return True
     
     
     def _get_boss_meta(self, boss_name: str, game_title: str, max_meta_len: int) -> str:

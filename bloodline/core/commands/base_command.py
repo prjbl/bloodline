@@ -1,0 +1,71 @@
+from re import compile, fullmatch, Match, IGNORECASE
+from typing import List, override
+
+from ..counter import Counter
+from ..key_listener import KeyListener
+from ..save_file import SaveFile
+from ..timer import Timer
+from interfaces import IInterceptCommand, IConsole, IOverlay
+
+class BaseCommand:
+    
+    def __init__(self, instances: dict):
+        self._console: IConsole = instances.get("console")
+        self._overlay: IOverlay = instances.get("overlay")
+        self._counter: Counter = instances.get("counter")
+        self._timer: Timer = instances.get("timer")
+        self._key_listener: KeyListener = instances.get("key_listener")
+        self._save_file: SaveFile = instances.get("save_file")
+
+
+class BaseInterceptCommand(BaseCommand, IInterceptCommand):
+    
+    def __init__(self, instances: dict):
+        super().__init__(instances)
+        
+        self._current_step: int = 0
+        self._console_input: str = ""
+    
+    
+    @override
+    def set_console_input(self, console_input: str) -> None:
+        self._console_input = console_input
+    
+    
+    @override
+    def print_invalid_input_pattern(self, text: str, text_type: str) -> None:
+        self._console.print_output(text, text_type)
+    
+    
+    @override
+    def increase_step_count(self) -> None:
+        self._current_step += 1
+    
+    
+    @override
+    def reset_step_count(self) -> None:
+        self._current_step = 0
+    
+    
+    def get_input_pattern_result(self, pattern_type: str) -> List[str]:
+        valid_input_pattern: str = ""
+        
+        if pattern_type == "single":
+            valid_input_pattern = compile(r"\"([^\"]+)\"$")
+        elif pattern_type == "double":
+            valid_input_pattern = compile(r"\"([^\"]+)\", \"([^\"]+)\"$")
+        elif pattern_type == "single_single":
+            valid_input_pattern = compile(r"\"([^\"]+)\" -> \"([^\"]+)\"$")
+        elif pattern_type == "single_double":
+            valid_input_pattern = compile(r"\"([^\"]+)\" -> \"([^\"]+)\", \"([^\"]+)\"$")
+        elif pattern_type == "double_single":
+            valid_input_pattern = compile(r"\"([^\"]+)\", \"([^\"]+)\" -> \"([^\"]+)\"$")
+        elif pattern_type == "yes_no":
+            valid_input_pattern = compile(r"((?:y(?:es)?)|(?:n(?:o)?))", IGNORECASE) # ?: ignores group so only one group is returning
+        
+        result: Match | None = fullmatch(valid_input_pattern, self._console_input)
+        
+        if result is None:
+            self._console.print_output("The input does not match the pattern. Please try again", "invalid")
+            return []
+        return list(map(str, result.groups()))
