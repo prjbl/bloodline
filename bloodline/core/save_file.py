@@ -113,7 +113,7 @@ class SaveFile:
                 changes_made = changes_made or boss_added # if changed_made is True onces, it keeps the True state even if boss_added is False
         
         if changes_made:
-            self._ensure_backup()
+            self._db_handler.ensure_backup()
     
     
     def add_unknown(self) -> None:

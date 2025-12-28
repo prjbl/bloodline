@@ -1,44 +1,11 @@
-from typing import List, override
+from typing import List
 
-from ..counter import Counter
-from ..key_listener import KeyListener
-from ..save_file import SaveFile
-from ..timer import Timer
-from interfaces import IInterceptCommand, IConsole, IOverlay
-from utils import CommandOperations
+from .base_command import BaseInterceptCommand
 
-class TrackingCommands(IInterceptCommand):
+class TrackingCommands(BaseInterceptCommand):
     
     def __init__(self, instances: dict):
-        self._console: IConsole = instances.get("console")
-        self._overlay: IOverlay = instances.get("overlay")
-        self._counter: Counter = instances.get("counter")
-        self._timer: Timer = instances.get("timer")
-        self._key_listener: KeyListener = instances.get("key_listener")
-        self._save_file: SaveFile = instances.get("save_file")
-        
-        self._current_step: int = 0
-        self._console_input: str = ""
-    
-    
-    @override
-    def set_console_input(self, console_input: str) -> None:
-        self._console_input = console_input
-    
-    
-    @override
-    def print_invalid_input_pattern(self, text: str, text_type: str) -> None:
-        self._console.print_output(text, text_type)
-    
-    
-    @override
-    def increase_step_count(self) -> None:
-        self._current_step += 1
-    
-    
-    @override
-    def reset_step_count(self) -> None:
-        self._current_step = 0
+        super().__init__(instances)
     
     
     def info(self) -> None:
@@ -63,11 +30,7 @@ class TrackingCommands(IInterceptCommand):
             self._console.print_output("Please enter the <\"boss name\", \"game title\"> of the boss you want to continue tracking <...>", "normal")
             return True
         
-        pattern_result: List[str] = CommandOperations.get_input_pattern_result(
-            instance=self,
-            pattern_type="double",
-            console_input=self._console_input
-        )
+        pattern_result: List[str] = self.get_input_pattern_result("double")
         
         if not pattern_result:
             return False

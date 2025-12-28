@@ -17,3 +17,14 @@ class ExternalJsonHandler(JsonFileOperations):
             pass
         finally:
             return data
+    
+    
+    @classmethod
+    def check_external_file_props(cls, src_file_path: Path) -> bool:
+        if not src_file_path.exists():
+            # f"The path '{src_file_path}' does not exists. Process is beeing canceled", "invalid"
+            return False
+        elif not super().check_json_extension(src_file_path):
+            # f"The file '{src_file_path}' is not a .json file. Process is beeing canceled", "invalid"
+            return False
+        return True
