@@ -30,7 +30,7 @@ class TrackingCommands(BaseInterceptCommand):
             self._console.print_output("Please enter the <\"boss name\", \"game title\"> of the boss you want to continue tracking <...>", "normal")
             return True
         
-        pattern_result: List[str] = self.get_input_pattern_result("double")
+        pattern_result: List[str] = self._get_input_pattern_result("double")
         
         if not pattern_result:
             return False

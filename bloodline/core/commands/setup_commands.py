@@ -85,7 +85,7 @@ class SetupCommands(BaseInterceptCommand):
             self._console.print_output("Please enter the <\"file path\"> of the preset you want to import <...>", "normal")
             return True
         
-        pattern_result: List[str] = self.get_input_pattern_result("single")
+        pattern_result: List[str] = self._get_input_pattern_result("single")
         
         if not pattern_result:
             return False
@@ -111,7 +111,7 @@ class SetupCommands(BaseInterceptCommand):
                 self._console.print_output(text, text_type)
             return True
         
-        pattern_result: List[str] = self.get_input_pattern_result(pattern_type)
+        pattern_result: List[str] = self._get_input_pattern_result(pattern_type)
         
         if not pattern_result:
             return False

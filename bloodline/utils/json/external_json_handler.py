@@ -10,7 +10,7 @@ class ExternalJsonHandler(JsonFileOperations):
     def load_data(cls, src_file_path: Path, model: BaseModel | RootModel) -> dict:
         data: dict = {}
         try:
-            raw_json: dict = super().perform_load(src_file_path)
+            raw_json: dict = super()._perform_load(src_file_path)
             data = model.model_validate(raw_json).model_dump()
         except JSONDecodeError:
             # put message in queue
@@ -24,7 +24,7 @@ class ExternalJsonHandler(JsonFileOperations):
         if not src_file_path.exists():
             # f"The path '{src_file_path}' does not exists. Process is beeing canceled", "invalid"
             return False
-        elif not super().check_json_extension(src_file_path):
+        elif not super()._check_json_extension(src_file_path):
             # f"The file '{src_file_path}' is not a .json file. Process is beeing canceled", "invalid"
             return False
         return True
