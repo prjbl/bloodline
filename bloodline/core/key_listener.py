@@ -86,7 +86,7 @@ class KeyListener:
         
         for keybind in dict_of_hotkeys.values():
             if cleaned_key_input == keybind:
-                self._console.print_output(f"Hotkey '{cleaned_key_input}' already in use. Please start config again and try another key", "indication")
+                self._console.print_output(f"Hotkey '{cleaned_key_input}' already in use. Please start config again and try another key", "invalid")
                 return False
         
         self._hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)

@@ -48,11 +48,11 @@ class PersistentJsonHandler(JsonFileOperations):
     # helper methods below
     
     def _save_data(self) -> None:
-        return self.perform_save(self._main_file_path, self._data)
+        return self._perform_save(self._main_file_path, self._data)
     
     
     def _load_validate_and_synchronize(self) -> None:
-        raw_json: dict = self.perform_load(self._main_file_path)
+        raw_json: dict = self._perform_load(self._main_file_path)
         self._data = self._default_data.model_validate(raw_json).model_dump(by_alias=True)
             
         if raw_json != self._data: # data changed

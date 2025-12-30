@@ -9,4 +9,5 @@ class CsvFileOperations:
         with open(dst_file_path, "w", newline="", encoding="utf-8") as output:
             csv_writer: Any = writer(output, delimiter=";") # the actual type hint is an internal var of the csv module
             csv_writer.writerow(header.upper() for header in headers)
+            csv_writer.writerow("")
             csv_writer.writerows(data)
