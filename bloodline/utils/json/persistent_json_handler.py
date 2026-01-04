@@ -1,6 +1,7 @@
 from json import JSONDecodeError
 from pathlib import Path
 from pydantic import BaseModel
+from queue import Queue
 from shutil import copy2
 
 from .json_file_operations import JsonFileOperations
@@ -12,6 +13,7 @@ class PersistentJsonHandler(JsonFileOperations):
         self._backup_file_path: Path = backup_file_path
         self._default_data: BaseModel = default_data
         self._data: dict = default_data.model_dump() # is initialized with the default to prevent empty value
+        self._error_queue: Queue = Queue()
         
         self._setup_files()
     
@@ -31,7 +33,7 @@ class PersistentJsonHandler(JsonFileOperations):
         try:
             self._load_validate_and_synchronize()
         except JSONDecodeError:
-            # put message in queue
+            self._error_queue.put_nowait((f"The file '{self._main_file_path}' is corrupted. An attempt is made to load the last backup.", "error"))
             self._handle_file_restore()
     
     
@@ -45,6 +47,10 @@ class PersistentJsonHandler(JsonFileOperations):
         self._ensure_backup()
     
     
+    def get_error_queue(self) -> Queue:
+        return self._error_queue
+    
+    
     # helper methods below
     
     def _save_data(self) -> None:
@@ -53,7 +59,11 @@ class PersistentJsonHandler(JsonFileOperations):
     
     def _load_validate_and_synchronize(self) -> None:
         raw_json: dict = self._perform_load(self._main_file_path)
-        self._data = self._default_data.model_validate(raw_json).model_dump(by_alias=True)
+        
+        self._data = self._default_data.model_validate(
+            obj=raw_json,
+            context={"error_queue": self._error_queue}
+        ).model_dump(by_alias=True)
             
         if raw_json != self._data: # data changed
             self._save_data()
@@ -61,22 +71,15 @@ class PersistentJsonHandler(JsonFileOperations):
     
     
     def _ensure_backup(self) -> None:
-        backup_exists: bool = self._backup_file_path.exists()
-        
         try:
             copy2(self._main_file_path, self._backup_file_path)
-            
-            if backup_exists:
-                # put message in queue
-                pass
         except Exception as e:
-            # put message in queue
-            pass
+            self._error_queue.put_nowait((f"An unexpected error occured while backuping the '{self._main_file_path}'. Exception: {e}", "error"))
     
     
     def _handle_file_restore(self) -> None:
         if not self._backup_file_path.exists():
-            # put message in queue
+            self._error_queue.put_nowait(("No backup could be found. Both files will be re-initialized", "error"))
             self._reinitialize_main_file()
             self._reinitialize_backup_file()
             return
@@ -85,9 +88,9 @@ class PersistentJsonHandler(JsonFileOperations):
             self._main_file_path.unlink(missing_ok=True)
             self._load_backup()
             self._load_validate_and_synchronize()
-            # put message in queue
+            self._error_queue.put_nowait((f"Loading backup from '{self._backup_file_path}' was successful", "success"))
         except JSONDecodeError:
-            # put message in queue
+            self._error_queue.put_nowait((f"The '{self._backup_file_path}' is also corrupted. Both files will be re-initialized", "error"))
             self._reinitialize_main_file()
             self._reinitialize_backup_file()
     
@@ -97,20 +100,18 @@ class PersistentJsonHandler(JsonFileOperations):
             self._set_default_value()
             self._main_file_path.unlink(missing_ok=True)
             self._create_main_file()
-            # put message in queue
+            self._error_queue.put_nowait((f"The '{self._main_file_path}' was re-initialized successfully", "success"))
         except Exception as e:
-            # put message in queue
-            pass
+            self._error_queue.put_nowait((f"An unexpected error occured while re-initializing the '{self._main_file_path}'. Exception: {e}", "error"))
     
     
     def _reinitialize_backup_file(self) -> None:
         try:
             self._backup_file_path.unlink(missing_ok=True)
             self._ensure_backup()
-            # put message in queue
+            self._error_queue.put_nowait((f"The '{self._backup_file_path}' was re-initialized successfully", "success"))
         except Exception as e:
-            # put message in queue
-            pass
+            self._error_queue.put_nowait((f"An unexpected error occured while re-initializing the '{self._backup_file_path}'. Exception: {e}", "error"))
     
     
     def _create_main_file(self) -> None:

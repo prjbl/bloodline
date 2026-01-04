@@ -9,6 +9,7 @@ class Directory:
     _VERSION: str = "1.0"
     
     _BACKUP_DIR: str = "backups"
+    _EXPORT_DIR: str = "exports"
     
     _DATA_PATH: Path = Path(user_data_dir(_APP_NAME, _AUTHOR, _VERSION))
     _BACKUP_PATH: Path = _DATA_PATH.joinpath(_BACKUP_DIR)
