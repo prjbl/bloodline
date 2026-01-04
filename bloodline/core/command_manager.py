@@ -76,7 +76,7 @@ class CommandManager:
     
     
     def _setup_core_instances(self) -> None:
-        self._hk_manager: HotkeyManager = HotkeyManager()
+        self._hk_manager: HotkeyManager = HotkeyManager(self._console)
         self._counter: Counter = Counter(self._console, self._overlay)
         self._timer: Timer = Timer(self._console, self._overlay)
         self._key_listener: KeyListener = KeyListener(

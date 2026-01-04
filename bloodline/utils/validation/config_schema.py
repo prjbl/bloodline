@@ -50,7 +50,7 @@ class _TypeEnforcementMixin:
     
     @field_validator("*", mode="before")
     @classmethod
-    def enforce_correct_data_type(cls, v: Any, info: FieldValidationInfo) -> Any:
+    def _enforce_correct_data_type(cls, v: Any, info: FieldValidationInfo) -> Any:
         """
         Method is called internally by Pydantic for each class that inherit the mixins characteristics
         """
@@ -60,7 +60,11 @@ class _TypeEnforcementMixin:
         if isinstance(expected_type, type) and issubclass(expected_type, _AllowModel):
             return v
         
-        if not isinstance(v, expected_type):
+        is_bool_but_expected_numeric: bool = isinstance(v, bool) and expected_type in (int, float)
+        
+        if not isinstance(v, expected_type) or is_bool_but_expected_numeric:
+            info.context["error_queue"].put_nowait((f"Wrong data type for '{info.field_name}'. The default is being restored.", "warning"))
+            
             if field.default_factory is not None:
                 return field.default_factory()
             return field.default
@@ -118,8 +122,9 @@ class _ColorModel(_AllowModel):
     
     @field_validator("*")
     @classmethod
-    def validate_hex_pattern(cls, color: str, info: FieldValidationInfo) -> str:
+    def _validate_hex_pattern(cls, color: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_hex_pattern(color):
+            info.context["error_queue"].put_nowait((f"Wrong hex value for '{info.field_name}'. The default is being restored.", "warning"))
             return cls.model_fields[info.field_name].default
         return color
 
@@ -140,8 +145,9 @@ class _RootWindow(_AllowModel):
     
     @field_validator("geometry")
     @classmethod
-    def validate_geoemtry_pattern(cls, geometry: str, info: FieldValidationInfo) -> str:
+    def _validate_geoemtry_pattern(cls, geometry: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_geometry_pattern(geometry):
+            info.context["error_queue"].put_nowait((f"Wrong geometry value for '{info.field_name}'. The default is being restored.", "warning"))
             return cls.model_fields[info.field_name].default
         return geometry
 
@@ -152,8 +158,9 @@ class _ToplevelWindow(_AllowModel):
     
     @field_validator("geometry")
     @classmethod
-    def validate_position_pattern(cls, geometry: str, info: FieldValidationInfo) -> str:
+    def _validate_position_pattern(cls, geometry: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_position_pattern(geometry):
+            info.context["error_queue"].put_nowait((f"Wrong position value for '{info.field_name}'. The default is being restored.", "warning"))
             return cls.model_fields[info.field_name].default
         return geometry
 

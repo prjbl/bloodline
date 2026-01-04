@@ -7,18 +7,20 @@ class PresetModel(RootModel[_PRESET_STRUCTURE]):
     
     @model_validator(mode="before")
     @classmethod
-    def enforce_correct_data_type(cls, raw_json: Any) -> Any:
+    def _enforce_correct_data_type(cls, raw_json: Any) -> Any:
         if not isinstance(raw_json, dict):
             return {}
         
         cleaned_data: _PRESET_STRUCTURE = {}
         for game_title, list_of_bosses in raw_json.items():
             if not isinstance(list_of_bosses, list):
+                # es handelt sich um keine liste
                 continue
             
             cleaned_list_of_bosses: List[str] = []
             for boss in list_of_bosses:
                 if not isinstance(boss, str):
+                    # es handelt sich um keinen bossnamen als str
                     continue
                 cleaned_list_of_bosses.append(boss)
             

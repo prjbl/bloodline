@@ -23,7 +23,7 @@ class _TypeEnforcementMixin:
     
     @field_validator("*", mode="before")
     @classmethod
-    def enforce_correct_data_type(cls, v: Any, info: FieldValidationInfo) -> Any:
+    def _enforce_correct_data_type(cls, v: Any, info: FieldValidationInfo) -> Any:
         """
         Method is called internally by Pydantic for each class that inherit the mixins characteristics
         """
@@ -34,6 +34,8 @@ class _TypeEnforcementMixin:
             return v
         
         if not isinstance(v, expected_type):
+            info.context["error_queue"].put_nowait((f"Wrong data type for '{info.field_name}'. The default is being restored.", "warning"))
+            
             if field.default_factory is not None:
                 return field.default_factory()
             return field.default
@@ -58,7 +60,8 @@ class HotkeyModel(_AllowModel):
     
     @field_validator("*")
     @classmethod
-    def validate_keybind_pattern(cls, keybind: str, info: FieldValidationInfo) -> str:
+    def _validate_keybind_pattern(cls, keybind: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_keybind_pattern(keybind):
+            info.context["error_queue"].put_nowait((f"Wrong keybind value for '{info.field_name}'. The default is being restored.", "warning"))
             return cls.model_fields[info.field_name].default
         return keybind

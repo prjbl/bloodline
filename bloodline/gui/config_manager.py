@@ -12,14 +12,12 @@ from utils.validation import GuiModel, SectionKeys, WindowKeys
 class ConfigManager(IConfigManager):
     
     _instance: ConfigManager | None = None
-    _error_queue: Queue | None = None
     _pers_json_handler: PersistentJsonHandler | None = None
     
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             
-            cls._instance._error_queue = Queue()
             cls._instance._pers_json_handler = PersistentJsonHandler(
                 main_file_path=cls._instance._CONFIG_FILE_PATH,
                 backup_file_path=cls._instance._BACKUP_FILE_PATH,
@@ -58,7 +56,7 @@ class ConfigManager(IConfigManager):
     
     
     def get_error_queue(self) -> Queue:
-        return self._error_queue
+        return self._pers_json_handler.get_error_queue()
     
     
     def get_root_props(self) -> dict:
