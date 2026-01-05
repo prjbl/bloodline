@@ -6,7 +6,7 @@ from ..key_listener import KeyListener
 from ..hotkey_manager import HotkeyManager
 from ..save_file import SaveFile
 from ..timer import Timer
-from interfaces import IConfigManager, IConsole, IOverlay
+from infrastructure.interfaces import IConfigManager, IConsole, IOverlay
 
 class BaseCommand:
     

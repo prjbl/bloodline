@@ -1,10 +1,10 @@
 from pathlib import Path
 from queue import Queue
 
-from interfaces import IConsole
-from utils import Directory
-from utils.json import PersistentJsonHandler
-from utils.validation import HotkeyModel
+from infrastructure import Directory
+from infrastructure.interfaces import IConsole
+from file_io.json import PersistentJsonHandler
+from schemas import HotkeyModel
 
 class HotkeyManager:
     

@@ -7,8 +7,8 @@ from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
 from .commands import BaseInterceptCommand, TrackingCommands, SetupCommands, StatsCommands, KeybindCommands, SettingsCommands
-from interfaces import IConfigManager, IConsole, IOverlay
-from utils.validation import HotkeyNames
+from infrastructure.interfaces import IConfigManager, IConsole, IOverlay
+from schemas import HotkeyNames
 
 class CommandManager:
     

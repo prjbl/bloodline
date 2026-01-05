@@ -1,6 +1,6 @@
 from time import time
 
-from interfaces import IConsole, IOverlay
+from infrastructure.interfaces import IConsole, IOverlay
 
 class Timer:
     

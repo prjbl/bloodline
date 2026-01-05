@@ -4,8 +4,8 @@ from tkinter.scrolledtext import ScrolledText
 from typing import Any, override
 
 from .config_manager import ConfigManager
-from interfaces import IConsole, IOverlay
-from utils.validation import WindowKeys, ColorKeys, FontKeys, WidgetKeys
+from infrastructure.interfaces import IConsole, IOverlay
+from schemas import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Overlay(IOverlay):
     

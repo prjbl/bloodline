@@ -6,8 +6,8 @@ from pynput.keyboard import Listener, Key
 from .counter import Counter
 from .hotkey_manager import HotkeyManager
 from .timer import Timer
-from interfaces import IConsole, IOverlay
-from utils.validation import HotkeyNames
+from infrastructure.interfaces import IConsole, IOverlay
+from schemas import HotkeyNames
 
 class KeyListener:
     
