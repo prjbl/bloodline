@@ -9,13 +9,15 @@ from .config_manager import ConfigManager
 from .overlay import Overlay
 from .shell_mechanics import ShellMechanics
 from core import CommandManager
-from interfaces import IConsole
-from utils import Directory
-from utils.validation import WindowKeys, ColorKeys, FontKeys, WidgetKeys
+from infrastructure import Directory, MessageHub
+from infrastructure.interfaces import IConsole
+from schemas import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Application(IConsole):
     
     def __init__(self):
+        self._msg_provider: MessageHub = MessageHub()
+        self._msg_provider.link_callback(self.print_output)
         self._main_queue: Queue = Queue()
         self._config_manager: ConfigManager = ConfigManager()
         self._setup_config_vars()

@@ -1,8 +1,9 @@
 from pathlib import Path
 from typing import List
 
-from interfaces import IConsole
-from utils import DatabaseHandler, Directory
+from file_io import DatabaseHandler
+from infrastructure import Directory
+from infrastructure.interfaces import IConsole
 
 class SaveFile:
     

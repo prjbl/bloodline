@@ -4,10 +4,10 @@ from pathlib import Path
 from queue import Queue
 from typing import override
 
-from interfaces import IConfigManager
-from utils import Directory
-from utils.json import PersistentJsonHandler
-from utils.validation import GuiModel, SectionKeys, WindowKeys
+from infrastructure import Directory
+from infrastructure.interfaces import IConfigManager
+from file_io.json import PersistentJsonHandler
+from schemas import GuiModel, SectionKeys, WindowKeys
 
 class ConfigManager(IConfigManager):
     

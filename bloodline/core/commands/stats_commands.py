@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import List, Callable
 
 from .base_command import BaseInterceptCommand
-from utils import CsvFileOperations
+from file_io import CsvFileOperations
 
 class StatsCommands(BaseInterceptCommand):
     

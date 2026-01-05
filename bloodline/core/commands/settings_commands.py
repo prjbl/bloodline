@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import List
 
 from .base_command import BaseInterceptCommand
-from utils.json import ExternalJsonHandler
-from utils.validation import ThemeModel
+from file_io.json import ExternalJsonHandler
+from schemas import ThemeModel
 
 class SettingsCommands(BaseInterceptCommand):
     
