@@ -15,8 +15,8 @@ class StatsCommands(BaseInterceptCommand):
     
     
     def info(self) -> None:
-        self._console.print_output("This is a list of all stat commands:", "normal")
-        self._console.print_output(
+        self._msg_provider.invoke("This is a list of all stat commands:", "normal")
+        self._msg_provider.invoke(
             "'stats list bosses [-a] [-s deaths|time -o desc|asc]': Lists bosses by the selected filters. By default all bosses will be listed in the order they were added\n"
             +"'stats list games [-s deaths|time -o desc|asc]': Lists all games by the selected filters. By default the games will be listed in the order they were added\n"
             +"'stats save': Saves the tracking values to the selected boss in the save file\n"
@@ -26,7 +26,7 @@ class StatsCommands(BaseInterceptCommand):
     
     def list_bosses_by(self, sort_filter: str, order_filter: str) -> bool:
         if self._current_step == 0:
-            self._console.print_output("Please enter the <\"game title\"> from which you want all bosses selected from <...>", "normal")
+            self._msg_provider.invoke("Please enter the <\"game title\"> from which you want all bosses selected from <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("single")
@@ -52,11 +52,11 @@ class StatsCommands(BaseInterceptCommand):
         for boss in list_of_bosses:
             formatted_boss_meta: str = self._get_formatted_meta(boss[0], max_meta_len)
             formatted_boss_stats: str = self._get_formatted_stats(boss[1], boss[2], max_deaths_len)
-            self._console.print_output(f"{formatted_boss_meta}  {formatted_boss_stats}", "list")
+            self._msg_provider.invoke(f"{formatted_boss_meta}  {formatted_boss_stats}", "list")
         
         game_avg: List[tuple] = self._save_file.get_game_avg(game_title)
         game_sum: List[tuple] = self._save_file.get_game_sum(game_title)
-        self._console.print_output(self._get_total_summary_block(game_avg, game_sum), "list")
+        self._msg_provider.invoke(self._get_total_summary_block(game_avg, game_sum), "list")
         return False
     
     
@@ -78,11 +78,11 @@ class StatsCommands(BaseInterceptCommand):
         for boss in list_of_bosses:
             formatted_boss_meta: str = self._get_formatted_meta(boss[0], max_meta_len, boss[1])
             formatted_boss_stats: str = self._get_formatted_stats(boss[2], boss[3], max_deaths_len)
-            self._console.print_output(f"{formatted_boss_meta}  {formatted_boss_stats}", "list")
+            self._msg_provider.invoke(f"{formatted_boss_meta}  {formatted_boss_stats}", "list")
         
         all_bosses_avg: List[tuple] = self._save_file.get_all_bosses_avg()
         all_bosses_sum: List[tuple] = self._save_file.get_all_bosses_sum()
-        self._console.print_output(self._get_total_summary_block(all_bosses_avg, all_bosses_sum), "list")
+        self._msg_provider.invoke(self._get_total_summary_block(all_bosses_avg, all_bosses_sum), "list")
     
     
     def list_games_by(self, sort_filter: str, order_filter: str) -> None:
@@ -103,16 +103,16 @@ class StatsCommands(BaseInterceptCommand):
         for game in list_of_games:
             formatted_game_meta: str = self._get_formatted_meta(game[0], max_meta_len)
             formatted_game_stats: str = self._get_formatted_stats(game[1], game[2], max_deaths_len)
-            self._console.print_output(f"{formatted_game_meta}  {formatted_game_stats}", "list")
+            self._msg_provider.invoke(f"{formatted_game_meta}  {formatted_game_stats}", "list")
         
         all_games_avg: List[tuple] = self._save_file.get_all_games_avg()
         all_games_sum: List[tuple] = self._save_file.get_all_games_sum()
-        self._console.print_output(self._get_total_summary_block(all_games_avg, all_games_sum), "list")
+        self._msg_provider.invoke(self._get_total_summary_block(all_games_avg, all_games_sum), "list")
     
     
     def save(self) -> bool:
         if self._counter.get_is_none() and self._timer.get_is_none():
-            self._console.print_output("There are no values to be saved. Make sure to start a tracking session and try saving again afterwards", "invalid")
+            self._msg_provider.invoke("There are no values to be saved. Make sure to start a tracking session and try saving again afterwards", "invalid")
             return False
         
         active_process: bool | None = self._process_count_value()
@@ -122,7 +122,7 @@ class StatsCommands(BaseInterceptCommand):
             return True
         
         if self._current_step == 0:
-            self._console.print_output("Please enter the <\"boss name\", \"game title\"> of the boss you want the stats safed to <...>", "normal")
+            self._msg_provider.invoke("Please enter the <\"boss name\", \"game title\"> of the boss you want the stats safed to <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("double")
@@ -144,7 +144,7 @@ class StatsCommands(BaseInterceptCommand):
     
     def export_by(self, sort_filter: str, order_filter: str) -> bool:
         if self._current_step == 0:
-            self._console.print_output("Please enter the <\"game title\"> you want the stats exported from <...>", "normal")
+            self._msg_provider.invoke("Please enter the <\"game title\"> you want the stats exported from <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("single")
@@ -229,7 +229,7 @@ class StatsCommands(BaseInterceptCommand):
             return False
         
         if self._current_step == 0:
-            self._console.print_output("Please enter <y[es]|n[o]> if you tracked deaths <...>", "normal")
+            self._msg_provider.invoke("Please enter <y[es]|n[o]> if you tracked deaths <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("yes_no")

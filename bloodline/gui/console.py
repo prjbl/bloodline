@@ -1,5 +1,4 @@
 from datetime import datetime
-from queue import Queue
 from tkinter import Tk, Frame, Label, Entry, StringVar, Event
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
@@ -17,8 +16,6 @@ class Application(IConsole):
     
     def __init__(self):
         self._msg_provider: MessageHub = MessageHub()
-        self._msg_provider.link_callback(self.print_output)
-        self._main_queue: Queue = Queue()
         self._config_manager: ConfigManager = ConfigManager()
         self._setup_config_vars()
         
@@ -29,13 +26,12 @@ class Application(IConsole):
         self._setup_font()
         self._setup_console_tags()
         
-        self.print_output(self._META, "normal")
-        self._merge_queues(self._main_queue, self._config_manager.get_error_queue())
-        self._display_startup_problems() # display call after first print out to prevent the texts from being displayed in the wrong order
+        self._print_output(self._META, "normal")
+        self._msg_provider.link_callback(self._print_output) # also iterates over the msg buffer to prevent the texts from being displayed in the wrong order
         
         self._cmd_manager: CommandManager = CommandManager(
             console=self,
-            overlay=Overlay(self),
+            overlay=Overlay(),
             config_manager=self._config_manager
         )
         self._shell_mechanics: ShellMechanics = ShellMechanics(self._cmd_manager.get_list_of_commands)
@@ -44,38 +40,6 @@ class Application(IConsole):
 
     _PREFIX: chr = ">"
     _META: str = f"{Directory.get_app_name()} v{Directory.get_version()}\nBy {Directory.get_author()}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
-    
-    
-    @override
-    def print_output(self, text: str, text_type: str) -> None:
-        self._input_entry.delete(0, "end")
-        
-        self._console.config(state="normal")
-        
-        if text_type == "command":
-            self._console.insert("end", f"\n{datetime.now().time().strftime("%H:%M:%S")}{self._PREFIX} ", "normal")
-            self._console.insert("end", f"{text}\n", "command")
-        elif text_type == "request":
-            self._console.delete("end-6c", "end")
-            self._console.insert("end", f"{text}", "command")
-            self._console.insert("end", ">\n", "normal")
-        elif text_type == "success":
-            self._console.insert("end", f"Success: {text}\n", "success")
-        elif text_type == "invalid":
-            self._console.insert("end", f"Invalid: {text}\n", "invalid")
-        elif text_type == "note":
-            self._console.insert("end", f"Note: {text}\n", "note")
-        elif text_type == "warning":
-            self._console.insert("end", f"Warning: {text}\n", "warning")
-        elif text_type == "error":
-            self._console.insert("end", f"Error: {text}\n", "error")
-        elif text_type == "list":
-            self._list_format_text(text)
-        else:
-            self._console.insert("end", f"{text}\n", "normal")
-            
-        self._console.config(state="disabled")
-        self._console.see("end")
     
     
     @override
@@ -224,10 +188,35 @@ class Application(IConsole):
         self._shell_mechanics.set_entry_var(cleaned_entry_var)
     
     
-    def _display_startup_problems(self) -> None:
-        while not self._main_queue.empty():
-            text, text_type = self._main_queue.get_nowait()
-            self.print_output(text, text_type)
+    def _print_output(self, text: str, text_type: str) -> None:
+        self._input_entry.delete(0, "end")
+        
+        self._console.config(state="normal")
+        
+        if text_type == "command":
+            self._console.insert("end", f"\n{datetime.now().time().strftime("%H:%M:%S")}{self._PREFIX} ", "normal")
+            self._console.insert("end", f"{text}\n", "command")
+        elif text_type == "request":
+            self._console.delete("end-6c", "end")
+            self._console.insert("end", f"{text}", "command")
+            self._console.insert("end", ">\n", "normal")
+        elif text_type == "success":
+            self._console.insert("end", f"Success: {text}\n", "success")
+        elif text_type == "invalid":
+            self._console.insert("end", f"Invalid: {text}\n", "invalid")
+        elif text_type == "note":
+            self._console.insert("end", f"Note: {text}\n", "note")
+        elif text_type == "warning":
+            self._console.insert("end", f"Warning: {text}\n", "warning")
+        elif text_type == "error":
+            self._console.insert("end", f"Error: {text}\n", "error")
+        elif text_type == "list":
+            self._list_format_text(text)
+        else:
+            self._console.insert("end", f"{text}\n", "normal")
+            
+        self._console.config(state="disabled")
+        self._console.see("end")
     
     
     def run(self) -> None:
@@ -244,10 +233,3 @@ class Application(IConsole):
                 self._console.insert("end", "\n")
                 continue
             self._console.insert("end", f"• {line}\n", "list")
-    
-    
-    @staticmethod
-    def _merge_queues(main_queue: Queue, source_queue: Queue) -> None:
-        while not source_queue.empty():
-            text, text_type = source_queue.get_nowait()
-            main_queue.put_nowait((text, text_type))

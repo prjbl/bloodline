@@ -2,13 +2,12 @@ from pathlib import Path
 from typing import List
 
 from file_io import DatabaseHandler
-from infrastructure import Directory
-from infrastructure.interfaces import IConsole
+from infrastructure import Directory, MessageHub
 
 class SaveFile:
     
-    def __init__(self, console: IConsole):
-        self._console: IConsole = console
+    def __init__(self):
+        self._msg_provider: MessageHub = MessageHub()
         
         self._db_handler: DatabaseHandler = DatabaseHandler(
             db_file_path=SaveFile._DB_FILE_PATH,
@@ -87,7 +86,7 @@ class SaveFile:
     
     def add_boss(self, boss_name: str, game_title: str, ensure_backup: bool = True) -> bool:
         if self.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{self._get_cased_boss_name(boss_name, game_title)}' of game '{self._get_cased_game_title(game_title)}' already exists in the save file", "invalid")
+            self._msg_provider.invoke(f"The boss '{self._get_cased_boss_name(boss_name, game_title)}' of game '{self._get_cased_game_title(game_title)}' already exists in the save file", "invalid")
             return False
         
         self._add_game(game_title)
@@ -141,16 +140,16 @@ class SaveFile:
     
     def identify_boss(self, unknown_boss_num: str, new_boss_name: str, new_game_title: str) -> None:
         if not self._get_game_exists(SaveFile._UNKNOWN_GAME_TITLE):
-            self._console.print_output(f"The game '{SaveFile._UNKNOWN_GAME_TITLE}' you want to identify a boss from does not exist in the save file so far", "invalid")
+            self._msg_provider.invoke(f"The game '{SaveFile._UNKNOWN_GAME_TITLE}' you want to identify a boss from does not exist in the save file so far", "invalid")
             return
         elif not self.get_boss_exists(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE):
-            self._console.print_output(f"The boss '{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}' you selected to identify does not exist in the game {SaveFile._UNKNOWN_GAME_TITLE}", "invalid")
+            self._msg_provider.invoke(f"The boss '{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}' you selected to identify does not exist in the game {SaveFile._UNKNOWN_GAME_TITLE}", "invalid")
             return
         elif not self._get_game_exists(new_game_title):
-            self._console.print_output(f"The game '{new_game_title}' you selected to link the boss to does not exist in the save file so far", "invalid")
+            self._msg_provider.invoke(f"The game '{new_game_title}' you selected to link the boss to does not exist in the save file so far", "invalid")
             return
         elif self.get_boss_exists(new_boss_name, new_game_title):
-            self._console.print_output(f"The boss '{self._get_cased_boss_name(new_boss_name, new_game_title)}' already exists in the game '{self._get_cased_game_title(new_game_title)}'", "invalid")
+            self._msg_provider.invoke(f"The boss '{self._get_cased_boss_name(new_boss_name, new_game_title)}' already exists in the game '{self._get_cased_game_title(new_game_title)}'", "invalid")
             return
         
         if not self._rename_boss_operation(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE, new_boss_name, False):
@@ -158,18 +157,18 @@ class SaveFile:
         if not self._move_boss_operation(new_boss_name, SaveFile._UNKNOWN_GAME_TITLE, new_game_title):
             return
         
-        self._console.print_output(f"The boss '{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}' was identified as '{new_boss_name}' from game '{self._get_cased_game_title(new_game_title)}'", "success")
+        self._msg_provider.invoke(f"The boss '{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}' was identified as '{new_boss_name}' from game '{self._get_cased_game_title(new_game_title)}'", "success")
     
     
     def rename_boss(self, boss_name: str, game_title: str, new_boss_name: str) -> None:
         if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you selected does not exist in the save file", "invalid")
+            self._msg_provider.invoke(f"The game '{game_title}' you selected does not exist in the save file", "invalid")
             return
         elif not self.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you wish to rename does not exist in the game '{self._get_cased_game_title(game_title)}' in the save file so far", "invalid")
+            self._msg_provider.invoke(f"The boss '{boss_name}' you wish to rename does not exist in the game '{self._get_cased_game_title(game_title)}' in the save file so far", "invalid")
             return
         elif self.get_boss_exists(new_boss_name, game_title):
-            self._console.print_output(f"The boss '{self._get_cased_boss_name(new_boss_name, game_title)}' already exists in the game '{self._get_cased_game_title(game_title)}'", "invalid")
+            self._msg_provider.invoke(f"The boss '{self._get_cased_boss_name(new_boss_name, game_title)}' already exists in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return
         
         old_boss_name: str = self._get_cased_boss_name(boss_name, game_title)
@@ -177,15 +176,15 @@ class SaveFile:
         if not self._rename_boss_operation(boss_name, game_title, new_boss_name):
             return
         
-        self._console.print_output(f"The boss '{old_boss_name}' of game '{self._get_cased_game_title(game_title)}' was renamed to '{new_boss_name}'", "success")
+        self._msg_provider.invoke(f"The boss '{old_boss_name}' of game '{self._get_cased_game_title(game_title)}' was renamed to '{new_boss_name}'", "success")
     
     
     def rename_game(self, game_title: str, new_game_title: str) -> None:
         if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you wish to rename does not exist in the save file so far", "invalid")
+            self._msg_provider.invoke(f"The game '{game_title}' you wish to rename does not exist in the save file so far", "invalid")
             return
         elif self._get_game_exists(new_game_title):
-            self._console.print_output(f"The game '{self._get_cased_game_title(new_game_title)}' already exist in the save file", "invalid")
+            self._msg_provider.invoke(f"The game '{self._get_cased_game_title(new_game_title)}' already exist in the save file", "invalid")
             return
         
         sql: str = """
@@ -205,16 +204,16 @@ class SaveFile:
     
     def move_boss(self, boss_name: str, game_title: str, new_game_title: str) -> None:
         if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you selected to move the boss from does not exist in the save file so far", "invalid")
+            self._msg_provider.invoke(f"The game '{game_title}' you selected to move the boss from does not exist in the save file so far", "invalid")
             return
         elif not self.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you selected to move does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
+            self._msg_provider.invoke(f"The boss '{boss_name}' you selected to move does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return
         elif not self._get_game_exists(new_game_title):
-            self._console.print_output(f"The game '{new_game_title}' you selected to be moved to does not exist in the save file so far", "invalid")
+            self._msg_provider.invoke(f"The game '{new_game_title}' you selected to be moved to does not exist in the save file so far", "invalid")
             return
         elif self.get_boss_exists(boss_name, new_game_title):
-            self._console.print_output(f"The boss '{self._get_cased_boss_name(boss_name, game_title)}' already exist in the game '{self._get_cased_game_title(new_game_title)}'", "invalid")
+            self._msg_provider.invoke(f"The boss '{self._get_cased_boss_name(boss_name, game_title)}' already exist in the game '{self._get_cased_game_title(new_game_title)}'", "invalid")
             return
         
         old_game_title: str = self._get_cased_game_title(game_title)
@@ -222,12 +221,12 @@ class SaveFile:
         if not self._move_boss_operation(boss_name, game_title, new_game_title):
             return
         
-        self._console.print_output(f"The boss '{self._get_cased_boss_name(boss_name, new_game_title)}' was moved from game '{old_game_title}' to '{self._get_cased_game_title(new_game_title)}'", "success")
+        self._msg_provider.invoke(f"The boss '{self._get_cased_boss_name(boss_name, new_game_title)}' was moved from game '{old_game_title}' to '{self._get_cased_game_title(new_game_title)}'", "success")
     
     
     def delete_game(self, game_title: str) -> None:
         if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you wish to delete does not exist in the save file", "invalid")
+            self._msg_provider.invoke(f"The game '{game_title}' you wish to delete does not exist in the save file", "invalid")
             return
         
         sql: str = """
@@ -246,10 +245,10 @@ class SaveFile:
     
     def delete_boss(self, boss_name: str, game_title: str) -> None:
         if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you selected to delete a boss from does not exist in the save file", "invalid")
+            self._msg_provider.invoke(f"The game '{game_title}' you selected to delete a boss from does not exist in the save file", "invalid")
             return
         elif not self.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you wish to delete does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
+            self._msg_provider.invoke(f"The boss '{boss_name}' you wish to delete does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return
         
         sql: str = """
@@ -268,10 +267,10 @@ class SaveFile:
     
     def update_boss(self, boss_name: str, game_title: str, deaths: int | None, required_time: int | None) -> bool:
         if not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you selected to save the stats to a boss from does not exist in the save file", "invalid")
+            self._msg_provider.invoke(f"The game '{game_title}' you selected to save the stats to a boss from does not exist in the save file", "invalid")
             return False
         elif not self.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"The boss '{boss_name}' you wish to save the stats to does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
+            self._msg_provider.invoke(f"The boss '{boss_name}' you wish to save the stats to does not exist in the game '{self._get_cased_game_title(game_title)}'", "invalid")
             return False
         
         sql: str = """
@@ -304,7 +303,7 @@ class SaveFile:
         fetched_list_of_games: List[tuple] = self._db_handler.fetch(sql)
         
         if not fetched_list_of_games:
-            self._console.print_output("There are no games in the save file so far", "invalid")
+            self._msg_provider.invoke("There are no games in the save file so far", "invalid")
         return fetched_list_of_games
     
     
@@ -322,7 +321,7 @@ class SaveFile:
         fetched_list_of_bosses: List[tuple] = self._db_handler.fetch(sql)
         
         if not fetched_list_of_bosses:
-            self._console.print_output("There are no bosses in the save file so far", "invalid")
+            self._msg_provider.invoke("There are no bosses in the save file so far", "invalid")
         return fetched_list_of_bosses
     
     
@@ -332,7 +331,7 @@ class SaveFile:
         if not self._validate_filters(sort_filter, order_filter, allowed_sort_filters):
             return []
         elif not self._get_game_exists(game_title):
-            self._console.print_output(f"The game '{game_title}' you selected all the bosses from does not exists in the save file", "invalid")
+            self._msg_provider.invoke(f"The game '{game_title}' you selected all the bosses from does not exists in the save file", "invalid")
             return []
         
         sql: str = f"""
@@ -344,7 +343,7 @@ class SaveFile:
         fetched_list_of_bosses: List[tuple] = self._db_handler.fetch(sql, game_title)
         
         if not fetched_list_of_bosses:
-            self._console.print_output(f"There are no bosses linked to the game '{self._get_cased_game_title(game_title)}'", "invalid")
+            self._msg_provider.invoke(f"There are no bosses linked to the game '{self._get_cased_game_title(game_title)}'", "invalid")
         return fetched_list_of_bosses
     
     
@@ -450,13 +449,13 @@ class SaveFile:
             self._db_handler.execute_dml(sql, *params)
             
             if success_msg:
-                self._console.print_output(success_msg, "success")
+                self._msg_provider.invoke(success_msg, "success")
             
             if ensure_backup:
                 self._db_handler.ensure_backup()
             return True
         except Exception as e:
-            self._console.print_output(f"{error_msg}. Exception: {e}", "error")
+            self._msg_provider.invoke(f"{error_msg}. Exception: {e}", "error")
             return False
     
     
@@ -550,9 +549,9 @@ class SaveFile:
         allowed_order_filters: List[str] = ["desc", "asc"]
         
         if sort_filter not in allowed_sort_filters:
-            self._console.print_output(f"Illegal sort filter '{sort_filter}' used", "invalid")
+            self._msg_provider.invoke(f"Illegal sort filter '{sort_filter}' used", "invalid")
             return False
         elif order_filter.lower() not in allowed_order_filters:
-            self._console.print_output(f"Illegal order filter '{order_filter}' used", "invalid")
+            self._msg_provider.invoke(f"Illegal order filter '{order_filter}' used", "invalid")
             return False
         return True

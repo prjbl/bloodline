@@ -1,11 +1,12 @@
-from infrastructure.interfaces import IConsole, IOverlay
+from infrastructure import MessageHub
+from infrastructure.interfaces import IOverlay
 
 class Counter:
     
-    def __init__(self, console: IConsole, overlay: IOverlay):
-        self._console: IConsole = console
+    def __init__(self, overlay: IOverlay):
         self._overlay: IOverlay = overlay
         
+        self._msg_provider: MessageHub = MessageHub()
         self._counter: int | None = None
         self._question_answered: bool = False
     
@@ -21,7 +22,7 @@ class Counter:
             self._counter = 0
         
         self._counter += 1
-        self._console.print_output(f"Counter increased: {self.get_count()}", "normal")
+        self._msg_provider.invoke(f"Counter increased: {self.get_count()}", "normal")
         self._overlay.update_counter_label(self._counter)
     
     
@@ -31,7 +32,7 @@ class Counter:
         
         if self._counter > 0:
             self._counter -= 1
-            self._console.print_output(f"Counter decreased: {self.get_count()}", "normal")
+            self._msg_provider.invoke(f"Counter decreased: {self.get_count()}", "normal")
             self._overlay.update_counter_label(self._counter)
     
     
@@ -41,7 +42,7 @@ class Counter:
             self._question_answered = False
         elif self._counter > 0:
             self._counter = 0
-            self._console.print_output("Counter has been reset", "normal")
+            self._msg_provider.invoke("Counter has been reset", "normal")
             self._overlay.update_counter_label(self._counter)
     
     

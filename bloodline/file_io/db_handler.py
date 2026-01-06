@@ -3,6 +3,8 @@ from shutil import copy2
 from sqlite3 import Connection, Cursor, connect, DatabaseError
 from typing import Any, Callable, List
 
+from infrastructure import MessageHub
+
 class DatabaseHandler:
     
     def __init__(self, db_file_path: Path, backup_file_path: Path, latest_version: int, db_structure: str, db_updates: Callable):
@@ -12,6 +14,7 @@ class DatabaseHandler:
         self._db_structure: str = db_structure
         self._db_updates: Callable = db_updates
         
+        self._msg_provider: MessageHub = MessageHub()
         self._conn: Connection | None = None
         self._cursor: Cursor | None = None
         
@@ -53,10 +56,10 @@ class DatabaseHandler:
             self._handle_backup_process()
             
             if backup_exists:
-                # put message in queue
+                self._msg_provider.invoke("Backup was updated", "normal")
                 pass
         except DatabaseError:
-            # put message in queue
+            self._msg_provider.invoke("The backup save file is corrupted. An attempt is made to re-initialize the backup file", "error")
             self._reinitialize_backup_file()
     
     
@@ -76,7 +79,7 @@ class DatabaseHandler:
         try:
             self._create_tables()
         except DatabaseError:
-            # put message in queue
+            self._msg_provider.invoke("The save file is corrupted. An attempt is made to re-initilize save file", "error")
             self._handle_file_restore()
     
     
@@ -102,7 +105,7 @@ class DatabaseHandler:
     
     def _handle_file_restore(self) -> None:
         if not self._backup_file_path.exists():
-            # put message in queue
+            self._msg_provider.invoke("No backup could be found. Both files will be re-initialized", "error")
             self._reinitialize_db_file()
             self._reinitialize_backup_file()
             return
@@ -116,9 +119,9 @@ class DatabaseHandler:
             self._db_file_path.unlink(missing_ok=True)
             self._load_backup()
             self._open_connection()
-            # put message in queue
+            self._msg_provider.invoke("Loading backup save file was successful", "success")
         except DatabaseError:
-            # put message in queue
+            self._msg_provider.invoke("The save file backup is also corrupted. Both files will be re-initialized", "error")
             self._reinitialize_db_file()
             self._reinitialize_backup_file()
     
@@ -152,9 +155,9 @@ class DatabaseHandler:
             self._db_file_path.unlink(missing_ok=True)
             self._open_connection()
             self._create_tables()
-            # put message in queue
+            self._msg_provider.invoke("The save file was re-initialized successfully", "success")
         except Exception as e:
-            # put message in queue
+            self._msg_provider.invoke(f"An unexpected error occured while re-initializing the 'save_file.sqlite'. Exception: {e}", "error")
             pass
     
     
@@ -162,7 +165,7 @@ class DatabaseHandler:
         try:
             self._backup_file_path.unlink(missing_ok=True)
             self._handle_backup_process()
-            # put message in queue
+            self._msg_provider.invoke("The safe file backup was re-initialized successfully", "success")
         except Exception as e:
-            # put message in queue
+            self._msg_provider.invoke(f"An unexpected error occured while re-initializing the 'save_file.sqlite.bak'. Exception: {e}", "error")
             pass

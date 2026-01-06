@@ -5,6 +5,7 @@ from pydantic_core.core_schema import FieldValidationInfo
 from typing import Any
 
 from .validation_pattern import ValidationPattern
+from infrastructure import MessageHub
 
 class HotkeyNames(str, Enum):
     COUNTER_INC: str = "hk_counter_increase"
@@ -18,6 +19,8 @@ class HotkeyNames(str, Enum):
 
 
 # Models below
+
+_msg_provider: MessageHub = MessageHub()
 
 class _TypeEnforcementMixin:
     
@@ -34,7 +37,7 @@ class _TypeEnforcementMixin:
             return v
         
         if not isinstance(v, expected_type):
-            info.context["error_queue"].put_nowait((f"Wrong data type for '{info.field_name}'. The default is being restored.", "warning"))
+            _msg_provider.invoke(f"Wrong data type for '{info.field_name}'. The default is being restored", "warning")
             
             if field.default_factory is not None:
                 return field.default_factory()
@@ -62,6 +65,6 @@ class HotkeyModel(_AllowModel):
     @classmethod
     def _validate_keybind_pattern(cls, keybind: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_keybind_pattern(keybind):
-            info.context["error_queue"].put_nowait((f"Wrong keybind value for '{info.field_name}'. The default is being restored.", "warning"))
+            _msg_provider.invoke(f"Wrong keybind value for '{info.field_name}'. The default is being restored.", "warning")
             return cls.model_fields[info.field_name].default
         return keybind

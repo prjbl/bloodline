@@ -4,13 +4,14 @@ from tkinter.scrolledtext import ScrolledText
 from typing import Any, override
 
 from .config_manager import ConfigManager
-from infrastructure.interfaces import IConsole, IOverlay
+from infrastructure import MessageHub
+from infrastructure.interfaces import IOverlay
 from schemas import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Overlay(IOverlay):
     
-    def __init__(self, console: IConsole):
-        self._console: IConsole = console
+    def __init__(self):
+        self._msg_provider: MessageHub = MessageHub()
         self._config_manager: ConfigManager = ConfigManager()
         self._setup_config_vars()
     
@@ -120,7 +121,7 @@ class Overlay(IOverlay):
                                 )
         else:
             font_to_use: Font = nametofont(ScrolledText.cget("font"))
-            self._console.print_output(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
+            self._msg_provider.invoke(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
         
         self._counter_label.config(font=font_to_use)
         self._timer_label.config(font=font_to_use)
