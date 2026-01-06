@@ -6,12 +6,12 @@ from ..key_listener import KeyListener
 from ..hotkey_manager import HotkeyManager
 from ..save_file import SaveFile
 from ..timer import Timer
-from infrastructure.interfaces import IConfigManager, IConsole, IOverlay
+from infrastructure import MessageHub
+from infrastructure.interfaces import IConfigManager, IOverlay
 
 class BaseCommand:
     
     def __init__(self, instances: dict):
-        self._console: IConsole = instances.get("console")
         self._overlay: IOverlay = instances.get("overlay")
         self._config_manager: IConfigManager = instances.get("config_manager")
         self._hk_manager: HotkeyManager = instances.get("hk_manager")
@@ -19,6 +19,8 @@ class BaseCommand:
         self._timer: Timer = instances.get("timer")
         self._key_listener: KeyListener = instances.get("key_listener")
         self._save_file: SaveFile = instances.get("save_file")
+        
+        self._msg_provider: MessageHub = MessageHub()
 
 
 class BaseInterceptCommand(BaseCommand):
@@ -32,10 +34,6 @@ class BaseInterceptCommand(BaseCommand):
     
     def set_console_input(self, console_input: str) -> None:
         self._console_input = console_input
-    
-    
-    def print_invalid_input_pattern(self, text: str, text_type: str) -> None:
-        self._console.print_output(text, text_type)
     
     
     def increase_step_count(self) -> None:
@@ -65,6 +63,6 @@ class BaseInterceptCommand(BaseCommand):
         result: Match | None = fullmatch(valid_input_pattern, self._console_input)
         
         if result is None:
-            self._console.print_output("The input does not match the pattern. Please try again", "invalid")
+            self._msg_provider.invoke("The input does not match the pattern. Please try again", "invalid")
             return []
         return list(map(str, result.groups()))

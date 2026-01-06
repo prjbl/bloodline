@@ -9,8 +9,8 @@ class TrackingCommands(BaseInterceptCommand):
     
     
     def info(self) -> None:
-        self._console.print_output("This is a list of all tracking commands:", "normal")
-        self._console.print_output(
+        self._msg_provider.invoke("This is a list of all tracking commands:", "normal")
+        self._msg_provider.invoke(
             "'tracking new': Starts a new global tracking session\n"
             +"'tracking continue': Continues an existing global tracking session", "list"
         )
@@ -27,7 +27,7 @@ class TrackingCommands(BaseInterceptCommand):
     # was renamed because "continue" is a keyword
     def carry_on(self) -> bool:
         if self._current_step == 0:
-            self._console.print_output("Please enter the <\"boss name\", \"game title\"> of the boss you want to continue tracking <...>", "normal")
+            self._msg_provider.invoke("Please enter the <\"boss name\", \"game title\"> of the boss you want to continue tracking <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("double")
@@ -39,7 +39,7 @@ class TrackingCommands(BaseInterceptCommand):
         game_title: str = pattern_result[1]
         
         if not self._save_file.get_boss_exists(boss_name, game_title):
-            self._console.print_output(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "invalid")
+            self._msg_provider.invoke(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "invalid")
             return False
         
         self._overlay.create_instance()

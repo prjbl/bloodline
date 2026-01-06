@@ -7,8 +7,8 @@ class KeybindCommands(BaseCommand):
     
     
     def info(self) -> None:
-        self._console.print_output("This is a list of all keybind commands:", "normal")
-        self._console.print_output(
+        self._msg_provider.invoke("This is a list of all keybind commands:", "normal")
+        self._msg_provider.invoke(
             "'keybinds list': Lists all hotkeys with their corresponding keybinds\n"
             +"'keybinds config <hotkey>': Changes the keybind of the selected hotkey", "list"
         )
@@ -18,7 +18,7 @@ class KeybindCommands(BaseCommand):
         dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         
         for hotkey, keybind in dict_of_hotkeys.items():
-            self._console.print_output(f"{hotkey}: {keybind}", "list")
+            self._msg_provider.invoke(f"{hotkey}: {keybind}", "list")
     
     
     def config(self, hotkey: str) -> None:

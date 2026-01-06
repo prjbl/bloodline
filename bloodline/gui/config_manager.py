@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from queue import Queue
 from typing import override
 
 from infrastructure import Directory
@@ -53,10 +52,6 @@ class ConfigManager(IConfigManager):
         ui_config: dict = self._pers_json_handler.get_data()
         ui_config[SectionKeys.THEME] = loaded_theme
         self._pers_json_handler.set_data(ui_config)
-    
-    
-    def get_error_queue(self) -> Queue:
-        return self._pers_json_handler.get_error_queue()
     
     
     def get_root_props(self) -> dict:

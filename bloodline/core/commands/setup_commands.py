@@ -12,8 +12,8 @@ class SetupCommands(BaseInterceptCommand):
     
     
     def info(self) -> None:
-        self._console.print_output("This is a list of all setup commands:", "normal")
-        self._console.print_output(
+        self._msg_provider.invoke("This is a list of all setup commands:", "normal")
+        self._msg_provider.invoke(
             "'setup add': Adds a boss with the corresponding game to the save file\n"
             +"'setup identify boss': Identifies an unknown boss and updates its meta infos\n"
             +"'setup move boss': Moves a boss to another game\n"
@@ -82,7 +82,7 @@ class SetupCommands(BaseInterceptCommand):
     
     def import_preset(self) -> bool:
         if self._current_step == 0:
-            self._console.print_output("Please enter the <\"file path\"> of the preset you want to import <...>", "normal")
+            self._msg_provider.invoke("Please enter the <\"file path\"> of the preset you want to import <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("single")
@@ -96,7 +96,7 @@ class SetupCommands(BaseInterceptCommand):
         
         loaded_preset: dict = ExternalJsonHandler.load_data(src_file_path, PresetModel)
         if not loaded_preset:
-            self._console.print_output("The imported preset does not contain any values to be added to the save file", "invalid")
+            self._msg_provider.invoke("The imported preset does not contain any values to be added to the save file", "invalid")
             return False
         
         self._save_file.add_preset(loaded_preset)
@@ -108,7 +108,7 @@ class SetupCommands(BaseInterceptCommand):
     def _run_setup_command(self, pattern_type: str, target_method: Callable[..., bool | None], *text_props: Tuple[str, str]) -> bool:
         if self._current_step == 0:
             for text, text_type in text_props:
-                self._console.print_output(text, text_type)
+                self._msg_provider.invoke(text, text_type)
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result(pattern_type)

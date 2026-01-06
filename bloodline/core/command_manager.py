@@ -7,6 +7,7 @@ from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
 from .commands import BaseInterceptCommand, TrackingCommands, SetupCommands, StatsCommands, KeybindCommands, SettingsCommands
+from infrastructure import MessageHub
 from infrastructure.interfaces import IConfigManager, IConsole, IOverlay
 from schemas import HotkeyNames
 
@@ -16,6 +17,8 @@ class CommandManager:
         self._console: IConsole = console
         self._overlay: IOverlay = overlay
         self._config_manager: IConfigManager = config_manager
+        
+        self._msg_provider: MessageHub = MessageHub()
         
         self._setup_core_instances()
         self._setup_command_instances()
@@ -76,22 +79,20 @@ class CommandManager:
     
     
     def _setup_core_instances(self) -> None:
-        self._hk_manager: HotkeyManager = HotkeyManager(self._console)
-        self._counter: Counter = Counter(self._console, self._overlay)
-        self._timer: Timer = Timer(self._console, self._overlay)
+        self._hk_manager: HotkeyManager = HotkeyManager()
+        self._counter: Counter = Counter(self._overlay)
+        self._timer: Timer = Timer(self._overlay)
         self._key_listener: KeyListener = KeyListener(
             hk_manager=self._hk_manager,
             counter=self._counter,
             timer=self._timer,
-            console=self._console,
             overlay=self._overlay
         )
-        self._save_file: SaveFile = SaveFile(self._console)
+        self._save_file: SaveFile = SaveFile()
     
     
     def _setup_command_instances(self) -> None:
         core_instances: dict = {
-            "console": self._console,
             "overlay": self._overlay,
             "config_manager": self._config_manager,
             "hk_manager": self._hk_manager,
@@ -153,15 +154,15 @@ class CommandManager:
         
         self._active_category.set_console_input(console_input)
         self._active_category.increase_step_count()
-        self._console.print_output(console_input, "request")
+        self._msg_provider.invoke(console_input, "request")
         return self._commands.get(self._last_command_executed)()
     
     
     def _handle_standard_input(self, console_input: str, cleaned_console_input: str) -> None:
-        self._console.print_output(console_input, "command")
+        self._msg_provider.invoke(console_input, "command")
         
         if not cleaned_console_input in self._commands:
-            self._console.print_output("Unknown input. Please use 'help' to get a list of all working command categories", "invalid")
+            self._msg_provider.invoke("Unknown input. Please use 'help' to get a list of all working command categories", "invalid")
             return
         
         self._last_command_executed: str = cleaned_console_input
@@ -189,8 +190,8 @@ class CommandManager:
     # command methods below
     
     def _help(self) -> None:
-        self._console.print_output("This is a list of all command categories:", "normal")
-        self._console.print_output(
+        self._msg_provider.invoke("This is a list of all command categories:", "normal")
+        self._msg_provider.invoke(
             "tracking: Lists all tracking actions\n"
             +"setup: Lists all setup actions\n"
             +"stats: Lists all stat actions\n"
@@ -207,4 +208,4 @@ class CommandManager:
     
     def _cancel(self) -> None:
         self._deactivate_cancel_commands()
-        self._console.print_output("Process was cancelled", "normal")
+        self._msg_provider.invoke("Process was cancelled", "normal")
