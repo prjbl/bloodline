@@ -1,31 +1,38 @@
 from pathlib import Path
 
-from appdirs import user_data_dir
+from platformdirs import user_data_dir, user_documents_dir
 
 class Directory:
     
     _APP_NAME: str = "Bloodline"
     _AUTHOR: str = "Project Bloodline"
-    _VERSION: str = "1.0"
+    _VERSION: str = "0.9.0-beta"
     
     _BACKUP_DIR: str = "backups"
     _EXPORT_DIR: str = "exports"
     
-    _DATA_PATH: Path = Path(user_data_dir(_APP_NAME, _AUTHOR, _VERSION))
-    _BACKUP_PATH: Path = _DATA_PATH.joinpath(_BACKUP_DIR)
+    _PERS_DATA_PATH: Path = Path(user_data_dir(_APP_NAME, _AUTHOR, _VERSION, roaming=True))
+    _BACKUP_PATH: Path = _PERS_DATA_PATH / _BACKUP_DIR
+    _EXPORT_PATH: Path = Path(user_documents_dir()) / _APP_NAME / _EXPORT_DIR
     
-    _DATA_PATH.mkdir(parents=True, exist_ok=True)
-    _BACKUP_PATH.mkdir(exist_ok=True)
+    _PERS_DATA_PATH.mkdir(parents=True, exist_ok=True)
+    _BACKUP_PATH.mkdir(parents=True, exist_ok=True)
+    _EXPORT_PATH.mkdir(parents=True, exist_ok=True)
     
     
     @classmethod
     def get_persistent_data_path(cls) -> Path:
-        return cls._DATA_PATH
+        return cls._PERS_DATA_PATH
     
     
     @classmethod
     def get_backup_path(cls) -> Path:
         return cls._BACKUP_PATH
+    
+    
+    @classmethod
+    def get_export_path(cls) -> Path:
+        return cls._EXPORT_PATH
     
     
     @classmethod

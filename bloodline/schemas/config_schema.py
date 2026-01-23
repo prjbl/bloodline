@@ -1,8 +1,9 @@
 from enum import Enum
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.fields import FieldInfo
 from pydantic_core.core_schema import FieldValidationInfo
-from typing import Any
 
 from .validation_pattern import ValidationPattern
 from infrastructure import MessageHub
@@ -66,7 +67,7 @@ class _TypeEnforcementMixin:
         is_bool_but_expected_numeric: bool = isinstance(v, bool) and expected_type in (int, float)
         
         if not isinstance(v, expected_type) or is_bool_but_expected_numeric:
-            _msg_provider.invoke(f"Wrong data type for '{info.field_name}'. The default is being restored.", "warning")
+            _msg_provider.invoke(f"The value \"{info.field_name}\" is not of type '{expected_type}'. The default will be restored", "warning")
             
             if field.default_factory is not None:
                 return field.default_factory()
@@ -127,7 +128,7 @@ class _ColorModel(_AllowModel):
     @classmethod
     def _validate_hex_pattern(cls, color: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_hex_pattern(color):
-            _msg_provider.invoke(f"Wrong hex value for '{info.field_name}'. The default is being restored.", "warning")
+            _msg_provider.invoke(f"The value of the color \"{info.field_name}\" is an unrecognized pattern. The default will be restored", "warning")
             return cls.model_fields[info.field_name].default
         return color
 
@@ -150,7 +151,7 @@ class _RootWindow(_AllowModel):
     @classmethod
     def _validate_geoemtry_pattern(cls, geometry: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_geometry_pattern(geometry):
-            _msg_provider.invoke(f"Wrong geometry value for '{info.field_name}'. The default is being restored.", "warning")
+            _msg_provider.invoke(f"The value of root \"{info.field_name}\" is not functional. The default will be restored", "warning")
             return cls.model_fields[info.field_name].default
         return geometry
 
@@ -163,7 +164,7 @@ class _ToplevelWindow(_AllowModel):
     @classmethod
     def _validate_position_pattern(cls, geometry: str, info: FieldValidationInfo) -> str:
         if not ValidationPattern.validate_position_pattern(geometry):
-            _msg_provider.invoke(f"Wrong position value for '{info.field_name}'. The default is being restored.", "warning")
+            _msg_provider.invoke(f"The value of toplevel \"{info.field_name}\" is not functional. The default will be restored", "warning")
             return cls.model_fields[info.field_name].default
         return geometry
 

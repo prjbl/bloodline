@@ -3,6 +3,7 @@ from typing import List, Callable
 
 from .base_command import BaseInterceptCommand
 from file_io import CsvFileOperations
+from infrastructure import Directory
 
 class StatsCommands(BaseInterceptCommand):
     
@@ -158,13 +159,16 @@ class StatsCommands(BaseInterceptCommand):
         if not game_data:
             return False
         
+        file_name: str = f"{game_title.lower().replace(" ", "_")}.csv"
+        dst_file_path: Path = Directory.get_export_path() / file_name
         headers: List[str] = [header[0] for header in self._save_file.get_boss_table_description()]
-        dst_file_path: Path = Path(f"{game_title.lower().replace(" ", "_")}.csv")
+        
         CsvFileOperations.perform_save(
             dst_file_path=dst_file_path,
             headers=headers,
             data=game_data
         )
+        self._msg_provider.invoke(f"The data was successfully written to the file '{file_name}'", "success")
         return False
     
     

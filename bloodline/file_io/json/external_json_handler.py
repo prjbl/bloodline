@@ -1,5 +1,6 @@
 from json import JSONDecodeError
 from pathlib import Path
+
 from pydantic import BaseModel, RootModel
 
 from .json_file_operations import JsonFileOperations
@@ -16,7 +17,7 @@ class ExternalJsonHandler(JsonFileOperations):
             raw_json: dict = super()._perform_load(src_file_path)
             data = model.model_validate(raw_json).model_dump()
         except JSONDecodeError:
-            cls._msg_provider.invoke(f"The file '{src_file_path}' is corrupted. Please make sure to check the file", "error")
+            cls._msg_provider.invoke(f"The file \"{src_file_path}\" is corrupted. Please make sure to check it", "error")
         finally:
             return data
     
@@ -24,9 +25,9 @@ class ExternalJsonHandler(JsonFileOperations):
     @classmethod
     def check_external_file_props(cls, src_file_path: Path) -> bool:
         if not src_file_path.exists():
-            cls._msg_provider.invoke(f"The path '{src_file_path}' does not exists. Process is beeing canceled", "invalid")
+            cls._msg_provider.invoke(f"The path \"{src_file_path}\" does not exist. Process is beeing canceled", "invalid")
             return False
         elif not super()._check_json_extension(src_file_path):
-            cls._msg_provider.invoke(f"The file '{src_file_path}' is not a .json file. Process is beeing canceled", "invalid")
+            cls._msg_provider.invoke(f"The file \"{src_file_path}\" is not a .json file. Process is beeing canceled", "invalid")
             return False
         return True

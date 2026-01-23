@@ -29,8 +29,8 @@ class ConfigManager(IConfigManager):
     
     _CONFIG_FILE: str = "ui_config.json"
     _BACKUP_FILE: str = f"{_CONFIG_FILE}.bak"
-    _CONFIG_FILE_PATH: Path = Directory.get_persistent_data_path().joinpath(_CONFIG_FILE)
-    _BACKUP_FILE_PATH: Path = Directory.get_backup_path().joinpath(_BACKUP_FILE)
+    _CONFIG_FILE_PATH: Path = Directory.get_persistent_data_path() / _CONFIG_FILE
+    _BACKUP_FILE_PATH: Path = Directory.get_backup_path() / _BACKUP_FILE
     
     
     @override
