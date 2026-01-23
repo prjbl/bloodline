@@ -15,6 +15,9 @@ class PersistentJsonHandler(JsonFileOperations):
         self._default_data: BaseModel = default_data
         self._data: dict = default_data.model_dump() # is initialized with the default to prevent empty value
         
+        self._main_file_name: str = main_file_path.name
+        self._backup_file_name: str = backup_file_path.name
+        
         self._msg_provider: MessageHub = MessageHub()
         
         self._setup_files()
@@ -35,7 +38,7 @@ class PersistentJsonHandler(JsonFileOperations):
         try:
             self._load_validate_and_synchronize()
         except JSONDecodeError:
-            self._msg_provider.invoke(f"The file '{self._main_file_path}' is corrupted. An attempt is made to load the last backup.", "error")
+            self._msg_provider.invoke(f"The file \"{self._main_file_name}\" is corrupted. An attempt is made to load the last backup", "error")
             self._handle_file_restore()
     
     
@@ -68,7 +71,10 @@ class PersistentJsonHandler(JsonFileOperations):
         try:
             copy2(self._main_file_path, self._backup_file_path)
         except Exception as e:
-            self._msg_provider.invoke(f"An unexpected error occured while backuping the '{self._main_file_path}'. Exception: {e}", "error")
+            self._msg_provider.invoke(
+                f"An unexpected error occured while loading the backup to the file \"{self._main_file_name}\".\n"
+                +f"Exception: {e}", "error"
+            )
     
     
     def _handle_file_restore(self) -> None:
@@ -82,9 +88,9 @@ class PersistentJsonHandler(JsonFileOperations):
             self._main_file_path.unlink(missing_ok=True)
             self._load_backup()
             self._load_validate_and_synchronize()
-            self._msg_provider.invoke(f"Loading backup from '{self._backup_file_path}' was successful", "success")
+            self._msg_provider.invoke(f"Loading the backup from \"{self._backup_file_name}\" was successful", "success")
         except JSONDecodeError:
-            self._msg_provider.invoke(f"The '{self._backup_file_path}' is also corrupted. Both files will be re-initialized", "error")
+            self._msg_provider.invoke(f"The file \"{self._backup_file_name}\" is also corrupted. Both files will be re-initialized", "error")
             self._reinitialize_main_file()
             self._reinitialize_backup_file()
     
@@ -94,18 +100,24 @@ class PersistentJsonHandler(JsonFileOperations):
             self._set_default_value()
             self._main_file_path.unlink(missing_ok=True)
             self._create_main_file()
-            self._msg_provider.invoke(f"The '{self._main_file_path}' was re-initialized successfully", "success")
+            self._msg_provider.invoke(f"The file \"{self._main_file_name}\" was re-initialized successfully", "success")
         except Exception as e:
-            self._msg_provider.invoke(f"An unexpected error occured while re-initializing the '{self._main_file_path}'. Exception: {e}", "error")
+            self._msg_provider.invoke(
+                f"An unexpected error occured while re-initializing the file \"{self._main_file_name}\".\n"
+                +f"Exception: {e}", "error"
+            )
     
     
     def _reinitialize_backup_file(self) -> None:
         try:
             self._backup_file_path.unlink(missing_ok=True)
             self._ensure_backup()
-            self._msg_provider.invoke(f"The '{self._backup_file_path}' was re-initialized successfully", "success")
+            self._msg_provider.invoke(f"The file \"{self._backup_file_name}\" was re-initialized successfully", "success")
         except Exception as e:
-            self._msg_provider.invoke(f"An unexpected error occured while re-initializing the '{self._backup_file_path}'. Exception: {e}", "error")
+            self._msg_provider.invoke(
+                f"An unexpected error occured while re-initializing the file \"{self._backup_file_name}\".\n"
+                +f"Exception: {e}", "error"
+            )
     
     
     def _create_main_file(self) -> None:

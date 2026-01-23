@@ -140,7 +140,7 @@ class Application(IConsole):
             font_to_use: Font = nametofont("TkFixedFont")
             self._msg_provider.invoke(f"The font \"{desired_font_family}\" could not be found on this system. The Tkinters default will be restored", "warning")
             self._msg_provider.invoke(
-                "Make sure to select an already installed font via 'setup import theme'.\n"
+                "Make sure to select an already installed font using the 'setup import theme' command.\n"
                 +"Tip: Use a monospaced font for best visual results", "note"
             )
         
