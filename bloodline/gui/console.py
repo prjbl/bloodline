@@ -137,8 +137,12 @@ class Application(IConsole):
                                     weight="normal"
                                 )
         else:
-            font_to_use: Font = nametofont(self._console.cget("font"))
-            self._main_queue.put_nowait((f"The font '{desired_font_family}' could not be found. The default has been restored", "warning"))
+            font_to_use: Font = nametofont("TkFixedFont")
+            self._msg_provider.invoke(f"The font \"{desired_font_family}\" could not be found on this system. The Tkinters default will be restored", "warning")
+            self._msg_provider.invoke(
+                "Make sure to select an already installed font via 'setup import theme'.\n"
+                +"Tip: Use a monospaced font for best visual results", "note"
+            )
         
         self._input_prefix.config(font=font_to_use)
         self._input_entry.config(font=font_to_use)

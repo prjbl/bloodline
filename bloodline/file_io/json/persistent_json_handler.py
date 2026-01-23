@@ -1,7 +1,8 @@
 from json import JSONDecodeError
 from pathlib import Path
-from pydantic import BaseModel
 from shutil import copy2
+
+from pydantic import BaseModel
 
 from .json_file_operations import JsonFileOperations
 from infrastructure import MessageHub

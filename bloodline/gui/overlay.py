@@ -1,6 +1,5 @@
 from tkinter import Toplevel, Frame, Label
 from tkinter.font import Font, families, nametofont
-from tkinter.scrolledtext import ScrolledText
 from typing import Any, override
 
 from .config_manager import ConfigManager
@@ -120,8 +119,7 @@ class Overlay(IOverlay):
                                     weight="normal"
                                 )
         else:
-            font_to_use: Font = nametofont(ScrolledText.cget("font"))
-            self._msg_provider.invoke(f"The font '{desired_font_family}' could not be found. The default has been restored", "warning")
+            font_to_use: Font = nametofont("TkFixedFont")
         
         self._counter_label.config(font=font_to_use)
         self._timer_label.config(font=font_to_use)

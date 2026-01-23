@@ -1,2 +1,4 @@
-appdirs
-pynput
+platformdirs==4.5.1
+pydantic==2.12.5
+pydantic_core==2.41.5
+pynput==1.8.1
