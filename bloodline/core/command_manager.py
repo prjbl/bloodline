@@ -208,4 +208,4 @@ class CommandManager:
     
     def _cancel(self) -> None:
         self._deactivate_cancel_commands()
-        self._msg_provider.invoke("Process was cancelled", "normal")
+        self._msg_provider.invoke("The process was cancelled", "normal")

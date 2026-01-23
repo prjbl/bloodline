@@ -28,7 +28,7 @@ class KeyListener:
     def start_key_listener(self) -> None:
         self._start_listener(
             target_method=self._on_key_listener,
-            start_msg="Key listener started in seperat thread"
+            start_msg="A key listener started in a seperat thread"
         )
     
     
@@ -39,7 +39,7 @@ class KeyListener:
         self._msg_provider.invoke("Make sure to save the data using the 'stats save' command", "note")
     
     
-    def _on_press(self, key: Any) -> bool | None:
+    def _on_press(self, key: Any) -> bool:
         dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         
         try:
@@ -59,9 +59,11 @@ class KeyListener:
                 self._timer.stop()
             elif self._equals_hotkey(key, HotkeyNames.TIMER_RESET, dict_of_hotkeys):
                 self._timer.reset()
-        except AttributeError:
+        except AttributeError as e:
             cleaned_key_input: str = str(key).replace("'", "")
-            self._msg_provider.invoke(f"An error occured while pressing the key '{cleaned_key_input}'", "error")
+            self._msg_provider.invoke(
+                f"An unexpected error occured while pressing the key \"{cleaned_key_input}\".\n"
+                +f"Exception: {e}", "error")
     
     
     # keybind change methods below
@@ -69,8 +71,8 @@ class KeyListener:
     def start_hotkey_config_listener(self) -> None:
         self._start_listener(
             target_method=self._on_hotkey_config_listener,
-            start_msg="Key listener started in seperat thread\n"
-                        +"Press key to change keybind <...>"
+            start_msg="A key listener started in a seperat thread\n"
+                        +"Press a key to change the keybind of the selected hotkey <...>"
         )
     
     
@@ -82,16 +84,18 @@ class KeyListener:
         dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         cleaned_key_input: str = str(key).replace("'", "")
         
+        self._msg_provider.invoke(cleaned_key_input, "request")
+        
         if self._check_helper_keys(cleaned_key_input):
             return
         
         for keybind in dict_of_hotkeys.values():
             if cleaned_key_input == keybind:
-                self._msg_provider.invoke(f"Hotkey '{cleaned_key_input}' already in use. Please start config again and try another key", "invalid")
+                self._msg_provider.invoke(f"The keybind \"{cleaned_key_input}\" is already assigned to a hotkey. Please start the config again and try another key", "invalid")
                 return False
         
         self._hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)
-        self._msg_provider.invoke(f"Hotkey was successfully changed to: '{cleaned_key_input}'", "success")
+        self._msg_provider.invoke(f"The keybind was successfully changed to \"{cleaned_key_input}\"", "success")
         return False
     
     
@@ -104,13 +108,13 @@ class KeyListener:
             self._msg_provider.invoke(start_msg, "normal")
             return
         
-        self._msg_provider.invoke("Key listener already running", "warning")
+        self._msg_provider.invoke("The key listener is already running", "warning")
     
     
     def _on_start_listener(self, on_press_method: Any) -> None:
         with Listener(on_press=on_press_method) as self._key_listener:
             self._key_listener.join()
-        self._msg_provider.invoke("Key listener stopped", "normal")
+        self._msg_provider.invoke("The key listener was stopped", "normal")
     
     
     @staticmethod

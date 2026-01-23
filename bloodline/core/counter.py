@@ -22,7 +22,7 @@ class Counter:
             self._counter = 0
         
         self._counter += 1
-        self._msg_provider.invoke(f"Counter increased: {self.get_count()}", "normal")
+        self._msg_provider.invoke(f"The counter was increased: {self.get_count()}", "normal")
         self._overlay.update_counter_label(self._counter)
     
     
@@ -32,7 +32,7 @@ class Counter:
         
         if self._counter > 0:
             self._counter -= 1
-            self._msg_provider.invoke(f"Counter decreased: {self.get_count()}", "normal")
+            self._msg_provider.invoke(f"The counter was decreased: {self.get_count()}", "normal")
             self._overlay.update_counter_label(self._counter)
     
     
@@ -42,7 +42,7 @@ class Counter:
             self._question_answered = False
         elif self._counter > 0:
             self._counter = 0
-            self._msg_provider.invoke("Counter has been reset", "normal")
+            self._msg_provider.invoke("The counter has been reset", "normal")
             self._overlay.update_counter_label(self._counter)
     
     

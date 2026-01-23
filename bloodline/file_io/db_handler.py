@@ -3,19 +3,19 @@ from shutil import copy2
 from sqlite3 import Connection, Cursor, connect, DatabaseError
 from typing import Any, Callable, List
 
-from infrastructure import Directory, MessageHub
+from infrastructure import MessageHub
 
 class DatabaseHandler:
     
-    def __init__(self, db_file_name: str, backup_file_name: str, latest_version: int, db_structure: str, db_updates: Callable):
-        self._db_file_name: str = db_file_name
-        self._backup_file_name: str = backup_file_name
+    def __init__(self, db_file_path: Path, backup_file_path: Path, latest_version: int, db_structure: str, db_updates: Callable):
+        self._db_file_path: Path = db_file_path
+        self._backup_file_path: Path = backup_file_path
         self._latest_version: int = latest_version
         self._db_structure: str = db_structure
         self._db_updates: Callable = db_updates
         
-        self._db_file_path: Path = Directory.get_persistent_data_path() / db_file_name
-        self._backup_file_path: Path = Directory.get_backup_path() / backup_file_name
+        self._db_file_name: str = db_file_path.name
+        self._backup_file_name: str = backup_file_path.name
         
         self._msg_provider: MessageHub = MessageHub()
         self._conn: Connection | None = None
@@ -76,7 +76,7 @@ class DatabaseHandler:
         try:
             self._create_tables()
         except DatabaseError:
-            self._msg_provider.invoke(f"The file \"{self._db_file_name}\" is corrupted. It will be re-initialized", "error")
+            self._msg_provider.invoke(f"The file \"{self._db_file_name}\" is corrupted. An attempt is made to load the last backup", "error")
             self._handle_file_restore()
     
     
@@ -116,7 +116,7 @@ class DatabaseHandler:
             self._db_file_path.unlink(missing_ok=True)
             self._load_backup()
             self._open_connection()
-            self._msg_provider.invoke("Loading the save file backup was successful", "success")
+            self._msg_provider.invoke(f"Loading the backup from \"{self._backup_file_name}\" was successful", "success")
         except DatabaseError:
             self._msg_provider.invoke(f"The file \"{self._backup_file_name}\" is also corrupted. Both files will be re-initialized", "error")
             self._reinitialize_db_file()
