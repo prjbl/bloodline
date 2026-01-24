@@ -91,7 +91,7 @@ class KeyListener:
         
         for keybind in dict_of_hotkeys.values():
             if cleaned_key_input == keybind:
-                self._msg_provider.invoke(f"The keybind \"{cleaned_key_input}\" is already assigned to a hotkey. Please start the config again and try another key", "invalid")
+                self._msg_provider.invoke(f"The keybind \"{cleaned_key_input}\" is already assigned to a hotkey. Make sure to select another key and try again", "invalid")
                 return False
         
         self._hk_manager.set_new_keybind(self._hotkey, cleaned_key_input)

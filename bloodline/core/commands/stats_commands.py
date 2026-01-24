@@ -27,7 +27,7 @@ class StatsCommands(BaseInterceptCommand):
     
     def list_bosses_by(self, sort_filter: str, order_filter: str) -> bool:
         if self._current_step == 0:
-            self._msg_provider.invoke("Please enter the <\"game title\"> from which you want all bosses selected from <...>", "normal")
+            self._msg_provider.invoke("Please enter the <\"game title\"> from which you want all bosses listed from <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("single")
@@ -123,7 +123,7 @@ class StatsCommands(BaseInterceptCommand):
             return True
         
         if self._current_step == 0:
-            self._msg_provider.invoke("Please enter the <\"boss name\", \"game title\"> of the boss you want the stats safed to <...>", "normal")
+            self._msg_provider.invoke("Please enter the <\"boss name\", \"game title\"> of the boss you want the stats saved to <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("double")
@@ -168,7 +168,7 @@ class StatsCommands(BaseInterceptCommand):
             headers=headers,
             data=game_data
         )
-        self._msg_provider.invoke(f"The data was successfully written to the file '{file_name}'", "success")
+        self._msg_provider.invoke(f"The data was successfully written to the file \"{file_name}\"", "success")
         return False
     
     
@@ -233,7 +233,7 @@ class StatsCommands(BaseInterceptCommand):
             return False
         
         if self._current_step == 0:
-            self._msg_provider.invoke("Please enter <y[es]|n[o]> if you tracked deaths <...>", "normal")
+            self._msg_provider.invoke("Please enter <y[es]|n[o]> if you tracked the deaths <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("yes_no")

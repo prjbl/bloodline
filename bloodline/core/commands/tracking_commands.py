@@ -39,7 +39,7 @@ class TrackingCommands(BaseInterceptCommand):
         game_title: str = pattern_result[1]
         
         if not self._save_file.get_boss_exists(boss_name, game_title):
-            self._msg_provider.invoke(f"There is no boss '{boss_name}' of game '{game_title}' in the save file so far", "invalid")
+            self._msg_provider.invoke(f"There is no boss \"{boss_name}\" of the game \"{game_title}\" in the save file so far", "invalid")
             return False
         
         self._overlay.create_instance()

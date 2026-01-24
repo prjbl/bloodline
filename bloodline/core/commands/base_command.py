@@ -63,6 +63,6 @@ class BaseInterceptCommand(BaseCommand):
         result: Match | None = fullmatch(valid_input_pattern, self._console_input)
         
         if result is None:
-            self._msg_provider.invoke("The input does not match the pattern. Please try again", "invalid")
+            self._msg_provider.invoke("The input does not match the pattern. Make sure to correct the pattern and try again", "invalid")
             return []
         return list(map(str, result.groups()))

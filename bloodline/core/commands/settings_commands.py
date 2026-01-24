@@ -21,15 +21,15 @@ class SettingsCommands(BaseInterceptCommand):
     
     def set_overlay_locked(self, lock_state: bool) -> None:
         if not self._config_manager.set_toplevel_locked(lock_state):
-            self._msg_provider.invoke(f"Overlay already {"locked" if lock_state else "unlocked"}", "normal")
+            self._msg_provider.invoke(f"The overlay is already {"locked" if lock_state else "unlocked"}", "normal")
             return
-        self._msg_provider.invoke(f"Overlay {"locked" if lock_state else "unlocked"}", "normal")
+        self._msg_provider.invoke(f"The overlay has been {"locked" if lock_state else "unlocked"}", "normal")
         self._overlay.display_lock_animation(1500, lock_state)
     
     
     def import_theme(self) -> bool:
         if self._current_step == 0:
-            self._msg_provider.invoke("Please enter the <\"file path\"> of the theme you want to import <...>", "normal")
+            self._msg_provider.invoke("Please enter the <\"file path\"> of the theme file you want to import <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("single")
@@ -43,7 +43,7 @@ class SettingsCommands(BaseInterceptCommand):
         
         loaded_theme: dict = ExternalJsonHandler.load_data(src_file_path, ThemeModel)
         if not loaded_theme:
-            self._msg_provider.invoke("Theme file is empty", "invalid")
+            self._msg_provider.invoke("The imported theme file does not contain any values to adjust the programs theme. Make sure to select an usable file an try again", "invalid")
             return False
         
         self._config_manager.set_theme(loaded_theme)
