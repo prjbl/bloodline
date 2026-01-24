@@ -75,14 +75,14 @@ class SetupCommands(BaseInterceptCommand):
         return self._run_setup_command(
             "single",
             self._save_file.delete_game,
-            ("All bosses linked to the game to be deleted will also be removed", "warning"),
+            ("All bosses linked to game you select to delete will also be removed", "warning"),
             ("Please enter the <\"game title\"> of the game you want to delete <...>", "normal")
         )
     
     
     def import_preset(self) -> bool:
         if self._current_step == 0:
-            self._msg_provider.invoke("Please enter the <\"file path\"> of the preset you want to import <...>", "normal")
+            self._msg_provider.invoke("Please enter the <\"file path\"> of the preset file you want to import <...>", "normal")
             return True
         
         pattern_result: List[str] = self._get_input_pattern_result("single")
@@ -96,7 +96,7 @@ class SetupCommands(BaseInterceptCommand):
         
         loaded_preset: dict = ExternalJsonHandler.load_data(src_file_path, PresetModel)
         if not loaded_preset:
-            self._msg_provider.invoke("The imported preset does not contain any values to be added to the save file", "invalid")
+            self._msg_provider.invoke("The imported preset file does not contain any values to be added to the save file. Make sure to select an usable file an try again", "invalid")
             return False
         
         self._save_file.add_preset(loaded_preset)
