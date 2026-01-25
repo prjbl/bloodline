@@ -24,13 +24,21 @@ class PersistentJsonHandler(JsonFileOperations):
     
     
     def _setup_files(self) -> None:
-        if self._main_file_path.exists() and self._backup_file_path.exists():
+        main_file_exists: bool = self._main_file_path.exists()
+        backup_file_exists: bool = self._backup_file_path.exists()
+        
+        if main_file_exists and backup_file_exists:
             return
         
-        if not self._main_file_path.exists():
+        if not main_file_exists and not backup_file_exists:
+            self._create_main_file()
+            self._ensure_backup()
+            return
+        
+        if not main_file_exists:
             self._handle_file_restore()
         
-        if not self._backup_file_path.exists():
+        if not backup_file_exists:
             self._ensure_backup()
     
     
@@ -90,7 +98,7 @@ class PersistentJsonHandler(JsonFileOperations):
             self._load_validate_and_synchronize()
             self._msg_provider.invoke(f"Loading the backup from \"{self._backup_file_name}\" was successful", "success")
         except JSONDecodeError:
-            self._msg_provider.invoke(f"The file \"{self._backup_file_name}\" is also corrupted. Both files will be re-initialized", "error")
+            self._msg_provider.invoke(f"The file \"{self._backup_file_name}\" is corrupted. Both files will be re-initialized", "error")
             self._reinitialize_main_file()
             self._reinitialize_backup_file()
     

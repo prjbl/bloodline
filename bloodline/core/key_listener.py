@@ -22,7 +22,7 @@ class KeyListener:
         self._key_listener: Listener | None = None
         self._listener_thread: Thread | None = None
         
-        self._helper_keys: Set[Key] = {Key.shift_l, Key.shift_r}
+        self._helper_keys: Set[str] = {str(Key.shift_l), str(Key.shift_r)}
     
     
     def start_key_listener(self) -> None:
@@ -84,10 +84,10 @@ class KeyListener:
         dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         cleaned_key_input: str = str(key).replace("'", "")
         
-        self._msg_provider.invoke(cleaned_key_input, "request")
-        
         if self._check_helper_keys(cleaned_key_input):
             return
+        
+        self._msg_provider.invoke(cleaned_key_input, "request")
         
         for keybind in dict_of_hotkeys.values():
             if cleaned_key_input == keybind:

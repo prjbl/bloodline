@@ -46,6 +46,10 @@ class ConfigManager(IConfigManager):
         self._pers_json_handler.set_data(ui_config)
         return True
     
+    @override
+    def get_theme(self) -> dict:
+        return self._pers_json_handler.get_data().get(SectionKeys.THEME)
+    
     
     @override
     def set_theme(self, loaded_theme: dict) -> None:

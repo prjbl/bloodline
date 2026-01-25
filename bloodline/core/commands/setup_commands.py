@@ -94,9 +94,13 @@ class SetupCommands(BaseInterceptCommand):
         if not ExternalJsonHandler.check_external_file_props(src_file_path):
             return False
         
-        loaded_preset: dict = ExternalJsonHandler.load_data(src_file_path, PresetModel)
+        loaded_preset: dict | None = ExternalJsonHandler.load_data(src_file_path, PresetModel)
+        
+        if loaded_preset is None:
+            return False
+        
         if not loaded_preset:
-            self._msg_provider.invoke("The imported preset file does not contain any values to be added to the save file. Make sure to select an usable file an try again", "invalid")
+            self._msg_provider.invoke("The imported preset file does not contain any valid values to be added to the save file. Make sure to select an usable file an try again", "invalid")
             return False
         
         self._save_file.add_preset(loaded_preset)

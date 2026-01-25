@@ -67,7 +67,7 @@ class _TypeEnforcementMixin:
         is_bool_but_expected_numeric: bool = isinstance(v, bool) and expected_type in (int, float)
         
         if not isinstance(v, expected_type) or is_bool_but_expected_numeric:
-            _msg_provider.invoke(f"The value \"{info.field_name}\" is not of type '{expected_type}'. The default will be restored", "warning")
+            _msg_provider.invoke(f"The value \"{info.field_name}\" is not of type '{expected_type.__name__}'. The default will be restored", "warning")
             
             if field.default_factory is not None:
                 return field.default_factory()

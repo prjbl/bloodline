@@ -153,7 +153,7 @@ class Application(IConsole):
     
     def _setup_console_tags(self) -> None:
         self._console.tag_config("normal", foreground=self._colors.get(ColorKeys.NORMAL))
-        self._console.tag_config("list", foreground=self._colors.get(ColorKeys.NORMAL), lmargin1=self._char_width_in_px * 4, lmargin2=self._char_width_in_px * 8)
+        self._console.tag_config("list", foreground=self._colors.get(ColorKeys.NORMAL), lmargin1=self._char_width_in_px * 4, lmargin2=self._char_width_in_px * 9)
         self._console.tag_config("success", foreground=self._colors.get(ColorKeys.SUCCESS))
         self._console.tag_config("invalid", foreground=self._colors.get(ColorKeys.INVALID))
         self._console.tag_config("command", foreground=self._colors.get(ColorKeys.COMMAND))
@@ -205,15 +205,15 @@ class Application(IConsole):
             self._console.insert("end", f"{text}", "command")
             self._console.insert("end", ">\n", "normal")
         elif text_type == "success":
-            self._console.insert("end", f"Success: {text}\n", "success")
+            self._console.insert("end", f"[SUCCESS] {text}\n", "success")
         elif text_type == "invalid":
-            self._console.insert("end", f"Invalid: {text}\n", "invalid")
+            self._console.insert("end", f"[INVALID] {text}\n", "invalid")
         elif text_type == "note":
-            self._console.insert("end", f"Note: {text}\n", "note")
+            self._console.insert("end", f"[NOTE] {text}\n", "note")
         elif text_type == "warning":
-            self._console.insert("end", f"Warning: {text}\n", "warning")
+            self._console.insert("end", f"[WARNING] {text}\n", "warning")
         elif text_type == "error":
-            self._console.insert("end", f"Error: {text}\n", "error")
+            self._console.insert("end", f"[ERROR] {text}\n", "error")
         elif text_type == "list":
             self._list_format_text(text)
         else:
