@@ -1,0 +1,31 @@
+{
+    "colors": {
+        "background": "#2a2830",
+        "normal": "#ffffff",
+        "success": "#a1e096",
+        "invalid": "#35a2de",
+        "command": "#25b354",
+        "selection": "#1d903e",
+        "note": "#a448cf",
+        "warning": "#d4a61e",
+        "error": "#cf213e"
+    },
+    "font": {
+        "family": "DM Mono",
+        "root": {
+            "size": 10
+        },
+        "toplevel": {
+            "size": 9
+        }
+    },
+    "widgets": {
+        "root": {
+            "padding": 5
+        },
+        "toplevel": {
+            "padding": 5,
+            "highlightthickness": 2
+        }
+    }
+}
