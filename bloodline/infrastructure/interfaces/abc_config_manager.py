@@ -9,5 +9,10 @@ class IConfigManager(ABC):
     
     
     @abstractmethod
+    def get_theme(self) -> dict:
+        pass
+    
+    
+    @abstractmethod
     def set_theme(self, src_file_path: Path) -> None:
         pass

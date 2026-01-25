@@ -51,7 +51,8 @@ class Overlay(IOverlay):
     
     @override
     def destroy_instance(self) -> None:
-        self._config_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx()}+{self._toplevel.winfo_rooty()}")
+        self._config_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx() - self._difference_width}+{self._toplevel.winfo_rooty()}")
+        self._difference_width = 0
         self._toplevel.destroy()
     
     
@@ -64,6 +65,7 @@ class Overlay(IOverlay):
         self._offset_x: int = 0
         self._offset_y: int = 0
         self._init_width: int = 0
+        self._difference_width: int = 0
         self._alignment: dict = {
             "left": True,
             "centered": False,
@@ -155,14 +157,15 @@ class Overlay(IOverlay):
         if self._alignment.get("left"):
             return # tkinters default is left aligned
         
-        difference_width: int = self._init_width - self._toplevel.winfo_width()
+        self._difference_width: int = self._init_width - self._toplevel.winfo_width()
         toplevel_x: int = self._toplevel.winfo_rootx()
         toplevle_y: int = self._toplevel.winfo_rooty()
         
         if self._alignment.get("centered"):
-            self._toplevel.geometry(f"+{toplevel_x + int(difference_width / 2)}+{toplevle_y}")
+            self._difference_width = int(self._difference_width / 2)
+            self._toplevel.geometry(f"+{toplevel_x + self._difference_width}+{toplevle_y}")
         elif self._alignment.get("right"):
-            self._toplevel.geometry(f"+{toplevel_x + difference_width}+{toplevle_y}")
+            self._toplevel.geometry(f"+{toplevel_x + self._difference_width}+{toplevle_y}")
     
     
     # helper methods below

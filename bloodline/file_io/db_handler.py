@@ -25,16 +25,24 @@ class DatabaseHandler:
     
     
     def _setup_files(self) -> None:
-        if not self._db_file_path.exists():
-            self._handle_file_restore()
+        db_file_exists: bool = self._db_file_path.exists()
+        backup_file_exists: bool = self._backup_file_path.exists()
         
-        if not self._backup_file_path.exists():
+        if not db_file_exists and not backup_file_exists:
+            self._open_connection()
+            self._setup_db()
+            self.ensure_backup()
+            return
+        
+        if not db_file_exists:
+            self._handle_file_restore()
+        else:
+            self._open_connection()
+            self._setup_db() # handles file restore if db file exists but is corrupted
+        
+        if not backup_file_exists:
             self.ensure_backup()
         
-        if not self._conn:
-            self._open_connection()
-        
-        self._setup_db()
         self._check_for_updates()
     
     
@@ -61,7 +69,10 @@ class DatabaseHandler:
     
     
     def close_connection(self) -> None:
-        self._conn.close()
+        if self._conn:
+            self._conn.close()
+        self._conn = None
+        self._cursor = None
     
     
     # helper methods below
@@ -118,12 +129,18 @@ class DatabaseHandler:
             self._open_connection()
             self._msg_provider.invoke(f"Loading the backup from \"{self._backup_file_name}\" was successful", "success")
         except DatabaseError:
-            self._msg_provider.invoke(f"The file \"{self._backup_file_name}\" is also corrupted. Both files will be re-initialized", "error")
+            self._msg_provider.invoke(f"The file \"{self._backup_file_name}\" is corrupted. Both files will be re-initialized", "error")
             self._reinitialize_db_file()
             self._reinitialize_backup_file()
+            
+            if not self._conn:
+                self._open_connection()
     
     
     def _handle_backup_process(self) -> None:
+        if not self._conn:
+            self._open_connection()
+        
         backup_conn: Connection | None = None
         
         try:
@@ -135,9 +152,14 @@ class DatabaseHandler:
     
     
     def _backup_integrity_check(self) -> None:
+        backup_conn: Connection | None = None
+        
         try:
-            backup_conn: Connection = connect(self._backup_file_path)
-            backup_conn.cursor().execute("PRAGMA integrity_check")
+            backup_conn = connect(self._backup_file_path)
+            result: Any = backup_conn.cursor().execute("PRAGMA integrity_check").fetchone()[0]
+            
+            if result != "ok":
+                raise DatabaseError
         finally:
             backup_conn.close()
     
