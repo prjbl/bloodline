@@ -194,9 +194,9 @@ class CommandManager:
         self._msg_provider.invoke(
             "tracking: Lists all tracking actions\n"
             +"setup: Lists all setup actions\n"
-            +"stats: Lists all stat actions\n"
+            +"stats: Lists all stats actions\n"
             +"keybinds: Lists all keybind actions\n"
-            +"settings: Lists all setting actions\n"
+            +"settings: Lists all settings actions\n"
             +"quit: Quits the application", "list"
         )
     
