@@ -16,7 +16,7 @@ class StatsCommands(BaseInterceptCommand):
     
     
     def info(self) -> None:
-        self._msg_provider.invoke("This is a list of all stat commands:", "normal")
+        self._msg_provider.invoke("This is a list of all stats commands:", "normal")
         self._msg_provider.invoke(
             "'stats list bosses [-a] [-s deaths|time -o desc|asc]': Lists bosses by the selected filters. By default all bosses will be listed in the order they were added\n"
             +"'stats list games [-s deaths|time -o desc|asc]': Lists all games by the selected filters. By default the games will be listed in the order they were added\n"
