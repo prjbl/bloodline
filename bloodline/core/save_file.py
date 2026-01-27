@@ -79,7 +79,7 @@ class SaveFile:
             sql=sql,
             params=(game_title,),
             success_msg=f"The game \"{game_title}\" was added to the save file",
-            error_msg=f"An unexpected error occured while adding the game \"{game_title}\" to the save file",
+            error_msg=f"An unexpected error occurred while adding the game \"{game_title}\" to the save file",
             ensure_backup=False
         )
     
@@ -101,7 +101,7 @@ class SaveFile:
             sql=sql,
             params=(boss_name, game_title),
             success_msg=f"The boss \"{boss_name}\" was added to the game \"{cased_game_title}\"",
-            error_msg=f"An unexpected error occured while adding the boss \"{boss_name}\" to the game \"{cased_game_title}\"",
+            error_msg=f"An unexpected error occurred while adding the boss \"{boss_name}\" to the game \"{cased_game_title}\"",
             ensure_backup=ensure_backup
         )
     
@@ -200,7 +200,7 @@ class SaveFile:
             sql=sql,
             params=(new_game_title, game_title),
             success_msg=f"The game \"{old_game_title}\" was renamed to \"{new_game_title}\"",
-            error_msg=f"An unexpected error occured while renaming the game \"{old_game_title}\" to \"{new_game_title}\""
+            error_msg=f"An unexpected error occurred while renaming the game \"{old_game_title}\" to \"{new_game_title}\""
         )
     
     
@@ -241,7 +241,7 @@ class SaveFile:
             sql=sql,
             params=(game_title,),
             success_msg=f"The game \"{removed_game}\" was deleted",
-            error_msg=f"An unexpected error occured while removing the game \"{self._get_cased_game_title(game_title)}\" from the save file"
+            error_msg=f"An unexpected error occurred while removing the game \"{self._get_cased_game_title(game_title)}\" from the save file"
         )
     
     
@@ -263,7 +263,7 @@ class SaveFile:
             sql=sql,
             params=(boss_name, game_title),
             success_msg=f"The boss \"{removed_boss}\" of the game \"{self._get_cased_game_title(game_title)}\" was removed",
-            error_msg=f"An unexpected error occured while removing the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self._get_cased_game_title(game_title)}\""
+            error_msg=f"An unexpected error occurred while removing the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self._get_cased_game_title(game_title)}\""
         )
     
     
@@ -284,7 +284,7 @@ class SaveFile:
             sql=sql,
             params=(deaths, required_time, boss_name, game_title),
             success_msg=f"The boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self._get_cased_game_title(game_title)}\" was updated with the following values: Deaths {deaths}, Req. time {required_time}",
-            error_msg=f"An unexpected error occured while saving the stats to the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self._get_cased_game_title(game_title)}\""
+            error_msg=f"An unexpected error occurred while saving the stats to the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self._get_cased_game_title(game_title)}\""
         )
     
     
@@ -530,7 +530,7 @@ class SaveFile:
             sql=sql,
             params=(new_boss_name, boss_name, game_title),
             success_msg=None,
-            error_msg=f"An unexpected error occured while renaming the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self._get_cased_game_title(game_title)}\" to \"{new_boss_name}\"",
+            error_msg=f"An unexpected error occurred while renaming the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self._get_cased_game_title(game_title)}\" to \"{new_boss_name}\"",
             ensure_backup=ensure_backup
         )
     
@@ -545,7 +545,7 @@ class SaveFile:
             sql=sql,
             params=(new_game_title, boss_name, game_title),
             success_msg=None,
-            error_msg=f"An unexpected error occured while moving the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self._get_cased_game_title(game_title)}\" to \"{new_game_title}\"",
+            error_msg=f"An unexpected error occurred while moving the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self._get_cased_game_title(game_title)}\" to \"{new_game_title}\"",
             ensure_backup=ensure_backup
         )
     

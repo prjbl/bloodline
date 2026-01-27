@@ -15,7 +15,8 @@ class SettingsCommands(BaseInterceptCommand):
         self._msg_provider.invoke("This is a list of all settings commands:", "normal")
         self._msg_provider.invoke(
             "'settings unlock|lock overlay': Enables|Disables the ability to move the overlay\n"
-            +"'settings import theme': Imports and changes the programs theme", "list"
+            +"'settings import theme': Imports and changes the programs theme"
+            +"'settings preview theme': Displays the current color theme", "list"
         )
     
     
@@ -58,5 +59,22 @@ class SettingsCommands(BaseInterceptCommand):
             return False
         
         self._config_manager.set_theme(loaded_theme)
-        self._msg_provider.invoke("The loaded theme was applied. Make sure to restart the program for the changes to display", "success")
+        self._msg_provider.invoke("The imported theme was applied. Make sure to restart the program for the changes to display", "success")
         return False
+    
+    
+    def preview_theme(self) -> None:
+        preview_msgs: List[tuple] = [
+            ("This is a preview of the current color theme:", "normal"),
+            ("settings preview theme", "preview_command"),
+            ("settings preview theme", "preview_selection"),
+            ("", "normal"), # Line Spacer
+            ("The imported theme was applied", "success"),
+            ("The theme can be changed using the theme template file", "note"),
+            ("The imported theme file does not contain any valid values", "invalid"),
+            ("The value of the color is an unrecognized pattern", "warning"),
+            ("An unexpected error occurred while importing the theme file", "error")
+        ]
+        
+        for text, text_type in preview_msgs:
+            self._msg_provider.invoke(text, text_type)
