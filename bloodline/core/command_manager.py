@@ -71,6 +71,7 @@ class CommandManager:
             "settings lock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, True),
             "settings unlock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, False),
             "settings import theme": self._settings_cmds.import_theme,
+            "settings preview theme": self._settings_cmds.preview_theme,
             "quit": self.quit
         }
         self._cancel_commands: dict = {"cancel": self._cancel}

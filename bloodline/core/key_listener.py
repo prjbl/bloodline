@@ -62,7 +62,7 @@ class KeyListener:
         except AttributeError as e:
             cleaned_key_input: str = str(key).replace("'", "")
             self._msg_provider.invoke(
-                f"An unexpected error occured while pressing the key \"{cleaned_key_input}\".\n"
+                f"An unexpected error occurred while pressing the key \"{cleaned_key_input}\".\n"
                 +f"Exception: {e}", "error")
     
     

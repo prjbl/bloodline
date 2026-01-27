@@ -28,7 +28,7 @@ Record deaths and encounter times using global hotkeys and evaluate your perform
 
 ## 💎 Key Features
 
-- **Console Experience:** Operations run exclusively through command input.
+- **Console Experience:** Run exclusively through commands, featuring input history and auto-completion.
 
 - **Global Hotkey Tracking:** Document time and deaths while the game is running in the foreground.
 
@@ -115,6 +115,7 @@ Examples for both the preset and theme files can be found in the [templates dire
 | :--- | :--- |
 | `settings unlock\|lock overlay` | Enables / Disables the ability to move the overlay |
 | `settings import theme` | Imports and changes the programs theme (see [templates](./templates)) |
+| `settings preview theme` | Displays the current color theme |
 
 ---
 

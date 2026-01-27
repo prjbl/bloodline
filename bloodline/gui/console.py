@@ -160,6 +160,10 @@ class Application(IConsole):
         self._console.tag_config("note", foreground=self._colors.get(ColorKeys.NOTE))
         self._console.tag_config("warning", foreground=self._colors.get(ColorKeys.WARNING))
         self._console.tag_config("error", foreground=self._colors.get(ColorKeys.ERROR))
+        
+        # special tags for theme preview
+        self._console.tag_config("preview_command", foreground=self._colors.get(ColorKeys.COMMAND))
+        self._console.tag_config("preview_selection", foreground=self._colors.get(ColorKeys.NORMAL), background=self._colors.get(ColorKeys.SELECTION))
     
     
     def _setup_bindings(self) -> None:
@@ -194,7 +198,6 @@ class Application(IConsole):
     
     def _print_output(self, text: str, text_type: str) -> None:
         self._input_entry.delete(0, "end")
-        
         self._console.config(state="normal")
         
         if text_type == "command":
@@ -202,7 +205,7 @@ class Application(IConsole):
             self._console.insert("end", f"{text}\n", "command")
         elif text_type == "request":
             self._console.delete("end-6c", "end")
-            self._console.insert("end", f"{text}", "command")
+            self._console.insert("end", text, "command")
             self._console.insert("end", ">\n", "normal")
         elif text_type == "success":
             self._console.insert("end", f"[SUCCESS] {text}\n", "success")
@@ -216,6 +219,10 @@ class Application(IConsole):
             self._console.insert("end", f"[ERROR] {text}\n", "error")
         elif text_type == "list":
             self._list_format_text(text)
+        elif text_type == "preview_command":
+            self._console.insert("end", f"{text}\n", "preview_command")
+        elif text_type == "preview_selection":
+            self._console.insert("end", text, "preview_selection")
         else:
             self._console.insert("end", f"{text}\n", "normal")
             
