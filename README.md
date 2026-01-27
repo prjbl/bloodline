@@ -3,9 +3,9 @@
 A small and minimalist **TUI** (Text-based User Interface) designed to track and analyze boss encounters in souls games.  
 Record deaths and encounter times using global hotkeys and evaluate your performance statistically.
 
-> ⚠️ <font color="#d4a61e">**State:** Beta-Phase</font>  
-> <font color="#d4c392">This project is currently still in development. The core functions of the program are present, but errors and problems may still occur.  
-> Constructive feedback is very welcome!</font>
+> [!IMPORTANT]
+> ⚜️ **Seeker of Errors:** This project is currently in its *Beta-Phase*.  
+> As with any treacherous journey, bugs may hide in the shadows. Your Feedback is a valuable soul - please share it!
 
 ---
 
@@ -22,17 +22,24 @@ Record deaths and encounter times using global hotkeys and evaluate your perform
     - [Syntax Legend](#syntax-legend)
     - [Command List](#command-list)
   - [⌨️ Default Keybinds](#️-default-keybinds)
+  - [📜 License \& Usage](#-license--usage)
 
 ---
 
 ## 💎 Key Features
 
 - **Console Experience:** Operations run exclusively through command input.
+
 - **Global Hotkey Tracking:** Document time and deaths while the game is running in the foreground.
+
 - **Local Data Management:** All data is stored in a local database.
+
 - **Import & Export of Stats:** Import game presets as `.json` and export game data via `.csv` files
+
 - **Flexible Data Analysis:** Sort and display stored data using various filters.
+
 - **Customizable Keybinds:** Select and assign keybinds for all tracking actions yourself.
+
 - **Theme Support:** Adjust the program's appearance via `.json` theme files.
 
 ---
@@ -125,3 +132,13 @@ Keybinds can be set using the `Shift L` / `Shift R` modifiers.
 | **Timer Stop** | `?` / `Shift` + `ß` |
 | **Timer Reset** | `*` / `Shift` + `+` |
 | **Key Listener End** | `°` / `Shift` + `^` |
+
+---
+
+## 📜 License & Usage
+
+As this project is primarily intended to provide easy access for users and friends, no official open-source license is currently attached. Standard copyright law applies with the following express permissions:
+
+- **Private Use:** You are free to use the [source code](./bloodline) and [releases](https://github.com/.../bloodline/releases) for personal, non-commercial purposes.
+
+- **Commercial Use:** Commercial use of the code or the resulting application is not permitted without prior written consent.
