@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from infrastructure import Directory
 from file_io.json import PersistentJsonHandler
+from infrastructure import Directory
 from schemas import HotkeyModel
 
 class HotkeyManager:
