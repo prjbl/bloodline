@@ -1,12 +1,12 @@
 from functools import partial
 from typing import Any, List, Callable
 
+from .commands import BaseInterceptCommand, TrackingCommands, SetupCommands, StatsCommands, KeybindCommands, SettingsCommands
 from .counter import Counter
 from .hotkey_manager import HotkeyManager
 from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
-from .commands import BaseInterceptCommand, TrackingCommands, SetupCommands, StatsCommands, KeybindCommands, SettingsCommands
 from infrastructure import MessageHub
 from infrastructure.interfaces import IConfigManager, IConsole, IOverlay
 from schemas import HotkeyNames

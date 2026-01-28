@@ -2,8 +2,8 @@ from re import compile, fullmatch, Match, IGNORECASE
 from typing import List
 
 from ..counter import Counter
-from ..key_listener import KeyListener
 from ..hotkey_manager import HotkeyManager
+from ..key_listener import KeyListener
 from ..save_file import SaveFile
 from ..timer import Timer
 from infrastructure import MessageHub

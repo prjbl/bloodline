@@ -11,7 +11,7 @@ class Directory:
     _BACKUP_DIR: str = "backups"
     _EXPORT_DIR: str = "exports"
     
-    _PERS_DATA_PATH: Path = Path(user_data_dir(_APP_NAME, _AUTHOR, _VERSION, roaming=True))
+    _PERS_DATA_PATH: Path = Path(user_data_dir(roaming=True)) / _APP_NAME / _VERSION
     _BACKUP_PATH: Path = _PERS_DATA_PATH / _BACKUP_DIR
     _EXPORT_PATH: Path = Path(user_documents_dir()) / _APP_NAME / _EXPORT_DIR
     

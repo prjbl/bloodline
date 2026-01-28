@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import override
 
+from file_io.json import PersistentJsonHandler
 from infrastructure import Directory
 from infrastructure.interfaces import IConfigManager
-from file_io.json import PersistentJsonHandler
 from schemas import GuiModel, SectionKeys, WindowKeys
 
 class ConfigManager(IConfigManager):

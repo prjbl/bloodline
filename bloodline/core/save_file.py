@@ -148,8 +148,7 @@ class SaveFile:
             self._msg_provider.invoke(f"The boss \"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}\" you selected to identify does not exist in the game \"{SaveFile._UNKNOWN_GAME_TITLE}\" so far", "invalid")
             return
         elif not self._get_game_exists(new_game_title):
-            self._msg_provider.invoke(f"The game \"{new_game_title}\" you selected to link the boss to does not exist in the save file so far", "invalid")
-            return
+            self._add_game(new_game_title)
         elif self.get_boss_exists(new_boss_name, new_game_title):
             self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(new_boss_name, new_game_title)}\" already exists in the game \"{self._get_cased_game_title(new_game_title)}\"", "invalid")
             return
