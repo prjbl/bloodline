@@ -58,7 +58,7 @@ The program allows you to precisely evaluate your stored data. A typical workflo
 ## 📥 Download
 
 ### Releases
-You can always find the latest versions on the [releases page](https://github.com/.../bloodline/releases).
+You can always find the latest versions on the [releases page](https://github.com/prjbl/bloodline/releases).
 
 ### Preset & Theme Templates
 Examples for both the preset and theme files can be found in the [templates directory](./templates) of this repository.
@@ -140,6 +140,6 @@ Keybinds can be set using the `Shift L` / `Shift R` modifiers.
 
 As this project is primarily intended to provide easy access for users and friends, no official open-source license is currently attached. Standard copyright law applies with the following express permissions:
 
-- **Private Use:** You are free to use the [source code](./bloodline) and [releases](https://github.com/.../bloodline/releases) for personal, non-commercial purposes.
+- **Private Use:** You are free to use the [source code](./bloodline) and [releases](https://github.com/prjbl/bloodline/releases) for personal, non-commercial purposes.
 
 - **Commercial Use:** Commercial use of the code or the resulting application is not permitted without prior written consent.
