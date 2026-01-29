@@ -22,6 +22,7 @@ Record deaths and encounter times using global hotkeys and evaluate your perform
     - [Syntax Legend](#syntax-legend)
     - [Command List](#command-list)
   - [⌨️ Default Keybinds](#️-default-keybinds)
+  - [🛡️ Compatibility \& Security](#️-compatibility--security)
   - [📜 License \& Usage](#-license--usage)
 
 ---
@@ -133,6 +134,14 @@ Keybinds can be set using the `Shift L` / `Shift R` modifiers.
 | **Timer Stop** | `?` / `Shift` + `ß` |
 | **Timer Reset** | `*` / `Shift` + `+` |
 | **Key Listener End** | `°` / `Shift` + `^` |
+
+---
+
+## 🛡️ Compatibility & Security
+
+Bloodline has been tested with the anti-cheat software [Easy Anti-Cheat](https://www.easy.ac/) and [BattlEye](https://www.battleye.com/) without any issues. However, it remains possible that other anti-cheat solutions may flag the software.
+
+Additionally, since the program utilizes global hotkeys via the [pynput](https://pypi.org/project/pynput/) library, some antivirus programs may trigger a warning due to the nature of keyboard hooks.
 
 ---
 
