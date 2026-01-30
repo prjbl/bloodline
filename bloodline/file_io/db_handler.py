@@ -178,7 +178,7 @@ class DatabaseHandler:
         except Exception as e:
             self._msg_provider.invoke(
                 f"An unexpected error occurred while re-initializing the file \"{self._db_file_name}\".\n"
-                +f"Exception: {e}", "error"
+                f"Exception: {e}", "error"
             )
     
     
@@ -190,5 +190,5 @@ class DatabaseHandler:
         except Exception as e:
             self._msg_provider.invoke(
                 f"An unexpected error occurred while re-initializing the file \"{self._backup_file_name}\".\n"
-                +f"Exception: {e}", "error"
+                f"Exception: {e}", "error"
             )

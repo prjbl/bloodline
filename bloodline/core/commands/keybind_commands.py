@@ -10,7 +10,7 @@ class KeybindCommands(BaseCommand):
         self._msg_provider.invoke("This is a list of all keybind commands:", "normal")
         self._msg_provider.invoke(
             "'keybinds list': Lists all hotkeys with their corresponding keybinds\n"
-            +"'keybinds config <hotkey>': Changes the keybind of the selected hotkey", "list"
+            "'keybinds config <hotkey>': Changes the keybind of the selected hotkey", "list"
         )
     
     

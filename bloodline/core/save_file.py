@@ -458,7 +458,7 @@ class SaveFile:
         except Exception as e:
             self._msg_provider.invoke(
                 f"{error_msg}.\n"
-                +f"Exception: {e}", "error"
+                f"Exception: {e}", "error"
             )
             return False
     

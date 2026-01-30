@@ -15,11 +15,11 @@ class SetupCommands(BaseInterceptCommand):
         self._msg_provider.invoke("This is a list of all setup commands:", "normal")
         self._msg_provider.invoke(
             "'setup add': Adds a boss with the corresponding game to the save file\n"
-            +"'setup identify boss': Identifies an unknown boss and updates its meta infos\n"
-            +"'setup move boss': Moves a boss to another game\n"
-            +"'setup rename boss|game': Renames a boss|game\n"
-            +"'setup delete boss|game': Deletes a boss|game\n"
-            +"'setup import preset': Imports and adds game data to the save file", "list"
+            "'setup identify boss': Identifies an unknown boss and updates its meta info\n"
+            "'setup move boss': Moves a boss to another game\n"
+            "'setup rename boss|game': Renames a boss|game\n"
+            "'setup delete boss|game': Deletes a boss|game\n"
+            "'setup import preset': Imports and adds game data to the save file", "list"
         )
     
     

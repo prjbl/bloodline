@@ -63,7 +63,7 @@ class KeyListener:
             cleaned_key_input: str = str(key).replace("'", "")
             self._msg_provider.invoke(
                 f"An unexpected error occurred while pressing the key \"{cleaned_key_input}\".\n"
-                +f"Exception: {e}", "error")
+                f"Exception: {e}", "error")
     
     
     # keybind change methods below
@@ -71,8 +71,10 @@ class KeyListener:
     def start_hotkey_config_listener(self) -> None:
         self._start_listener(
             target_method=self._on_hotkey_config_listener,
-            start_msg="A key listener started in a seperat thread\n"
-                        +"Press a key to change the keybind of the selected hotkey <...>"
+            start_msg=(
+                "A key listener started in a seperat thread\n"
+                "Press a key to change the keybind of the selected hotkey <...>"
+            )
         )
     
     

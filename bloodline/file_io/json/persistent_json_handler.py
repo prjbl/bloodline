@@ -81,7 +81,7 @@ class PersistentJsonHandler(JsonFileOperations):
         except Exception as e:
             self._msg_provider.invoke(
                 f"An unexpected error occurred while loading the backup to the file \"{self._main_file_name}\".\n"
-                +f"Exception: {e}", "error"
+                f"Exception: {e}", "error"
             )
     
     
@@ -112,7 +112,7 @@ class PersistentJsonHandler(JsonFileOperations):
         except Exception as e:
             self._msg_provider.invoke(
                 f"An unexpected error occurred while re-initializing the file \"{self._main_file_name}\".\n"
-                +f"Exception: {e}", "error"
+                f"Exception: {e}", "error"
             )
     
     
@@ -124,7 +124,7 @@ class PersistentJsonHandler(JsonFileOperations):
         except Exception as e:
             self._msg_provider.invoke(
                 f"An unexpected error occurred while re-initializing the file \"{self._backup_file_name}\".\n"
-                +f"Exception: {e}", "error"
+                f"Exception: {e}", "error"
             )
     
     

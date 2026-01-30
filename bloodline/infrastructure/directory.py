@@ -47,4 +47,4 @@ class Directory:
     
     @classmethod
     def get_version(cls) -> str:
-        return cls._VERSION
+        return f"v{cls._VERSION}"

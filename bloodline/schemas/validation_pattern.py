@@ -38,3 +38,12 @@ class ValidationPattern:
         elif keybind in keyboard.Key.__members__.keys():
             return True
         return False
+    
+    
+    @staticmethod
+    def validate_timestamp_pattern(timestamp: str) -> bool:
+        valid_timestamp_pattern: str = compile(r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\s([01]\d|2[0-3]):[0-5]\d$")
+        
+        if not fullmatch(valid_timestamp_pattern, timestamp):
+            return False
+        return True

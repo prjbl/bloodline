@@ -11,6 +11,7 @@ from core import CommandManager
 from infrastructure import Directory, MessageHub
 from infrastructure.interfaces import IConsole
 from schemas import WindowKeys, ColorKeys, FontKeys, WidgetKeys
+from services import UpdateService, WebManager
 
 class Application(IConsole):
     
@@ -36,10 +37,16 @@ class Application(IConsole):
         )
         self._shell_mechanics: ShellMechanics = ShellMechanics(self._cmd_manager.get_list_of_commands)
         self._setup_bindings()
+        UpdateService(request_interval_minutes=60.0).check_for_update()
     
 
     _PREFIX: chr = ">"
-    _META: str = f"{Directory.get_app_name()} v{Directory.get_version()}\nBy {Directory.get_author()}\n----------------------------\n{datetime.now().time().strftime("%H:%M:%S")}{_PREFIX} Use 'help' to get started"
+    _META: str = (
+        f"{Directory.get_app_name()} {Directory.get_version()}\n"
+        f"By {Directory.get_author()}\n"
+        "----------------------------\n"
+        f"{datetime.now().time().strftime('%H:%M:%S')}{_PREFIX} Use 'help' to get started"
+    )
     
     
     @override
@@ -141,7 +148,7 @@ class Application(IConsole):
             self._msg_provider.invoke(f"The font \"{desired_font_family}\" could not be found on this system. The Tkinters default will be restored", "warning")
             self._msg_provider.invoke(
                 "Make sure to select an already installed font using the 'setup import theme' command.\n"
-                +"Tip: Use a monospaced font for best visual results", "note"
+                "Tip: Use a monospaced font for best visual results", "note"
             )
         
         self._input_prefix.config(font=font_to_use)
@@ -160,6 +167,7 @@ class Application(IConsole):
         self._console.tag_config("note", foreground=self._colors.get(ColorKeys.NOTE))
         self._console.tag_config("warning", foreground=self._colors.get(ColorKeys.WARNING))
         self._console.tag_config("error", foreground=self._colors.get(ColorKeys.ERROR))
+        self._console.tag_config("hyperlink", foreground=self._colors.get(ColorKeys.HYPERLINK), underline=True)
         
         # special tags for theme preview
         self._console.tag_config("preview_command", foreground=self._colors.get(ColorKeys.COMMAND))
@@ -168,6 +176,10 @@ class Application(IConsole):
     
     def _setup_bindings(self) -> None:
         self._root.protocol("WM_DELETE_WINDOW", self._on_close)
+        
+        self._console.tag_bind("hyperlink", "<Enter>", self._on_enter_hyperlink)
+        self._console.tag_bind("hyperlink", "<Leave>", self._on_leave_hyperlink)
+        self._console.tag_bind("hyperlink", "<Button-1>", lambda event: WebManager.open_hyperlink(WebManager.get_release_url()))
         
         self._input_entry.bind("<FocusIn>", self._on_focus_in)
         self._input_entry.bind("<FocusOut>", self._on_focus_out)
@@ -179,16 +191,30 @@ class Application(IConsole):
         self._input_entry.bind("<Down>", lambda event: self._shell_mechanics.get_prev_input(self._input_entry))
     
     
+    def _on_close(self) -> None:
+        self._cmd_manager.quit() # additionally closes the db connection
+    
+    
+    def _on_enter_hyperlink(self, event: Event) -> None:
+        self._console.config(cursor="hand2")
+    
+    
+    def _on_leave_hyperlink(self, event: Event) -> None:
+        self._console.config(cursor="xterm")
+    
+    
     def _on_focus_in(self, event: Event) -> None:
-        self._entry_var.set("")
+        cleaned_entry_var: str = self._entry_var.get().strip()
+        
+        if cleaned_entry_var == "_":
+            self._entry_var.set("")
     
     
     def _on_focus_out(self, event: Event) -> None:
-        self._entry_var.set("_")
-    
-    
-    def _on_close(self) -> None:
-        self._cmd_manager.quit() # additionally closes the db connection
+        cleaned_entry_var: str = self._entry_var.get().strip()
+        
+        if cleaned_entry_var == "":
+            self._entry_var.set("_")
     
     
     def _on_entry_change(self, *args: tuple) -> None:
@@ -201,7 +227,8 @@ class Application(IConsole):
         self._console.config(state="normal")
         
         if text_type == "command":
-            self._console.insert("end", f"\n{datetime.now().time().strftime("%H:%M:%S")}{self._PREFIX} ", "normal")
+            timestamp: str = datetime.now().time().strftime("%H:%M:%S")
+            self._console.insert("end", f"\n{timestamp}{self._PREFIX} ", "normal")
             self._console.insert("end", f"{text}\n", "command")
         elif text_type == "request":
             self._console.delete("end-6c", "end")
@@ -217,12 +244,14 @@ class Application(IConsole):
             self._console.insert("end", f"[WARNING] {text}\n", "warning")
         elif text_type == "error":
             self._console.insert("end", f"[ERROR] {text}\n", "error")
-        elif text_type == "list":
-            self._list_format_text(text)
+        elif text_type == "hyperlink":
+            self._console.insert("end", f"{text}\n", "hyperlink")
         elif text_type == "preview_command":
             self._console.insert("end", f"{text}\n", "preview_command")
         elif text_type == "preview_selection":
             self._console.insert("end", text, "preview_selection")
+        elif text_type == "list":
+            self._format_and_insert_list(text)
         else:
             self._console.insert("end", f"{text}\n", "normal")
             
@@ -236,7 +265,7 @@ class Application(IConsole):
     
     # helper methods below
     
-    def _list_format_text(self, text: str) -> None:
+    def _format_and_insert_list(self, text: str) -> None:
         lines: List[str] = text.split("\n")
         
         for line in lines:

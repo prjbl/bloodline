@@ -22,7 +22,6 @@ class ConfigManager(IConfigManager):
                 backup_file_path=cls._instance._BACKUP_FILE_PATH,
                 default_data=GuiModel()
             )
-            
             cls._instance._pers_json_handler.load_data()
         return cls._instance
     
