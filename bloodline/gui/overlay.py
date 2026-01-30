@@ -3,14 +3,12 @@ from tkinter.font import Font, families, nametofont
 from typing import Any, override
 
 from .config_manager import ConfigManager
-from infrastructure import MessageHub
 from infrastructure.interfaces import IOverlay
 from schemas import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Overlay(IOverlay):
     
     def __init__(self):
-        self._msg_provider: MessageHub = MessageHub()
         self._config_manager: ConfigManager = ConfigManager()
         self._setup_config_vars()
     

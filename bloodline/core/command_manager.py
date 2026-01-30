@@ -194,11 +194,11 @@ class CommandManager:
         self._msg_provider.invoke("This is a list of all command categories:", "normal")
         self._msg_provider.invoke(
             "tracking: Lists all tracking actions\n"
-            +"setup: Lists all setup actions\n"
-            +"stats: Lists all stats actions\n"
-            +"keybinds: Lists all keybind actions\n"
-            +"settings: Lists all settings actions\n"
-            +"quit: Quits the application", "list"
+            "setup: Lists all setup actions\n"
+            "stats: Lists all stats actions\n"
+            "keybinds: Lists all keybind actions\n"
+            "settings: Lists all settings actions\n"
+            "quit: Quits the application", "list"
         )
     
     

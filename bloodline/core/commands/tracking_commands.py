@@ -12,7 +12,7 @@ class TrackingCommands(BaseInterceptCommand):
         self._msg_provider.invoke("This is a list of all tracking commands:", "normal")
         self._msg_provider.invoke(
             "'tracking new': Starts a new global tracking session\n"
-            +"'tracking continue': Continues an existing global tracking session", "list"
+            "'tracking continue': Continues an existing global tracking session", "list"
         )
     
     

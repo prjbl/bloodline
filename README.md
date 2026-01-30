@@ -22,6 +22,7 @@ Record deaths and encounter times using global hotkeys and evaluate your perform
     - [Syntax Legend](#syntax-legend)
     - [Command List](#command-list)
   - [⌨️ Default Keybinds](#️-default-keybinds)
+  - [🔗 Dependencies](#-dependencies)
   - [🛡️ Compatibility \& Security](#️-compatibility--security)
   - [📜 License \& Usage](#-license--usage)
 
@@ -76,7 +77,7 @@ Examples for both the preset and theme files can be found in the [templates dire
 | `<>` | Acts as a placeholder for your specific input |
 
 ### Command List
-| Toplevel Level Commands | Description |
+| Toplevel Commands | Description |
 | :--- | :--- |
 | `help` | Lists all command categories |
 | `tracking` | Lists all tracking actions |
@@ -86,15 +87,19 @@ Examples for both the preset and theme files can be found in the [templates dire
 | `settings` | Lists all settings actions |
 | `quit` | Quits the application |
 
+| Dynamic Commands | Description |
+| :--- | :--- |
+| `cancel` | Cancels the current input process. Only available during an active input request |
+
 | Tracking Commands | Description |
 | :--- | :--- |
-| `tracking new` | Starts a new gloabl tracking session |
+| `tracking new` | Starts a new global tracking session |
 | `tracking continue` | Continues an existing global tracking session |
 
 | Setup Commands | Description |
 | :--- | :--- |
 | `setup add` | Adds a boss with the corresponding game to the save file |
-| `setup identify boss` | Identifies an unknown boss and updates its meta infos |
+| `setup identify boss` | Identifies an unknown boss and updates its meta info |
 | `setup move boss` | Moves a boss to another game |
 | `setup rename boss\|game` | Renames a boss / game |
 | `setup delete boss\|game` | Deletes a boss / game |
@@ -115,7 +120,7 @@ Examples for both the preset and theme files can be found in the [templates dire
 | Settings Commands | Description |
 | :--- | :--- |
 | `settings unlock\|lock overlay` | Enables / Disables the ability to move the overlay |
-| `settings import theme` | Imports and changes the programs theme (see [templates](./templates)) |
+| `settings import theme` | Imports and changes the program's theme (see [templates](./templates)) |
 | `settings preview theme` | Displays the current color theme |
 
 ---
@@ -134,6 +139,21 @@ Keybinds can be set using the `Shift L` / `Shift R` modifiers.
 | **Timer Stop** | `?` / `Shift` + `ß` |
 | **Timer Reset** | `*` / `Shift` + `+` |
 | **Key Listener End** | `°` / `Shift` + `^` |
+
+---
+
+## 🔗 Dependencies
+
+Bloodline is *built with Python* and relies on the following external libraries:
+
+| Library | Description of Use |
+| :--- | :--- |
+| [platformdirs](https://pypi.org/project/platformdirs/) | Provides system paths for local data |
+| [pydantic](https://pypi.org/project/pydantic/) | Handles data validation for external files |
+| [pynput](https://pypi.org/project/pynput/) | Manages global hotkey listeners |
+| [requests](https://pypi.org/project/requests/) | Retrieves external api data |
+
+To set up a development environment, install the required packages via the [requirements.txt](requirements.txt) file by running the following command in your terminal or powershell: `pip install -r requirements.txt`.
 
 ---
 

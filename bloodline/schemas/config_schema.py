@@ -34,6 +34,7 @@ class ColorKeys(str, Enum):
     NOTE: str = "note"
     WARNING: str = "warning"
     ERROR: str = "error"
+    HYPERLINK: str = "hyperlink"
 
 
 class FontKeys(str, Enum):
@@ -123,6 +124,7 @@ class _ColorModel(_AllowModel):
     note: str = Field(default="#a448cf", alias=ColorKeys.NOTE.value)
     warning: str = Field(default="#d4a61e", alias=ColorKeys.WARNING.value)
     error: str = Field(default="#cf213e", alias=ColorKeys.ERROR.value)
+    hyperlink: str = Field(default="#35a2de", alias=ColorKeys.HYPERLINK.value)
     
     @field_validator("*")
     @classmethod

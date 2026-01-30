@@ -12,7 +12,6 @@ class HotkeyManager:
             backup_file_path=self._BACKUP_FILE_PATH,
             default_data=HotkeyModel()
         )
-        
         self._pers_json_handler.load_data()
     
     
