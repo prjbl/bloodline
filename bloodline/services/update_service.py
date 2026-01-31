@@ -17,11 +17,12 @@ class UpdateService:
     def __init__(self, request_interval_minutes: float):
         self._request_interval_minutes: float = request_interval_minutes
         
+        self._status_file_exists: bool = UpdateService._STATUS_FILE_PATH.exists() or UpdateService._BACKUP_FILE_PATH.exists()
         self._msg_provider: MessageHub = MessageHub()
         
         self._pers_json_handler: PersistentJsonHandler = PersistentJsonHandler(
-            main_file_path=self._HK_FILE_PATH,
-            backup_file_path=self._BACKUP_FILE_PATH,
+            main_file_path=UpdateService._STATUS_FILE_PATH,
+            backup_file_path=UpdateService._BACKUP_FILE_PATH,
             default_data=UpdateModel()
         )
         self._pers_json_handler.load_data()
@@ -29,7 +30,7 @@ class UpdateService:
     
     _STATUS_FILE: str = "update_status.json"
     _BACKUP_FILE: str = f"{_STATUS_FILE}.bak"
-    _HK_FILE_PATH: Path = Directory.get_persistent_data_path() / _STATUS_FILE
+    _STATUS_FILE_PATH: Path = Directory.get_persistent_data_path() / _STATUS_FILE
     _BACKUP_FILE_PATH: Path = Directory.get_backup_path() / _BACKUP_FILE
     
     
@@ -49,8 +50,9 @@ class UpdateService:
             latest_version: str = data.get("tag_name")
             
             if self._get_new_version_available(latest_version):
+                release_url: str = WebManager.get_release_url()
                 self._msg_provider.invoke(f"A newer version \"{latest_version}\" is available to download at:", "note")
-                self._msg_provider.invoke(WebManager.get_release_url(), "hyperlink")
+                self._msg_provider.invoke(release_url, "hyperlink", release_url)
         except JSONDecodeError:
             self._msg_provider.invoke("The fetched update data is corrupted or invalid. The update check is being aborted", "error")
         except RequestException:
@@ -63,6 +65,9 @@ class UpdateService:
         current_timestamp: datetime = datetime.now()
         update_status: dict = self._pers_json_handler.get_data()
         last_api_request: datetime = datetime.strptime(update_status.get(UpdateKeys.LAST_API_REQUEST), RequestTime.TIME_FORMAT)
+        
+        if not self._status_file_exists:
+            return True
         
         if current_timestamp < last_api_request + timedelta(minutes=self._request_interval_minutes):
             return False

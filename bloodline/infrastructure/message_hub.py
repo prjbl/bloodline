@@ -25,9 +25,9 @@ class MessageHub:
     
     
     @classmethod
-    def invoke(cls, text: str, text_type: str) -> None:
+    def invoke(cls, text: str, text_type: str, optional_arg: str | None = None) -> None:
         if cls._callback_method is None:
-            cls._buffer.put_nowait((text, text_type))
+            cls._buffer.put_nowait((text, text_type, optional_arg))
             return
         
-        cls._callback_method(text, text_type)
+        cls._callback_method(text, text_type, optional_arg)

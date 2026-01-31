@@ -8,8 +8,8 @@ class HotkeyManager:
     
     def __init__(self):
         self._pers_json_handler: PersistentJsonHandler = PersistentJsonHandler(
-            main_file_path=self._HK_FILE_PATH,
-            backup_file_path=self._BACKUP_FILE_PATH,
+            main_file_path=HotkeyManager._HK_FILE_PATH,
+            backup_file_path=HotkeyManager._BACKUP_FILE_PATH,
             default_data=HotkeyModel()
         )
         self._pers_json_handler.load_data()

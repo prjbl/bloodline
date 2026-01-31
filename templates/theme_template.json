@@ -8,7 +8,8 @@
         "selection": "#1d903e",
         "note": "#a448cf",
         "warning": "#d4a61e",
-        "error": "#cf213e"
+        "error": "#cf213e",
+        "hyperlink": "#35a2de"
     },
     "font": {
         "family": "DM Mono",

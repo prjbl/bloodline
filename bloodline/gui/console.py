@@ -1,8 +1,9 @@
 from datetime import datetime
+from inspect import signature, Signature
 from tkinter import Tk, Frame, Label, Entry, StringVar, Event
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
-from typing import List, override
+from typing import List, Callable, override
 
 from .config_manager import ConfigManager
 from .overlay import Overlay
@@ -26,8 +27,9 @@ class Application(IConsole):
         self._setup_ui_elements()
         self._setup_font()
         self._setup_console_tags()
+        self._setup_text_config()
         
-        self._print_output(self._META, "normal")
+        self._print_output(Application._META, "normal")
         self._msg_provider.link_callback(self._print_output) # also iterates over the msg buffer to prevent the texts from being displayed in the wrong order
         
         self._cmd_manager: CommandManager = CommandManager(
@@ -40,6 +42,7 @@ class Application(IConsole):
         UpdateService(request_interval_minutes=60.0).check_for_update()
     
 
+    _CURSOR_UNFOCUSED: str = "_"
     _PREFIX: chr = ">"
     _META: str = (
         f"{Directory.get_app_name()} {Directory.get_version()}\n"
@@ -97,7 +100,7 @@ class Application(IConsole):
             master=self._input_section,
             fg=self._colors.get(ColorKeys.COMMAND),
             bg=self._colors.get(ColorKeys.BACKGROUND),
-            text=self._PREFIX
+            text=Application._PREFIX
         )
         self._input_prefix.pack(side="left")
         
@@ -161,17 +164,34 @@ class Application(IConsole):
     def _setup_console_tags(self) -> None:
         self._console.tag_config("normal", foreground=self._colors.get(ColorKeys.NORMAL))
         self._console.tag_config("list", foreground=self._colors.get(ColorKeys.NORMAL), lmargin1=self._char_width_in_px * 4, lmargin2=self._char_width_in_px * 9)
+        self._console.tag_config("command", foreground=self._colors.get(ColorKeys.COMMAND))
         self._console.tag_config("success", foreground=self._colors.get(ColorKeys.SUCCESS))
         self._console.tag_config("invalid", foreground=self._colors.get(ColorKeys.INVALID))
-        self._console.tag_config("command", foreground=self._colors.get(ColorKeys.COMMAND))
         self._console.tag_config("note", foreground=self._colors.get(ColorKeys.NOTE))
         self._console.tag_config("warning", foreground=self._colors.get(ColorKeys.WARNING))
         self._console.tag_config("error", foreground=self._colors.get(ColorKeys.ERROR))
         self._console.tag_config("hyperlink", foreground=self._colors.get(ColorKeys.HYPERLINK), underline=True)
         
-        # special tags for theme preview
+        # special tags
         self._console.tag_config("preview_command", foreground=self._colors.get(ColorKeys.COMMAND))
         self._console.tag_config("preview_selection", foreground=self._colors.get(ColorKeys.NORMAL), background=self._colors.get(ColorKeys.SELECTION))
+    
+    
+    def _setup_text_config(self) -> None:
+        self._text_config: dict = {
+            "list": self._format_and_insert_list,
+            "command": self._format_and_insert_command,
+            "request": self._format_and_insert_request,
+            "success": lambda text: self._console.insert("end", f"[SUCCESS] {text}\n", "success"),
+            "invalid": lambda text: self._console.insert("end", f"[INVALID] {text}\n", "invalid"),
+            "note": lambda text: self._console.insert("end", f"[NOTE] {text}\n", "note"),
+            "warning": lambda text: self._console.insert("end", f"[WARNING] {text}\n", "warning"),
+            "error": lambda text: self._console.insert("end", f"[ERROR] {text}\n", "error"),
+            "hyperlink": lambda text, target_url: self._console.insert("end", f"{text}\n", ("hyperlink", target_url)),
+            "preview_command": lambda text: self._console.insert("end", f"{text}\n", "preview_command"),
+            "preview_selection": lambda text: self._console.insert("end", text, "preview_selection"),
+            "counter": self._format_and_insert_counter,
+        }
     
     
     def _setup_bindings(self) -> None:
@@ -179,7 +199,7 @@ class Application(IConsole):
         
         self._console.tag_bind("hyperlink", "<Enter>", self._on_enter_hyperlink)
         self._console.tag_bind("hyperlink", "<Leave>", self._on_leave_hyperlink)
-        self._console.tag_bind("hyperlink", "<Button-1>", lambda event: WebManager.open_hyperlink(WebManager.get_release_url()))
+        self._console.tag_bind("hyperlink", "<Button-1>", self._on_click_hyperlink)
         
         self._input_entry.bind("<FocusIn>", self._on_focus_in)
         self._input_entry.bind("<FocusOut>", self._on_focus_out)
@@ -203,18 +223,19 @@ class Application(IConsole):
         self._console.config(cursor="xterm")
     
     
+    def _on_click_hyperlink(self, event: Event) -> None:
+        link_url: str = self._console.tag_names("current")[1]
+        WebManager.open_hyperlink(link_url)
+    
+    
     def _on_focus_in(self, event: Event) -> None:
-        cleaned_entry_var: str = self._entry_var.get().strip()
-        
-        if cleaned_entry_var == "_":
-            self._entry_var.set("")
+        entry_var_input: str = self._entry_var.get()
+        self._entry_var.set(entry_var_input[0:-1])
     
     
     def _on_focus_out(self, event: Event) -> None:
-        cleaned_entry_var: str = self._entry_var.get().strip()
-        
-        if cleaned_entry_var == "":
-            self._entry_var.set("_")
+        entry_var_input: str = self._entry_var.get() + Application._CURSOR_UNFOCUSED
+        self._entry_var.set(entry_var_input)
     
     
     def _on_entry_change(self, *args: tuple) -> None:
@@ -222,36 +243,18 @@ class Application(IConsole):
         self._shell_mechanics.set_entry_var(cleaned_entry_var)
     
     
-    def _print_output(self, text: str, text_type: str) -> None:
+    def _print_output(self, text: str, text_type: str, optional_arg: str | None = None) -> None:
         self._input_entry.delete(0, "end")
         self._console.config(state="normal")
         
-        if text_type == "command":
-            timestamp: str = datetime.now().time().strftime("%H:%M:%S")
-            self._console.insert("end", f"\n{timestamp}{self._PREFIX} ", "normal")
-            self._console.insert("end", f"{text}\n", "command")
-        elif text_type == "request":
-            self._console.delete("end-6c", "end")
-            self._console.insert("end", text, "command")
-            self._console.insert("end", ">\n", "normal")
-        elif text_type == "success":
-            self._console.insert("end", f"[SUCCESS] {text}\n", "success")
-        elif text_type == "invalid":
-            self._console.insert("end", f"[INVALID] {text}\n", "invalid")
-        elif text_type == "note":
-            self._console.insert("end", f"[NOTE] {text}\n", "note")
-        elif text_type == "warning":
-            self._console.insert("end", f"[WARNING] {text}\n", "warning")
-        elif text_type == "error":
-            self._console.insert("end", f"[ERROR] {text}\n", "error")
-        elif text_type == "hyperlink":
-            self._console.insert("end", f"{text}\n", "hyperlink")
-        elif text_type == "preview_command":
-            self._console.insert("end", f"{text}\n", "preview_command")
-        elif text_type == "preview_selection":
-            self._console.insert("end", text, "preview_selection")
-        elif text_type == "list":
-            self._format_and_insert_list(text)
+        insert_method: Callable[[str, str | None], None] | None = self._text_config.get(text_type)
+        
+        if insert_method is not None:
+            self._execute_insert_method(
+                insert_method=insert_method,
+                text=text,
+                optional_arg=optional_arg
+            )
         else:
             self._console.insert("end", f"{text}\n", "normal")
             
@@ -265,6 +268,17 @@ class Application(IConsole):
     
     # helper methods below
     
+    @staticmethod
+    def _execute_insert_method(insert_method: Callable[[str, str | None], None], text: str, optional_arg: str | None) -> None:
+        sig: Signature = signature(insert_method)
+        param_count: int = len(sig.parameters)
+        
+        if param_count == 1:
+            insert_method(text)
+            return
+        insert_method(text, optional_arg)
+    
+    
     def _format_and_insert_list(self, text: str) -> None:
         lines: List[str] = text.split("\n")
         
@@ -273,3 +287,27 @@ class Application(IConsole):
                 self._console.insert("end", "\n")
                 continue
             self._console.insert("end", f"• {line}\n", "list")
+    
+    
+    def _format_and_insert_command(self, text: str) -> None:
+        timestamp: str = datetime.now().time().strftime("%H:%M:%S")
+        self._console.insert("end", f"\n{timestamp}{Application._PREFIX} ", "normal")
+        self._console.insert("end", f"{text}\n", "command")
+    
+    
+    def _format_and_insert_request(self, text: str) -> None:
+        self._console.delete("end-6c", "end")
+        self._console.insert("end", text, "command")
+        self._console.insert("end", ">\n", "normal")
+    
+    
+    def _format_and_insert_counter(self, text: str, counter_tag: str) -> None:
+        last_lines_tag: tuple = self._console.tag_names("end-2c")
+        tag_amount: int = len(last_lines_tag)
+        
+        if tag_amount == 2 and last_lines_tag[1] == counter_tag:
+            last_counter_range: tuple = self._console.tag_prevrange(counter_tag, "end")
+            start, end = last_counter_range
+            self._console.delete(start, end)
+        
+        self._console.insert("end", f"{text}\n", ("normal", counter_tag))

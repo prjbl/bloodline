@@ -15,6 +15,9 @@ Record deaths and encounter times using global hotkeys and evaluate your perform
   - [📖 Table of Contents](#-table-of-contents)
   - [💎 Key Features](#-key-features)
   - [📊 Workflow \& Analysis](#-workflow--analysis)
+  - [💡 Good to Know](#-good-to-know)
+    - [Version Check](#version-check)
+    - [Font Selection](#font-selection)
   - [📥 Download](#-download)
     - [Releases](#releases)
     - [Preset \& Theme Templates](#preset--theme-templates)
@@ -54,6 +57,18 @@ The program allows you to precisely evaluate your stored data. A typical workflo
 2. **Track:** Monitor time and deaths during a fight.
 3. **Save:** Save the tracked data to your save file.
 4. **Analyze:** View your data listed and filtered according to your needs.
+
+---
+
+## 💡 Good to Know
+
+### Version Check
+Bloodline performs an automatic version check via the GitHub API on the program's startup, provided the last check was at least one hour ago. Depending on your internet connection and the API's response time, the startup may be delayed by a few seconds. To ensure a short startup process, the maximum wait time (timeout) is limited to 5s.
+
+### Font Selection
+> [!NOTE]
+> The default theme uses the [DM Mono](https://fonts.google.com/specimen/DM+Mono) font. If this font is not installed, a warning will appear at startup. You can either install the font or use a custom [theme template](./templates/theme_template.json) to select a different font already available on your system.  
+> **Tip:** Always use a *monospaced* font for the best visual experience.
 
 ---
 
@@ -103,7 +118,7 @@ Examples for both the preset and theme files can be found in the [templates dire
 | `setup move boss` | Moves a boss to another game |
 | `setup rename boss\|game` | Renames a boss / game |
 | `setup delete boss\|game` | Deletes a boss / game |
-| `setup import preset` | Imports and adds the game data to the save file (see [templates](./templates)) |
+| `setup import preset` | Imports and adds the game data to the save file (see [preset template](./templates/preset_template.json)) |
 
 | Stats Commands | Description |
 | :--- | :--- |
@@ -120,7 +135,7 @@ Examples for both the preset and theme files can be found in the [templates dire
 | Settings Commands | Description |
 | :--- | :--- |
 | `settings unlock\|lock overlay` | Enables / Disables the ability to move the overlay |
-| `settings import theme` | Imports and changes the program's theme (see [templates](./templates)) |
+| `settings import theme` | Imports and changes the program's theme (see [theme template](./templates/theme_template.json)) |
 | `settings preview theme` | Displays the current color theme |
 
 ---
@@ -161,7 +176,7 @@ To set up a development environment, install the required packages via the [requ
 
 Bloodline has been tested with the anti-cheat software [Easy Anti-Cheat](https://www.easy.ac/) and [BattlEye](https://www.battleye.com/) without any issues. However, it remains possible that other anti-cheat solutions may flag the software.
 
-Additionally, since the program utilizes global hotkeys via the [pynput](https://pypi.org/project/pynput/) library, some antivirus programs may trigger a warning due to the nature of keyboard hooks.
+Additionally, since the program utilizes global hotkeys via the pynput library, some antivirus programs may trigger a warning due to the nature of keyboard hooks.
 
 ---
 

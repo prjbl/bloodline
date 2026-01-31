@@ -69,6 +69,7 @@ class SettingsCommands(BaseInterceptCommand):
             ("settings preview theme", "preview_command"),
             ("settings preview theme", "preview_selection"),
             ("", "normal"), # Line Spacer
+            ("https://github.com/prjbl/bloodline/templates/theme_template.json", "hyperlink", "https://github.com/prjbl/bloodline/blob/main/templates/theme_template.json"),
             ("The imported theme was applied", "success"),
             ("The theme can be changed using the theme template file", "note"),
             ("The imported theme file does not contain any valid values", "invalid"),
@@ -76,5 +77,7 @@ class SettingsCommands(BaseInterceptCommand):
             ("An unexpected error occurred while importing the theme file", "error")
         ]
         
-        for text, text_type in preview_msgs:
-            self._msg_provider.invoke(text, text_type)
+        for msg in preview_msgs:
+            text, text_type, *optional = msg
+            target_url: str | None = optional[0] if optional else None
+            self._msg_provider.invoke(text, text_type, target_url)
