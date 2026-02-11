@@ -41,6 +41,17 @@ class ValidationPattern:
     
     
     @staticmethod
+    def validate_version_pattern(version: str) -> bool:
+        valid_version_pattern: str = compile(r"^(\d+\.\d+\.\d+)(-[a-zA-Z0-9.]+)?$")
+        
+        cleaned_version: str = version.lstrip("v")
+        
+        if not fullmatch(valid_version_pattern, cleaned_version):
+            return False
+        return True
+    
+    
+    @staticmethod
     def validate_timestamp_pattern(timestamp: str) -> bool:
         valid_timestamp_pattern: str = compile(r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\s([01]\d|2[0-3]):[0-5]\d$")
         

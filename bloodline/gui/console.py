@@ -5,9 +5,10 @@ from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 from typing import List, Callable, override
 
-from .config_manager import ConfigManager
 from .overlay import Overlay
 from .shell_mechanics import ShellMechanics
+from .theme_manager import ThemeManager
+from .window_manager import WindowManager
 from core import CommandManager
 from infrastructure import Directory, MessageHub
 from infrastructure.interfaces import IConsole
@@ -18,7 +19,8 @@ class Application(IConsole):
     
     def __init__(self):
         self._msg_provider: MessageHub = MessageHub()
-        self._config_manager: ConfigManager = ConfigManager()
+        self._theme_manager: ThemeManager = ThemeManager()
+        self._window_manager: WindowManager = WindowManager()
         self._setup_config_vars()
         
         self._root: Tk = Tk()
@@ -35,7 +37,8 @@ class Application(IConsole):
         self._cmd_manager: CommandManager = CommandManager(
             console=self,
             overlay=Overlay(),
-            config_manager=self._config_manager
+            theme_manager=self._theme_manager,
+            window_manager=self._window_manager
         )
         self._shell_mechanics: ShellMechanics = ShellMechanics(self._cmd_manager.get_list_of_commands)
         self._setup_bindings()
@@ -59,15 +62,15 @@ class Application(IConsole):
     
     @override
     def quit(self):
-        self._config_manager.set_root_props(self._root.winfo_geometry(), True if self._root.state() == "zoomed" else False)
+        self._window_manager.set_root_props(self._root.winfo_geometry(), True if self._root.state() == "zoomed" else False)
         self._root.destroy()
     
     
     def _setup_config_vars(self) -> None:
-        self._root_props: dict = self._config_manager.get_root_props()
-        self._colors: dict = self._config_manager.get_colors()
-        self._font_props: dict = self._config_manager.get_root_font_props()
-        self._widget_props: dict = self._config_manager.get_root_widget_props()
+        self._root_props: dict = self._window_manager.get_root_props()
+        self._colors: dict = self._theme_manager.get_colors()
+        self._font_props: dict = self._theme_manager.get_root_font_props()
+        self._widget_props: dict = self._theme_manager.get_root_widget_props()
     
     
     def _setup_window(self) -> None:

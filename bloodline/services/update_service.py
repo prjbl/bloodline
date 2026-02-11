@@ -17,20 +17,20 @@ class UpdateService:
     def __init__(self, request_interval_minutes: float):
         self._request_interval_minutes: float = request_interval_minutes
         
-        self._status_file_exists: bool = UpdateService._STATUS_FILE_PATH.exists() or UpdateService._BACKUP_FILE_PATH.exists()
+        self._update_file_exists: bool = UpdateService._UPDATE_FILE_PATH.exists() or UpdateService._BACKUP_FILE_PATH.exists()
         self._msg_provider: MessageHub = MessageHub()
         
         self._pers_json_handler: PersistentJsonHandler = PersistentJsonHandler(
-            main_file_path=UpdateService._STATUS_FILE_PATH,
+            main_file_path=UpdateService._UPDATE_FILE_PATH,
             backup_file_path=UpdateService._BACKUP_FILE_PATH,
             default_data=UpdateModel()
         )
         self._pers_json_handler.load_data()
     
     
-    _STATUS_FILE: str = "update_status.json"
-    _BACKUP_FILE: str = f"{_STATUS_FILE}.bak"
-    _STATUS_FILE_PATH: Path = Directory.get_persistent_data_path() / _STATUS_FILE
+    _UPDATE_FILE: str = "update_state.json"
+    _BACKUP_FILE: str = f"{_UPDATE_FILE}.bak"
+    _UPDATE_FILE_PATH: Path = Directory.get_persistent_data_path() / _UPDATE_FILE
     _BACKUP_FILE_PATH: Path = Directory.get_backup_path() / _BACKUP_FILE
     
     
@@ -63,17 +63,17 @@ class UpdateService:
     
     def _get_check_allowed(self) -> bool:
         current_timestamp: datetime = datetime.now()
-        update_status: dict = self._pers_json_handler.get_data()
-        last_api_request: datetime = datetime.strptime(update_status.get(UpdateKeys.LAST_API_REQUEST), RequestTime.TIME_FORMAT)
+        update_state: dict = self._pers_json_handler.get_data()
+        last_api_request: datetime = datetime.strptime(update_state.get(UpdateKeys.LAST_API_REQUEST), RequestTime.TIME_FORMAT)
         
-        if not self._status_file_exists:
+        if not self._update_file_exists:
             return True
         
         if current_timestamp < last_api_request + timedelta(minutes=self._request_interval_minutes):
             return False
         
-        update_status[UpdateKeys.LAST_API_REQUEST] = current_timestamp.strftime(RequestTime.TIME_FORMAT)
-        self._pers_json_handler.set_data(update_status)
+        update_state[UpdateKeys.LAST_API_REQUEST] = current_timestamp.strftime(RequestTime.TIME_FORMAT)
+        self._pers_json_handler.set_data(update_state)
         return True
     
     

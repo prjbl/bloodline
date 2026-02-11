@@ -8,12 +8,12 @@ class Directory:
     _AUTHOR: str = "Project Bloodline"
     _VERSION: str = "0.9.0-beta"
     
-    _BACKUP_DIR: str = "backups"
+    _BACKUP_DIR: str = "_backups"
     _EXPORT_DIR: str = "exports"
     
-    _PERS_DATA_PATH: Path = Path(user_data_dir(roaming=True)) / _APP_NAME / _VERSION
+    _PERS_DATA_PATH: Path = Path(user_data_dir(roaming=True)) / _AUTHOR / _APP_NAME
     _BACKUP_PATH: Path = _PERS_DATA_PATH / _BACKUP_DIR
-    _EXPORT_PATH: Path = Path(user_documents_dir()) / _APP_NAME / _EXPORT_DIR
+    _EXPORT_PATH: Path = Path(user_documents_dir()) / _AUTHOR / _APP_NAME / _EXPORT_DIR
     
     _PERS_DATA_PATH.mkdir(parents=True, exist_ok=True)
     _BACKUP_PATH.mkdir(parents=True, exist_ok=True)

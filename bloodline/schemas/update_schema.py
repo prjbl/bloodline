@@ -1,11 +1,10 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from pydantic.fields import FieldInfo
+from pydantic import Field, field_validator
 from pydantic_core.core_schema import FieldValidationInfo
 
+from .shared_models import AllowModel
 from .validation_pattern import ValidationPattern
 from infrastructure import MessageHub
 
@@ -17,40 +16,12 @@ class RequestTime(str, Enum):
     TIME_FORMAT: str = "%Y-%m-%d %H:%M"
 
 
-# Models below
-
 _msg_provider: MessageHub = MessageHub()
-
-class _TypeEnforcementMixin:
-    
-    @field_validator("*", mode="before")
-    @classmethod
-    def _enforce_correct_data_type(cls, v: Any, info: FieldValidationInfo) -> Any:
-        """
-        Method is called internally by Pydantic for each class that inherit the mixins characteristics
-        """
-        field: FieldInfo = cls.model_fields[info.field_name]
-        expected_type: type = field.annotation
-        
-        if isinstance(expected_type, type) and issubclass(expected_type, _AllowModel):
-            return v
-        
-        if not isinstance(v, expected_type):
-            _msg_provider.invoke(f"The hotkey \"{info.field_name}\" is not of type 'str'. The default will be restored", "warning")
-            
-            if field.default_factory is not None:
-                return field.default_factory()
-            return field.default
-        return v
-
-
-class _AllowModel(BaseModel, _TypeEnforcementMixin):
-    model_config = ConfigDict(extra="ignore")
 
 
 # Update schema
 
-class UpdateModel(_AllowModel):
+class UpdateModel(AllowModel):
     last_api_request: str = Field(default_factory=lambda: datetime.now().strftime(RequestTime.TIME_FORMAT), alias=UpdateKeys.LAST_API_REQUEST.value)
     
     @field_validator("*")

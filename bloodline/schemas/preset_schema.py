@@ -4,7 +4,7 @@ from pydantic import RootModel, model_validator
 
 from infrastructure import MessageHub
 
-_PRESET_STRUCTURE = Dict[str, List[str]]
+type _PRESET_STRUCTURE = Dict[str, List[str]]
 _msg_provider: MessageHub = MessageHub()
 
 class PresetModel(RootModel[_PRESET_STRUCTURE]):

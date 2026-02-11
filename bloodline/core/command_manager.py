@@ -8,15 +8,16 @@ from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
 from infrastructure import MessageHub
-from infrastructure.interfaces import IConfigManager, IConsole, IOverlay
+from infrastructure.interfaces import IConsole, IOverlay, IThemeManager, IWindowManager
 from schemas import HotkeyNames
 
 class CommandManager:
     
-    def __init__(self, console: IConsole, overlay: IOverlay, config_manager: IConfigManager):
+    def __init__(self, console: IConsole, overlay: IOverlay, theme_manager: IThemeManager, window_manager: IWindowManager):
         self._console: IConsole = console
         self._overlay: IOverlay = overlay
-        self._config_manager: IConfigManager = config_manager
+        self._theme_manager: IThemeManager = theme_manager
+        self._window_manager: IWindowManager = window_manager
         
         self._msg_provider: MessageHub = MessageHub()
         
@@ -95,7 +96,8 @@ class CommandManager:
     def _setup_command_instances(self) -> None:
         core_instances: dict = {
             "overlay": self._overlay,
-            "config_manager": self._config_manager,
+            "theme_manager": self._theme_manager,
+            "window_manager": self._window_manager,
             "hk_manager": self._hk_manager,
             "counter": self._counter,
             "timer": self._timer,

@@ -2,14 +2,16 @@ from tkinter import Toplevel, Frame, Label
 from tkinter.font import Font, families, nametofont
 from typing import Any, override
 
-from .config_manager import ConfigManager
+from .theme_manager import ThemeManager
+from .window_manager import WindowManager
 from infrastructure.interfaces import IOverlay
 from schemas import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Overlay(IOverlay):
     
     def __init__(self):
-        self._config_manager: ConfigManager = ConfigManager()
+        self._theme_manager: ThemeManager = ThemeManager()
+        self._window_manager: WindowManager = WindowManager()
         self._setup_config_vars()
     
     
@@ -49,16 +51,16 @@ class Overlay(IOverlay):
     
     @override
     def destroy_instance(self) -> None:
-        self._config_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx() - self._difference_width}+{self._toplevel.winfo_rooty()}")
+        self._window_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx() - self._difference_width}+{self._toplevel.winfo_rooty()}")
         self._difference_width = 0
         self._toplevel.destroy()
     
     
     def _setup_config_vars(self) -> None:
-        self._toplevel_props: dict = self._config_manager.get_toplevel_props()
-        self._colors: dict = self._config_manager.get_colors()
-        self._font_props: dict = self._config_manager.get_toplevel_font_props()
-        self._widget_props: dict = self._config_manager.get_toplevel_widget_props()
+        self._toplevel_props: dict = self._window_manager.get_toplevel_props()
+        self._colors: dict = self._theme_manager.get_colors()
+        self._font_props: dict = self._theme_manager.get_toplevel_font_props()
+        self._widget_props: dict = self._theme_manager.get_toplevel_widget_props()
         
         self._offset_x: int = 0
         self._offset_y: int = 0

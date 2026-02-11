@@ -7,13 +7,14 @@ from ..key_listener import KeyListener
 from ..save_file import SaveFile
 from ..timer import Timer
 from infrastructure import MessageHub
-from infrastructure.interfaces import IConfigManager, IOverlay
+from infrastructure.interfaces import IOverlay, IThemeManager, IWindowManager
 
 class BaseCommand:
     
     def __init__(self, instances: dict):
         self._overlay: IOverlay = instances.get("overlay")
-        self._config_manager: IConfigManager = instances.get("config_manager")
+        self._theme_manager: IThemeManager = instances.get("theme_manager")
+        self._window_manager: IWindowManager = instances.get("window_manager")
         self._hk_manager: HotkeyManager = instances.get("hk_manager")
         self._counter: Counter = instances.get("counter")
         self._timer: Timer = instances.get("timer")

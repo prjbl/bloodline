@@ -1,10 +1,9 @@
 from enum import Enum
-from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from pydantic.fields import FieldInfo
+from pydantic import Field, field_validator
 from pydantic_core.core_schema import FieldValidationInfo
 
+from .shared_models import AllowModel
 from .validation_pattern import ValidationPattern
 from infrastructure import MessageHub
 
@@ -19,40 +18,12 @@ class HotkeyNames(str, Enum):
     LISTENER_END: str = "hk_listener_end"
 
 
-# Models below
-
 _msg_provider: MessageHub = MessageHub()
-
-class _TypeEnforcementMixin:
-    
-    @field_validator("*", mode="before")
-    @classmethod
-    def _enforce_correct_data_type(cls, v: Any, info: FieldValidationInfo) -> Any:
-        """
-        Method is called internally by Pydantic for each class that inherit the mixins characteristics
-        """
-        field: FieldInfo = cls.model_fields[info.field_name]
-        expected_type: type = field.annotation
-        
-        if isinstance(expected_type, type) and issubclass(expected_type, _AllowModel):
-            return v
-        
-        if not isinstance(v, expected_type):
-            _msg_provider.invoke(f"The hotkey \"{info.field_name}\" is not of type 'str'. The default will be restored", "warning")
-            
-            if field.default_factory is not None:
-                return field.default_factory()
-            return field.default
-        return v
-
-
-class _AllowModel(BaseModel, _TypeEnforcementMixin):
-    model_config = ConfigDict(extra="ignore")
 
 
 # Hotkey schema
 
-class HotkeyModel(_AllowModel):
+class HotkeyModel(AllowModel):
     counter_inc: str = Field(default="+", alias=HotkeyNames.COUNTER_INC.value)
     counter_dec: str = Field(default="-", alias=HotkeyNames.COUNTER_DEC.value)
     counter_reset: str = Field(default="/", alias=HotkeyNames.COUNTER_RESET.value)

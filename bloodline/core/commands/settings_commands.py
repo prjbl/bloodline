@@ -21,7 +21,7 @@ class SettingsCommands(BaseInterceptCommand):
     
     
     def set_overlay_locked(self, lock_state: bool) -> None:
-        if not self._config_manager.set_toplevel_locked(lock_state):
+        if not self._window_manager.set_toplevel_locked(lock_state):
             self._msg_provider.invoke(f"The overlay is already {"locked" if lock_state else "unlocked"}", "invalid")
             return
         self._msg_provider.invoke(f"The overlay has been {"locked" if lock_state else "unlocked"}", "normal")
@@ -48,7 +48,7 @@ class SettingsCommands(BaseInterceptCommand):
         if loaded_theme is None or raw_loaded_theme is None:
             return False
         
-        curr_theme: dict = self._config_manager.get_theme()
+        curr_theme: dict = self._theme_manager.get_theme()
         
         if not raw_loaded_theme:
             self._msg_provider.invoke("The imported theme file does not contain any valid values to adjust the programs theme. Make sure to select an usable file an try again", "invalid")
@@ -58,7 +58,7 @@ class SettingsCommands(BaseInterceptCommand):
             self._msg_provider.invoke("The imported theme file does not contain any new values to adjust the programs theme. Make sure to adjust the files theme and try again", "note")
             return False
         
-        self._config_manager.set_theme(loaded_theme)
+        self._theme_manager.set_theme(loaded_theme)
         self._msg_provider.invoke("The imported theme was applied. Make sure to restart the program for the changes to display", "success")
         return False
     
