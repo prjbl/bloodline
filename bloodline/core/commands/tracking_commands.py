@@ -22,6 +22,7 @@ class TrackingCommands(BaseInterceptCommand):
         self._counter.set_count_already_required(None)
         self._timer.set_time_already_required(None)
         self._key_listener.start_key_listener()
+        self._controller_listener.start_controller_listener()
     
     
     # was renamed because "continue" is a keyword
@@ -46,4 +47,5 @@ class TrackingCommands(BaseInterceptCommand):
         self._counter.set_count_already_required(self._save_file.get_boss_deaths(boss_name, game_title))
         self._timer.set_time_already_required(self._save_file.get_boss_time(boss_name, game_title))
         self._key_listener.start_key_listener()
+        self._controller_listener.start_controller_listener()
         return False

@@ -2,6 +2,7 @@ from functools import partial
 from typing import Any, List, Callable
 
 from .commands import BaseInterceptCommand, TrackingCommands, SetupCommands, StatsCommands, KeybindCommands, SettingsCommands
+from .controller_listener import ControllerListener
 from .counter import Counter
 from .hotkey_manager import HotkeyManager
 from .key_listener import KeyListener
@@ -84,11 +85,13 @@ class CommandManager:
         self._hk_manager: HotkeyManager = HotkeyManager()
         self._counter: Counter = Counter(self._overlay)
         self._timer: Timer = Timer(self._overlay)
+        self._controller_listener: ControllerListener = ControllerListener(self._counter, self._timer)
         self._key_listener: KeyListener = KeyListener(
             hk_manager=self._hk_manager,
             counter=self._counter,
             timer=self._timer,
-            overlay=self._overlay
+            overlay=self._overlay,
+            controller_listener=self._controller_listener
         )
         self._save_file: SaveFile = SaveFile()
     
@@ -102,6 +105,7 @@ class CommandManager:
             "counter": self._counter,
             "timer": self._timer,
             "key_listener": self._key_listener,
+            "controller_listener": self._controller_listener,
             "save_file": self._save_file
         }
         

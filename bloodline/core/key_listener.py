@@ -1,8 +1,9 @@
 from threading import Thread
-from typing import Any, Set
+from typing import Any, Callable, Set
 
 from pynput.keyboard import Listener, Key
 
+from .controller_listener import ControllerListener
 from .counter import Counter
 from .hotkey_manager import HotkeyManager
 from .timer import Timer
@@ -12,11 +13,12 @@ from schemas import HotkeyNames
 
 class KeyListener:
     
-    def __init__(self, hk_manager: HotkeyManager, counter: Counter, timer: Timer, overlay: IOverlay):
+    def __init__(self, hk_manager: HotkeyManager, counter: Counter, timer: Timer, overlay: IOverlay, controller_listener: ControllerListener):
         self._hk_manager: HotkeyManager = hk_manager
         self._counter: Counter = counter
         self._timer: Timer = timer
         self._overlay: IOverlay = overlay
+        self._controller_listener: ControllerListener = controller_listener
         
         self._msg_provider: MessageHub = MessageHub()
         self._key_listener: Listener | None = None
@@ -34,6 +36,7 @@ class KeyListener:
     
     def _on_key_listener(self) -> None:
         self._on_start_listener(on_press_method=self._on_press)
+        self._controller_listener.stop()
         self._overlay.destroy_instance()
         self._timer.check_timer_stopped()
         self._msg_provider.invoke("Make sure to save the data using the 'stats save' command", "note")
@@ -103,7 +106,7 @@ class KeyListener:
     
     # helper methods below
     
-    def _start_listener(self, target_method: Any, start_msg: str) -> None:
+    def _start_listener(self, target_method: Callable[..., None], start_msg: str) -> None:
         if self._listener_thread is None or not self._listener_thread.is_alive():
             self._listener_thread = Thread(target=target_method, daemon=True)
             self._listener_thread.start()
@@ -113,7 +116,7 @@ class KeyListener:
         self._msg_provider.invoke("The key listener is already running", "warning")
     
     
-    def _on_start_listener(self, on_press_method: Any) -> None:
+    def _on_start_listener(self, on_press_method: Callable[..., bool | None]) -> None:
         with Listener(on_press=on_press_method) as self._key_listener:
             self._key_listener.join()
         self._msg_provider.invoke("The key listener was stopped", "normal")

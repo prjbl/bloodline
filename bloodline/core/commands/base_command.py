@@ -1,6 +1,7 @@
 from re import compile, fullmatch, Match, IGNORECASE
 from typing import List
 
+from ..controller_listener import ControllerListener
 from ..counter import Counter
 from ..hotkey_manager import HotkeyManager
 from ..key_listener import KeyListener
@@ -19,6 +20,7 @@ class BaseCommand:
         self._counter: Counter = instances.get("counter")
         self._timer: Timer = instances.get("timer")
         self._key_listener: KeyListener = instances.get("key_listener")
+        self._controller_listener: ControllerListener = instances.get("controller_listener")
         self._save_file: SaveFile = instances.get("save_file")
         
         self._msg_provider: MessageHub = MessageHub()
