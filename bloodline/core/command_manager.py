@@ -104,8 +104,8 @@ class CommandManager:
             "hk_manager": self._hk_manager,
             "counter": self._counter,
             "timer": self._timer,
-            "key_listener": self._key_listener,
             "controller_listener": self._controller_listener,
+            "key_listener": self._key_listener,
             "save_file": self._save_file
         }
         
