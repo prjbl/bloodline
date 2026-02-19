@@ -42,8 +42,8 @@ class SettingsCommands(BaseInterceptCommand):
         if not ExternalJsonHandler.check_external_file_props(src_file_path):
             return False
         
-        loaded_theme: dict | None = ExternalJsonHandler.load_data(src_file_path, ThemeModel)
-        raw_loaded_theme: dict | None = ExternalJsonHandler.load_data(src_file_path, ThemeModel, strict_load=True, show_error=False)
+        loaded_theme: dict | None = ExternalJsonHandler.load_and_validate_data(src_file_path, ThemeModel)
+        raw_loaded_theme: dict | None = ExternalJsonHandler.load_and_validate_data(src_file_path, ThemeModel, strict_load=True, silent=True)
         
         if loaded_theme is None or raw_loaded_theme is None:
             return False

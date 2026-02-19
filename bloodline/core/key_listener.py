@@ -1,7 +1,7 @@
 from threading import Thread
-from typing import Any, Set
+from typing import Callable, Set
 
-from pynput.keyboard import Listener, Key
+from pynput.keyboard import Listener, Key, KeyCode
 
 from .counter import Counter
 from .hotkey_manager import HotkeyManager
@@ -39,7 +39,7 @@ class KeyListener:
         self._msg_provider.invoke("Make sure to save the data using the 'stats save' command", "note")
     
     
-    def _on_press(self, key: Any) -> bool:
+    def _on_press(self, key: Key | KeyCode) -> bool | None:
         dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         
         try:
@@ -82,7 +82,7 @@ class KeyListener:
         self._on_start_listener(on_press_method=self._on_change_keybind)
     
     
-    def _on_change_keybind(self, key: Any) -> bool | None:
+    def _on_change_keybind(self, key: Key | KeyCode) -> bool | None:
         dict_of_hotkeys: dict = self._hk_manager.get_current_hotkeys()
         cleaned_key_input: str = str(key).replace("'", "")
         
@@ -103,7 +103,7 @@ class KeyListener:
     
     # helper methods below
     
-    def _start_listener(self, target_method: Any, start_msg: str) -> None:
+    def _start_listener(self, target_method: Callable[..., bool | None], start_msg: str) -> None:
         if self._listener_thread is None or not self._listener_thread.is_alive():
             self._listener_thread = Thread(target=target_method, daemon=True)
             self._listener_thread.start()
@@ -113,14 +113,14 @@ class KeyListener:
         self._msg_provider.invoke("The key listener is already running", "warning")
     
     
-    def _on_start_listener(self, on_press_method: Any) -> None:
+    def _on_start_listener(self, on_press_method: Callable[..., bool | None]) -> None:
         with Listener(on_press=on_press_method) as self._key_listener:
             self._key_listener.join()
         self._msg_provider.invoke("The key listener was stopped", "normal")
     
     
     @staticmethod
-    def _equals_hotkey(key: Any, hotkey: str, dict_of_hotkeys: dict) -> bool:
+    def _equals_hotkey(key: Key | KeyCode, hotkey: str, dict_of_hotkeys: dict) -> bool:
         cleaned_key_input: str = str(key).replace("'", "")
         return cleaned_key_input == dict_of_hotkeys.get(hotkey)
     

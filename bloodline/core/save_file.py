@@ -18,7 +18,7 @@ class SaveFile:
         )
     
     
-    _DB_FILE: str = "save_file.sqlite"
+    _DB_FILE: str = "stats.sqlite"
     _BACKUP_FILE: str = f"{_DB_FILE}.bak"
     _DB_FILE_PATH: Path = Directory.get_persistent_data_path().joinpath(_DB_FILE)
     _BACKUP_FILE_PATH: Path = Directory.get_backup_path().joinpath(_BACKUP_FILE)

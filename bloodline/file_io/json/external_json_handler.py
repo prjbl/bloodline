@@ -11,17 +11,14 @@ class ExternalJsonHandler(JsonFileOperations):
     _msg_provider: MessageHub = MessageHub()
     
     @classmethod
-    def load_data(cls, src_file_path: Path, model: BaseModel | RootModel, strict_load: bool = False, show_error: bool = True) -> dict | None:
-        data: dict | None = None
-        
+    def load_and_validate_data(cls, src_file_path: Path, model: BaseModel | RootModel, strict_load: bool = False, silent: bool = False) -> dict | None:
         try:
             raw_json: dict = super()._perform_load(src_file_path)
-            data = model.model_validate(raw_json).model_dump(exclude_unset=strict_load)
+            return model.model_validate(raw_json).model_dump(exclude_unset=strict_load)
         except JSONDecodeError:
-            if show_error:
+            if not silent:
                 cls._msg_provider.invoke(f"The file \"{src_file_path.name}\" is corrupted. Please make sure to check it", "error")
-        finally:
-            return data
+            return None
     
     
     @classmethod

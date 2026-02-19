@@ -94,7 +94,7 @@ class SetupCommands(BaseInterceptCommand):
         if not ExternalJsonHandler.check_external_file_props(src_file_path):
             return False
         
-        loaded_preset: dict | None = ExternalJsonHandler.load_data(src_file_path, PresetModel)
+        loaded_preset: dict | None = ExternalJsonHandler.load_and_validate_data(src_file_path, PresetModel)
         
         if loaded_preset is None:
             return False

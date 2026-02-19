@@ -10,12 +10,14 @@ from .shell_mechanics import ShellMechanics
 from .theme_manager import ThemeManager
 from .window_manager import WindowManager
 from core import CommandManager
-from infrastructure import Directory, MessageHub
+from infrastructure import Directory, MessageHub, MigrationPipeline
 from infrastructure.interfaces import IConsole
 from schemas import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 from services import UpdateService, WebManager
 
 class Application(IConsole):
+    
+    MigrationPipeline.run_all_migrations()
     
     def __init__(self):
         self._msg_provider: MessageHub = MessageHub()
