@@ -28,7 +28,7 @@ class WindowManager(IWindowManager):
     
     _STATE_FILE: str = "window_state.json"
     _BACKUP_FILE: str = f"{_STATE_FILE}.bak"
-    _STATE_FILE_PATH: Path = Directory.get_persistent_data_path() / _STATE_FILE
+    _STATE_FILE_PATH: Path = Directory.get_roaming_data_path() / _STATE_FILE
     _BACKUP_FILE_PATH: Path = Directory.get_backup_path() / _BACKUP_FILE
     
     

@@ -17,7 +17,7 @@ class HotkeyManager:
     
     _HK_FILE: str = "hotkeys.json"
     _BACKUP_FILE: str = f"{_HK_FILE}.bak"
-    _HK_FILE_PATH: Path = Directory.get_persistent_data_path() / _HK_FILE
+    _HK_FILE_PATH: Path = Directory.get_roaming_data_path() / _HK_FILE
     _BACKUP_FILE_PATH: Path = Directory.get_backup_path() / _BACKUP_FILE
     
     

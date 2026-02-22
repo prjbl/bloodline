@@ -28,7 +28,7 @@ class ThemeManager(IThemeManager):
     
     _THEME_FILE: str = "theme.json"
     _BACKUP_FILE: str = f"{_THEME_FILE}.bak"
-    _THEME_FILE_PATH: Path = Directory.get_persistent_data_path() / _THEME_FILE
+    _THEME_FILE_PATH: Path = Directory.get_roaming_data_path() / _THEME_FILE
     _BACKUP_FILE_PATH: Path = Directory.get_backup_path() / _BACKUP_FILE
     
     

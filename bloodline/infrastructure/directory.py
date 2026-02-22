@@ -13,30 +13,40 @@ class Directory:
     _LOGS_DIR: str = "logs"
     _EXPORT_DIR: str = "exports"
     
-    _PERS_DATA_PATH: Path = Path(user_data_dir(roaming=True)) / _AUTHOR / _APP_NAME
-    _ARCHIVE_PATH: Path = _PERS_DATA_PATH / _ARCHIVE_DIR
-    _BACKUP_PATH: Path = _PERS_DATA_PATH / _BACKUP_DIR
-    _LOGS_PATH: Path = _PERS_DATA_PATH / _LOGS_DIR
-    _EXPORT_PATH: Path = Path(user_documents_dir()) / _AUTHOR / _APP_NAME / _EXPORT_DIR
+    # Roaming
+    _ROAMING_DATA_PATH: Path = Path(user_data_dir(roaming=True)) / _AUTHOR / _APP_NAME
+    _ROAMING_ARCHIVE_PATH: Path = _ROAMING_DATA_PATH / _ARCHIVE_DIR
+    _BACKUP_PATH: Path = _ROAMING_DATA_PATH / _BACKUP_DIR
+    _LOGS_PATH: Path = _ROAMING_DATA_PATH / _LOGS_DIR
     
-    _PERS_DATA_PATH.mkdir(parents=True, exist_ok=True)
+    _ROAMING_DATA_PATH.mkdir(parents=True, exist_ok=True)
     _BACKUP_PATH.mkdir(parents=True, exist_ok=True)
+    
+    # User documents
+    _DOCS_DATA_PATH: Path = Path(user_documents_dir()) / _AUTHOR / _APP_NAME
+    _DOCS_ARCHIVE_PATH: Path = _DOCS_DATA_PATH / _ARCHIVE_DIR
+    _EXPORT_PATH: Path = _DOCS_DATA_PATH / _EXPORT_DIR
+    
+    _DOCS_DATA_PATH.mkdir(parents=True, exist_ok=True)
     _EXPORT_PATH.mkdir(parents=True, exist_ok=True)
     
     
-    @classmethod
-    def create_archive_dir(cls) -> None:
-        cls._ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
     
+    # Roaming methods below
     
     @classmethod
-    def create_logs_dir(cls) -> None:
-        cls._LOGS_PATH.mkdir(parents=True, exist_ok=True)
+    def get_roaming_data_path(cls) -> Path:
+        return cls._ROAMING_DATA_PATH
     
     
     @classmethod
-    def get_persistent_data_path(cls) -> Path:
-        return cls._PERS_DATA_PATH
+    def create_roaming_archive_dir(cls) -> None:
+        cls._ROAMING_ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
+    
+    
+    @classmethod
+    def get_roaming_archive_path(cls) -> Path:
+        return cls._ROAMING_ARCHIVE_PATH
     
     
     @classmethod
@@ -45,8 +55,8 @@ class Directory:
     
     
     @classmethod
-    def get_archive_path(cls) -> Path:
-        return cls._ARCHIVE_PATH
+    def create_logs_dir(cls) -> None:
+        cls._LOGS_PATH.mkdir(parents=True, exist_ok=True)
     
     
     @classmethod
@@ -54,10 +64,29 @@ class Directory:
         return cls._LOGS_PATH
     
     
+    # User documents methods below
+    
+    @classmethod
+    def get_docs_data_path(cls) -> None:
+        return cls._DOCS_DATA_PATH
+    
+    
+    @classmethod
+    def create_docs_archive_dir(cls) -> None:
+        cls._DOCS_ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
+    
+    
+    @classmethod
+    def get_docs_archive_path(cls) -> Path:
+        return cls._DOCS_ARCHIVE_PATH
+    
+    
     @classmethod
     def get_export_path(cls) -> Path:
         return cls._EXPORT_PATH
     
+    
+    # Meta methods below
     
     @classmethod
     def get_app_name(cls) -> str:
