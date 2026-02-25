@@ -3,7 +3,7 @@ from typing import List
 
 from .base_command import BaseInterceptCommand
 from file_io.json import ExternalJsonHandler
-from schemas import ThemeModel
+from schemas.definitions import ThemeModel
 
 class SettingsCommands(BaseInterceptCommand):
     

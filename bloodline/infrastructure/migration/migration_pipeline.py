@@ -2,87 +2,69 @@ from pathlib import Path
 from shutil import move, make_archive, rmtree
 from typing import List, Tuple
 
-from platformdirs import user_data_dir, user_documents_dir
-
-from .directory import Directory
+from ..directory import Directory
+from .legacy_data import LegacyData
 from file_io.json import MigrationJsonHandler
-
-class _LegacyData:
-    
-    def __init__(
-        self,
-        version: str,
-        migration_method: str,
-        roaming_dir: str,
-        docs_dir: str,
-        roaming_src: str | None = None,
-        docs_src: str | None = None,
-        roaming_backup: bool = True,
-        docs_backup: bool = True,
-        metadata: str | None = None,
-        alt_signature: List[str] | None = None
-    ):
-        self._version: str = version
-        self._migration_method: str = migration_method
-        self._roaming_path: Path = Path(user_data_dir(roaming=True)) / roaming_dir
-        self._docs_path: Path = Path(user_documents_dir()) / docs_dir
-        self._roaming_src_path: Path = self._roaming_path / roaming_src if roaming_src is not None else self._roaming_path
-        self._docs_src_path: Path = self._docs_path / docs_src if docs_src is not None else self._docs_path
-        self._roaming_backup: bool = roaming_backup
-        self._docs_backup: bool = docs_backup
-        self._metadata: str | None = metadata
-        self._alt_signature: List[str] | None = alt_signature
-    
-    
-    def get_version(self) -> str:
-        return self._version
-    
-    
-    def get_migration_method(self) -> str:
-        return self._migration_method
-    
-    
-    def get_roaming_path(self) -> Path:
-        return self._roaming_path
-    
-    
-    def get_docs_path(self) -> Path:
-        return self._docs_path
-    
-    
-    def get_roaming_src_path(self) -> Path | None:
-        return self._roaming_src_path
-    
-    
-    def get_docs_src_path(self) -> Path | None:
-        return self._docs_src_path
-    
-    
-    def roaming_backup_required(self) -> bool:
-        return self._roaming_backup
-    
-    
-    def docs_backup_required(self) -> bool:
-        return self._docs_backup
-    
-    
-    def get_metadata(self) -> str | None:
-        return self._metadata
-    
-    
-    def get_alt_signature(self) -> List[str] | None:
-        return self._alt_signature
-
 
 class MigrationPipeline:
     
-    _MIGRATION_VERSIONS: List[_LegacyData] = [
-        _LegacyData(
+    _MIGRATION_VERSIONS: List[LegacyData] = [
+        LegacyData(
+            version="0.9.0-beta",
+            #migration_method=VersionChanges.migrate_v090_to_v0100,
+            roaming_root="Bloodline",
+            roaming_src="0.9.0-beta",
+            docs_root="Bloodline",
+            alt_signature=["ui_config.json", "save_file.sqlite"]
+        )
+    ]
+    
+    
+    @classmethod
+    def handle_migration_process(cls) -> None:
+        while True:
+            pending_migration: LegacyData | None = cls._get_next_pending()
+            
+            if pending_migration is None:
+                return
+    
+    
+    # helper methods below
+    
+    @classmethod
+    def _get_next_pending(cls) -> LegacyData | None:
+        for legacy_data in cls._MIGRATION_VERSIONS:
+            roaming_src_path: Path = legacy_data.get_roaming_src_path()
+            
+            if not roaming_src_path.exists():
+                continue
+            
+            if cls._contains_signature_files(legacy_data):
+                return legacy_data
+        return None
+    
+    
+    @staticmethod
+    def _contains_signature_files(legacy_data: LegacyData) -> bool:
+        roaming_src_path: Path = legacy_data.get_roaming_src_path()
+        has_metadata: bool = True if legacy_data.get_metadata() is not None else False
+        
+        if not has_metadata:
+            return all((roaming_src_path / file).exists() for file in legacy_data.get_alt_signature())
+    
+    
+    
+    
+    
+    
+    
+    _MIGRATION_VERSIONS: List[LegacyData] = [
+        LegacyData(
             version="0.9.0-beta",
             migration_method="_migrate_v090_to_v0100",
-            roaming_dir="Bloodline",
+            roaming_root="Bloodline",
             roaming_src="0.9.0-beta",
-            docs_dir="Bloodline",
+            docs_root="Bloodline",
             alt_signature=["ui_config.json", "save_file.sqlite"]
         )
     ]
@@ -90,7 +72,7 @@ class MigrationPipeline:
     
     @classmethod
     def run_all_migrations(cls) -> None:
-        pending_migrations: List[_LegacyData] = cls._get_pending_migrations()
+        pending_migrations: List[LegacyData] = cls._get_pending_migrations()
         
         if not pending_migrations:
             return
@@ -113,7 +95,7 @@ class MigrationPipeline:
     
     
     @staticmethod
-    def _archive_legacy_backup(legacy_data: _LegacyData, roaming_backup_required: bool, docs_backup_required: bool) -> None:
+    def _archive_legacy_backup(legacy_data: LegacyData, roaming_backup_required: bool, docs_backup_required: bool) -> None:
         archive_name: str = legacy_data.get_version()
         backup_targets: List[Tuple[Path, Path]] = []
         
@@ -144,7 +126,7 @@ class MigrationPipeline:
     # version specific method below
     
     @classmethod
-    def _migrate_v090_to_v0100(cls, legacy_data: _LegacyData) -> None:
+    def _migrate_v090_to_v0100(cls, legacy_data: LegacyData) -> None:
         # Roaming migration
         src_path: Path = legacy_data.get_roaming_src_path()
         dst_path: Path = Directory.get_roaming_data_path()
@@ -184,8 +166,8 @@ class MigrationPipeline:
     # helper methods below
     
     @classmethod
-    def _get_pending_migrations(cls) -> List[_LegacyData]:
-        pending_migrations: List[_LegacyData] = []
+    def _get_pending_migrations(cls) -> List[LegacyData]:
+        pending_migrations: List[LegacyData] = []
         
         for legacy_data in cls._MIGRATION_VERSIONS:
             roaming_src_path: Path = legacy_data.get_roaming_src_path()
@@ -199,7 +181,7 @@ class MigrationPipeline:
     
     
     @staticmethod
-    def _contains_signature_files(legacy_data: _LegacyData, roaming_src_path: Path) -> bool:
+    def _contains_signature_files(legacy_data: LegacyData, roaming_src_path: Path) -> bool:
         has_metadata: bool = True if legacy_data.get_metadata() is not None else False
         
         if has_metadata:
@@ -243,7 +225,7 @@ class MigrationPipeline:
     
     
     @staticmethod
-    def _cleanup_legacy_data(legacy_data: _LegacyData) -> None:
+    def _cleanup_legacy_data(legacy_data: LegacyData) -> None:
         roaming_path: Path = legacy_data.get_roaming_path()
         docs_path: Path = legacy_data.get_docs_path()
         

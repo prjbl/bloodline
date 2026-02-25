@@ -4,8 +4,8 @@ from enum import Enum
 from pydantic import Field, field_validator
 from pydantic_core.core_schema import FieldValidationInfo
 
-from .shared_models import AllowModel
-from .validation_pattern import ValidationPattern
+from ..shared_models import AllowModel
+from ..validation_pattern import ValidationPattern
 from infrastructure import MessageHub
 
 class UpdateKeys(str, Enum):

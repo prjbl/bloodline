@@ -8,7 +8,7 @@ from .hotkey_manager import HotkeyManager
 from .timer import Timer
 from infrastructure import MessageHub
 from infrastructure.interfaces import IOverlay
-from schemas import HotkeyNames
+from schemas.definitions import HotkeyNames
 
 class KeyListener:
     

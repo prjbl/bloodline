@@ -9,7 +9,7 @@ from .save_file import SaveFile
 from .timer import Timer
 from infrastructure import MessageHub
 from infrastructure.interfaces import IConsole, IOverlay, IThemeManager, IWindowManager
-from schemas import HotkeyNames
+from schemas.definitions import HotkeyNames
 
 class CommandManager:
     

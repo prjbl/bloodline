@@ -3,7 +3,7 @@ from typing import List, Callable, Tuple
 
 from .base_command import BaseInterceptCommand
 from file_io.json import ExternalJsonHandler
-from schemas import PresetModel
+from schemas.definitions import PresetModel
 
 class SetupCommands(BaseInterceptCommand):
     

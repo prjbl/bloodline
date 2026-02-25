@@ -8,9 +8,9 @@ from typing import Any, List
 from requests import get, Response, RequestException
 
 from .web_manager import WebManager
-from file_io.json import PersistentJsonHandler
+from file_io.json import SystemJsonHandler
 from infrastructure import Directory, MessageHub
-from schemas import UpdateModel, UpdateKeys, RequestTime
+from schemas.definitions import UpdateModel, UpdateKeys, RequestTime
 
 class UpdateService:
     
@@ -20,12 +20,12 @@ class UpdateService:
         self._update_file_exists: bool = UpdateService._UPDATE_FILE_PATH.exists() or UpdateService._BACKUP_FILE_PATH.exists()
         self._msg_provider: MessageHub = MessageHub()
         
-        self._pers_json_handler: PersistentJsonHandler = PersistentJsonHandler(
+        self._sys_json_handler: SystemJsonHandler = SystemJsonHandler(
             main_file_path=UpdateService._UPDATE_FILE_PATH,
             backup_file_path=UpdateService._BACKUP_FILE_PATH,
             default_data=UpdateModel()
         )
-        self._pers_json_handler.load_data()
+        self._sys_json_handler.load_data()
     
     
     _UPDATE_FILE: str = "update_state.json"
@@ -63,7 +63,7 @@ class UpdateService:
     
     def _get_check_allowed(self) -> bool:
         current_timestamp: datetime = datetime.now()
-        update_state: dict = self._pers_json_handler.get_data()
+        update_state: dict = self._sys_json_handler.get_data()
         last_api_request: datetime = datetime.strptime(update_state.get(UpdateKeys.LAST_API_REQUEST), RequestTime.TIME_FORMAT)
         
         if not self._update_file_exists:
@@ -73,7 +73,7 @@ class UpdateService:
             return False
         
         update_state[UpdateKeys.LAST_API_REQUEST] = current_timestamp.strftime(RequestTime.TIME_FORMAT)
-        self._pers_json_handler.set_data(update_state)
+        self._sys_json_handler.set_data(update_state)
         return True
     
     

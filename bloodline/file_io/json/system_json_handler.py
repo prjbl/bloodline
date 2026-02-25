@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from .json_file_operations import JsonFileOperations
 from infrastructure import MessageHub
 
-class PersistentJsonHandler(JsonFileOperations):
+class SystemJsonHandler(JsonFileOperations):
     
     def __init__(self, main_file_path: Path, backup_file_path: Path, default_data: BaseModel):
         self._main_file_path: Path = main_file_path

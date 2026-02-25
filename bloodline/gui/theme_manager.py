@@ -3,26 +3,26 @@ from __future__ import annotations
 from pathlib import Path
 from typing import override
 
-from file_io.json import PersistentJsonHandler
+from file_io.json import SystemJsonHandler
 from infrastructure import Directory
 from infrastructure.interfaces import IThemeManager
-from schemas import ThemeModel, TSectionKeys
+from schemas.definitions import ThemeModel, TSectionKeys
 
 class ThemeManager(IThemeManager):
     
     _instance: ThemeManager | None = None
-    _pers_json_handler: PersistentJsonHandler | None = None
+    _sys_json_handler: SystemJsonHandler | None = None
     
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             
-            cls._instance._pers_json_handler = PersistentJsonHandler(
+            cls._instance._sys_json_handler = SystemJsonHandler(
                 main_file_path=cls._instance._THEME_FILE_PATH,
                 backup_file_path=cls._instance._BACKUP_FILE_PATH,
                 default_data=ThemeModel()
             )
-            cls._instance._pers_json_handler.load_data()
+            cls._instance._sys_json_handler.load_data()
         return cls._instance
     
     
@@ -34,16 +34,16 @@ class ThemeManager(IThemeManager):
     
     @override
     def get_theme(self) -> dict:
-        return self._pers_json_handler.get_data()
+        return self._sys_json_handler.get_data()
     
     
     @override
     def set_theme(self, loaded_theme: dict) -> None:
-        self._pers_json_handler.set_data(loaded_theme)
+        self._sys_json_handler.set_data(loaded_theme)
     
     
     def get_colors(self) -> dict:
-        return self._pers_json_handler.get_data().get(TSectionKeys.COLORS)
+        return self._sys_json_handler.get_data().get(TSectionKeys.COLORS)
     
     
     def get_root_font_props(self) -> dict:
@@ -81,8 +81,8 @@ class ThemeManager(IThemeManager):
     
     
     def _get_font_props(self) -> dict:
-        return self._pers_json_handler.get_data().get(TSectionKeys.FONT)
+        return self._sys_json_handler.get_data().get(TSectionKeys.FONT)
     
     
     def _get_widget_props(self) -> dict:
-        return self._pers_json_handler.get_data().get(TSectionKeys.WIDGETS)
+        return self._sys_json_handler.get_data().get(TSectionKeys.WIDGETS)

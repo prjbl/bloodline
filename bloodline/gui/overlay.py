@@ -5,7 +5,7 @@ from typing import Any, override
 from .theme_manager import ThemeManager
 from .window_manager import WindowManager
 from infrastructure.interfaces import IOverlay
-from schemas import WindowKeys, ColorKeys, FontKeys, WidgetKeys
+from schemas.definitions import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Overlay(IOverlay):
     

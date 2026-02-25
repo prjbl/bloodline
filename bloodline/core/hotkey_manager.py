@@ -1,18 +1,18 @@
 from pathlib import Path
 
-from file_io.json import PersistentJsonHandler
+from file_io.json import SystemJsonHandler
 from infrastructure import Directory
-from schemas import HotkeyModel
+from schemas.definitions import HotkeyModel
 
 class HotkeyManager:
     
     def __init__(self):
-        self._pers_json_handler: PersistentJsonHandler = PersistentJsonHandler(
+        self._sys_json_handler: SystemJsonHandler = SystemJsonHandler(
             main_file_path=HotkeyManager._HK_FILE_PATH,
             backup_file_path=HotkeyManager._BACKUP_FILE_PATH,
             default_data=HotkeyModel()
         )
-        self._pers_json_handler.load_data()
+        self._sys_json_handler.load_data()
     
     
     _HK_FILE: str = "hotkeys.json"
@@ -22,11 +22,11 @@ class HotkeyManager:
     
     
     def set_new_keybind(self, hotkey: str, new_keybind: str) -> None:
-        hotkeys: dict = self._pers_json_handler.get_data()
+        hotkeys: dict = self._sys_json_handler.get_data()
         hotkeys[hotkey] = new_keybind
         
-        self._pers_json_handler.set_data(hotkeys)
+        self._sys_json_handler.set_data(hotkeys)
     
     
     def get_current_hotkeys(self) -> dict:
-        return self._pers_json_handler.get_data()
+        return self._sys_json_handler.get_data()
