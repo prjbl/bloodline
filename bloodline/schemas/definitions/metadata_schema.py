@@ -3,7 +3,7 @@ from pydantic_core.core_schema import FieldValidationInfo
 
 from ..shared_models import AllowModel
 from ..validation_pattern import ValidationPattern
-from infrastructure.constants import MetadataSchema
+from infrastructure.config import MetadataSchema
 
 class MetadataModel(AllowModel):
     signature: str = Field(default=MetadataSchema.SIGNATURE.default, alias=MetadataSchema.SIGNATURE.alias)

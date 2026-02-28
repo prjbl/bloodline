@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import override
 
 from file_io.json import SystemJsonHandler
-from infrastructure.constants import WSectionKeys as SectionKeys, WindowKeys, WindowPaths
+from infrastructure.config import WSectionKeys as SectionKeys, WindowKeys, SystemFiles
 from infrastructure.interfaces import IWindowManager
 from schemas.definitions import WindowModel
 
@@ -17,8 +17,8 @@ class WindowManager(IWindowManager):
             cls._instance = super().__new__(cls)
             
             cls._instance._sys_json_handler = SystemJsonHandler(
-                main_file_path=WindowPaths.MAIN_FILE_PATH,
-                backup_file_path=WindowPaths.BACKUP_FILE_PATH,
+                main_file_path=SystemFiles.WINDOW_STATE.main_file_path,
+                backup_file_path=SystemFiles.WINDOW_STATE.backup_file_path,
                 default_data=WindowModel()
             )
             cls._instance._sys_json_handler.load_data()

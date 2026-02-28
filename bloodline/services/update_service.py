@@ -9,18 +9,18 @@ from requests import get, Response, RequestException
 from .web_manager import WebManager
 from file_io.json import SystemJsonHandler
 from infrastructure import MessageHub
-from infrastructure.constants import Metadata, UpdatePaths
+from infrastructure.config import Metadata, SystemFiles
 from schemas.definitions import UpdateModel
 
 class UpdateService:
     
     def __init__(self):
-        self._update_file_exists: bool = UpdatePaths.MAIN_FILE_PATH.exists() or UpdatePaths.BACKUP_FILE_PATH.exists()
+        self._update_file_exists: bool = SystemFiles.UPDATE_STATE.main_file_path.exists() or SystemFiles.UPDATE_STATE.backup_file_path.exists()
         self._msg_provider: MessageHub = MessageHub()
         
         self._sys_json_handler: SystemJsonHandler = SystemJsonHandler(
-            main_file_path=UpdatePaths.MAIN_FILE_PATH,
-            backup_file_path=UpdatePaths.BACKUP_FILE_PATH,
+            main_file_path=SystemFiles.UPDATE_STATE.main_file_path,
+            backup_file_path=SystemFiles.UPDATE_STATE.backup_file_path,
             default_data=UpdateModel()
         )
         self._sys_json_handler.load_data()

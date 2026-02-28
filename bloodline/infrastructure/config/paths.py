@@ -4,6 +4,13 @@ from platformdirs import user_data_dir, user_documents_dir
 
 from .metadata import Metadata
 
+class _PathDef:
+    
+    def __init__(self, main_file_name: str):
+        self.main_file_path: Path = Directory.ROAMING_DATA_PATH / main_file_name
+        self.backup_file_path: Path = Directory.BACKUP_PATH / f"{main_file_name}"
+
+
 class Directory:
     _ARCHIVE_DIR: str = "_archive"
     _BACKUP_DIR: str = "backups"
@@ -56,41 +63,9 @@ class Directory:
         cls.DOCS_ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
 
 
-class UpdatePaths:
-    _MAIN_FILE_NAME: str = "update_state.json"
-    _BACKUP_FILE_NAME: str = f"{_MAIN_FILE_NAME}.bak"
-    
-    MAIN_FILE_PATH: Path = Directory.ROAMING_DATA_PATH / _MAIN_FILE_NAME
-    BACKUP_FILE_PATH: Path = Directory.BACKUP_PATH / _BACKUP_FILE_NAME
-
-
-class WindowPaths:
-    _MAIN_FILE_NAME: str = "window_state.json"
-    _BACKUP_FILE_NAME: str = f"{_MAIN_FILE_NAME}.bak"
-    
-    MAIN_FILE_PATH: Path = Directory.ROAMING_DATA_PATH / _MAIN_FILE_NAME
-    BACKUP_FILE_PATH: Path = Directory.BACKUP_PATH / _BACKUP_FILE_NAME
-
-
-class ThemePaths:
-    _MAIN_FILE_NAME: str = "theme.json"
-    _BACKUP_FILE_NAME: str = f"{_MAIN_FILE_NAME}.bak"
-    
-    MAIN_FILE_PATH: Path = Directory.ROAMING_DATA_PATH / _MAIN_FILE_NAME
-    BACKUP_FILE_PATH: Path = Directory.BACKUP_PATH / _BACKUP_FILE_NAME
-
-
-class SaveFilePaths:
-    _MAIN_FILE_NAME: str = "stats.sqlite"
-    _BACKUP_FILE_NAME: str = f"{_MAIN_FILE_NAME}.bak"
-    
-    MAIN_FILE_PATH: Path = Directory.ROAMING_DATA_PATH / _MAIN_FILE_NAME
-    BACKUP_FILE_PATH: Path = Directory.BACKUP_PATH / _BACKUP_FILE_NAME
-
-
-class HotkeyPaths:
-    _MAIN_FILE_NAME: str = "hotkeys.json"
-    _BACKUP_FILE_NAME: str = f"{_MAIN_FILE_NAME}.bak"
-    
-    MAIN_FILE_PATH: Path = Directory.ROAMING_DATA_PATH / _MAIN_FILE_NAME
-    BACKUP_FILE_PATH: Path = Directory.BACKUP_PATH / _BACKUP_FILE_NAME
+class SystemFiles:
+    UPDATE_STATE: _PathDef = _PathDef("update_state.json")
+    WINDOW_STATE: _PathDef = _PathDef("window_state.json")
+    THEME: _PathDef = _PathDef("theme.json")
+    STATS: _PathDef = _PathDef("stats.sqlite")
+    HOTKEYS: _PathDef = _PathDef("hotkeys.json")

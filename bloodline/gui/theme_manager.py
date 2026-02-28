@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import override
 
 from file_io.json import SystemJsonHandler
-from infrastructure.constants import TSectionKeys as SectionKeys, ThemePaths
+from infrastructure.config import TSectionKeys as SectionKeys, SystemFiles
 from infrastructure.interfaces import IThemeManager
 from schemas.definitions import ThemeModel
 
@@ -17,8 +17,8 @@ class ThemeManager(IThemeManager):
             cls._instance = super().__new__(cls)
             
             cls._instance._sys_json_handler = SystemJsonHandler(
-                main_file_path=ThemePaths.MAIN_FILE_PATH,
-                backup_file_path=ThemePaths.BACKUP_FILE_PATH,
+                main_file_path=SystemFiles.THEME.main_file_path,
+                backup_file_path=SystemFiles.THEME.backup_file_path,
                 default_data=ThemeModel()
             )
             cls._instance._sys_json_handler.load_data()

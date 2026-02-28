@@ -11,13 +11,14 @@ from .theme_manager import ThemeManager
 from .window_manager import WindowManager
 from core import CommandManager
 from infrastructure import MessageHub
-from infrastructure.constants import Metadata, WindowKeys, ThemeKeys
+from infrastructure.config import Metadata, Directory, WindowKeys, ThemeKeys
 from infrastructure.interfaces import IConsole
 from infrastructure.migration import MigrationPipeline
 from services import UpdateService, WebManager
 
 class Application(IConsole):
     
+    Directory.setup_all_dirs()
     #MigrationPipeline.run_all_migrations()
     
     def __init__(self):

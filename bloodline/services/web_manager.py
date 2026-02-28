@@ -1,6 +1,6 @@
 from webbrowser import open_new_tab
 
-from infrastructure.constants import Metadata
+from infrastructure.config import Metadata
 
 class WebManager:
     

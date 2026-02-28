@@ -4,7 +4,7 @@ from typing import Any, override
 
 from .theme_manager import ThemeManager
 from .window_manager import WindowManager
-from infrastructure.constants import WindowKeys, ThemeKeys
+from infrastructure.config import WindowKeys, ThemeKeys
 from infrastructure.interfaces import IOverlay
 
 class Overlay(IOverlay):

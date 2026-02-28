@@ -2,7 +2,7 @@ from typing import List
 
 from file_io import DatabaseHandler
 from infrastructure import MessageHub
-from infrastructure.constants import SaveFilePaths
+from infrastructure.config import Metadata, SystemFiles
 
 class SaveFile:
     
@@ -10,15 +10,14 @@ class SaveFile:
         self._msg_provider: MessageHub = MessageHub()
         
         self._db_handler: DatabaseHandler = DatabaseHandler(
-            db_file_path=SaveFilePaths.MAIN_FILE_PATH,
-            backup_file_path=SaveFilePaths.BACKUP_FILE_PATH,
-            latest_version=SaveFile._LATEST_VERSION,
+            db_file_path=SystemFiles.STATS.main_file_path,
+            backup_file_path=SystemFiles.STATS.backup_file_path,
+            latest_version=Metadata.DB_SCHEMA_VERSION,
             db_structure=SaveFile._DB_STRUCTURE,
             db_updates=self._update_history
         )
     
     
-    _LATEST_VERSION: int = 1
     _DB_STRUCTURE: str = """
         CREATE TABLE IF NOT EXISTS Game (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

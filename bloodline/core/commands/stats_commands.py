@@ -3,7 +3,7 @@ from typing import List, Callable
 
 from .base_command import BaseInterceptCommand
 from file_io import CsvFileOperations
-from infrastructure.constants import Directory
+from infrastructure.config import Directory
 
 class StatsCommands(BaseInterceptCommand):
     

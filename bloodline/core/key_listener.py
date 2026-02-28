@@ -7,7 +7,7 @@ from .counter import Counter
 from .hotkey_manager import HotkeyManager
 from .timer import Timer
 from infrastructure import MessageHub
-from infrastructure.constants import HotkeyNames
+from infrastructure.config import HotkeyNames
 from infrastructure.interfaces import IOverlay
 
 class KeyListener:

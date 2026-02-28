@@ -1,15 +1,13 @@
-from pathlib import Path
-
 from file_io.json import SystemJsonHandler
-from infrastructure.constants import HotkeyPaths
+from infrastructure.config import SystemFiles
 from schemas.definitions import HotkeyModel
 
 class HotkeyManager:
     
     def __init__(self):
         self._sys_json_handler: SystemJsonHandler = SystemJsonHandler(
-            main_file_path=HotkeyPaths.MAIN_FILE_PATH,
-            backup_file_path=HotkeyPaths.BACKUP_FILE_PATH,
+            main_file_path=SystemFiles.HOTKEYS.main_file_path,
+            backup_file_path=SystemFiles.HOTKEYS.backup_file_path,
             default_data=HotkeyModel()
         )
         self._sys_json_handler.load_data()

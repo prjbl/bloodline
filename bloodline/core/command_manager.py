@@ -8,7 +8,7 @@ from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
 from infrastructure import MessageHub
-from infrastructure.constants import HotkeyNames
+from infrastructure.config import HotkeyNames
 from infrastructure.interfaces import IConsole, IOverlay, IThemeManager, IWindowManager
 
 class CommandManager:

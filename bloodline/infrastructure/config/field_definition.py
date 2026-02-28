@@ -1,6 +1,6 @@
 from typing import Any
 
-class Const:
+class FieldDef:
     
     def __init__(self, alias: str, default: Any):
         self._alias: str = alias

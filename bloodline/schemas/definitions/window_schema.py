@@ -4,7 +4,7 @@ from pydantic_core.core_schema import FieldValidationInfo
 from ..shared_models import AllowModel
 from ..validation_pattern import ValidationPattern
 from infrastructure import MessageHub
-from infrastructure.constants import WindowSchema, WSectionKeys as SectionKeys
+from infrastructure.config import WindowSchema, WSectionKeys as SectionKeys
 
 _msg_provider: MessageHub = MessageHub()
 

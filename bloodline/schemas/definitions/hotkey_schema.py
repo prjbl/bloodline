@@ -4,7 +4,7 @@ from pydantic_core.core_schema import FieldValidationInfo
 from ..shared_models import AllowModel
 from ..validation_pattern import ValidationPattern
 from infrastructure import MessageHub
-from infrastructure.constants import HotkeySchema
+from infrastructure.config import HotkeySchema
 
 _msg_provider: MessageHub = MessageHub()
 

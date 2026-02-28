@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from .base_constant import Const
+from .field_definition import FieldDef
 
 class Metadata:
     APP_NAME: str = "Bloodline"
@@ -17,11 +17,13 @@ class Metadata:
     UPDATE_INTERVAL_MINUTES: float = 60.0
     UPDATE_TIMEOUT_SECONDS: int = 5
     LAST_API_REQUEST: str = "last_api_request"
+    
+    DB_SCHEMA_VERSION: int = 1
 
 
 class MetadataSchema:
-    VERSION: Const = Const("version", Metadata.VERSION)
-    SIGNATURE: Const = Const("signature", Metadata.URL_REPO)
-    SCHEMA_VERSION: Const = Const("schema_version", 1)
+    VERSION: FieldDef = FieldDef("version", Metadata.VERSION)
+    SIGNATURE: FieldDef = FieldDef("signature", Metadata.URL_REPO)
+    SCHEMA_VERSION: FieldDef = FieldDef("schema_version", 1)
     
-    LAST_API_REQUEST: Const = Const(Metadata.LAST_API_REQUEST, lambda: datetime.now().strftime(Metadata.UPDATE_TIME_FORMAT))
+    LAST_API_REQUEST: FieldDef = FieldDef(Metadata.LAST_API_REQUEST, lambda: datetime.now().strftime(Metadata.UPDATE_TIME_FORMAT))
