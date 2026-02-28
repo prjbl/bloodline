@@ -6,7 +6,7 @@ from typing import Callable
 class MessageHub:
     
     _instance: MessageHub | None = None
-    _callback_method: Callable[[str, str], None] | None = None
+    _callback_method: Callable[[str, str, str | None], None] | None = None
     _buffer: Queue = Queue()
     
     def __new__(cls):
@@ -16,12 +16,12 @@ class MessageHub:
     
     
     @classmethod
-    def link_callback(cls, callback_method: Callable[[str, str], None]) -> None:
+    def link_callback(cls, callback_method: Callable[[str, str, str | None], None]) -> None:
         cls._callback_method = callback_method
         
         while not cls._buffer.empty():
-            text, text_type = cls._buffer.get_nowait()
-            cls._callback_method(text, text_type)
+            text, text_type, optional_arg = cls._buffer.get_nowait()
+            cls._callback_method(text, text_type, optional_arg)
     
     
     @classmethod

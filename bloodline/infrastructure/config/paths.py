@@ -8,7 +8,7 @@ class _PathDef:
     
     def __init__(self, main_file_name: str):
         self.main_file_path: Path = Directory.ROAMING_DATA_PATH / main_file_name
-        self.backup_file_path: Path = Directory.BACKUP_PATH / f"{main_file_name}"
+        self.backup_file_path: Path = Directory.BACKUP_PATH / f"{main_file_name}.bak"
 
 
 class Directory:
