@@ -2,25 +2,24 @@ from pathlib import Path
 from shutil import move, make_archive, rmtree
 from typing import List, Tuple
 
-from ..directory import Directory
 from .legacy_data import LegacyData
 from file_io.json import MigrationJsonHandler
 
 class MigrationPipeline:
     
-    _MIGRATION_VERSIONS: List[LegacyData] = [
-        LegacyData(
-            version="0.9.0-beta",
-            #migration_method=VersionChanges.migrate_v090_to_v0100,
-            roaming_root="Bloodline",
-            roaming_src="0.9.0-beta",
-            docs_root="Bloodline",
-            alt_signature=["ui_config.json", "save_file.sqlite"]
-        )
-    ]
+    #_MIGRATION_VERSIONS: List[LegacyData] = [
+    #    LegacyData(
+    #        version="0.9.0-beta",
+    #        #migration_method=VersionChanges.migrate_v090_to_v0100,
+    #        roaming_root="Bloodline",
+    #        roaming_src="0.9.0-beta",
+    #        docs_root="Bloodline",
+    #        alt_signature=["ui_config.json", "save_file.sqlite"]
+    #    )
+    #]
     
     
-    @classmethod
+    """@classmethod
     def handle_migration_process(cls) -> None:
         while True:
             pending_migration: LegacyData | None = cls._get_next_pending()
@@ -233,4 +232,4 @@ class MigrationPipeline:
             rmtree(str(roaming_path))
         
         if docs_path.resolve() != Directory.get_docs_data_path():
-            rmtree(str(docs_path))
+            rmtree(str(docs_path))"""

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import override
 
 from file_io.json import SystemJsonHandler
-from infrastructure import Directory
+from infrastructure.constants import TSectionKeys as SectionKeys, ThemePaths
 from infrastructure.interfaces import IThemeManager
-from schemas.definitions import ThemeModel, TSectionKeys
+from schemas.definitions import ThemeModel
 
 class ThemeManager(IThemeManager):
     
@@ -18,18 +17,12 @@ class ThemeManager(IThemeManager):
             cls._instance = super().__new__(cls)
             
             cls._instance._sys_json_handler = SystemJsonHandler(
-                main_file_path=cls._instance._THEME_FILE_PATH,
-                backup_file_path=cls._instance._BACKUP_FILE_PATH,
+                main_file_path=ThemePaths.MAIN_FILE_PATH,
+                backup_file_path=ThemePaths.BACKUP_FILE_PATH,
                 default_data=ThemeModel()
             )
             cls._instance._sys_json_handler.load_data()
         return cls._instance
-    
-    
-    _THEME_FILE: str = "theme.json"
-    _BACKUP_FILE: str = f"{_THEME_FILE}.bak"
-    _THEME_FILE_PATH: Path = Directory.get_roaming_data_path() / _THEME_FILE
-    _BACKUP_FILE_PATH: Path = Directory.get_backup_path() / _BACKUP_FILE
     
     
     @override
@@ -43,30 +36,30 @@ class ThemeManager(IThemeManager):
     
     
     def get_colors(self) -> dict:
-        return self._sys_json_handler.get_data().get(TSectionKeys.COLORS)
+        return self._sys_json_handler.get_data().get(SectionKeys.COLORS)
     
     
     def get_root_font_props(self) -> dict:
         shared_font_props: dict = self._get_shared_props(self._get_font_props())
-        root_specific_props: dict = self._get_font_props().get(TSectionKeys.ROOT)
+        root_specific_props: dict = self._get_font_props().get(SectionKeys.ROOT)
         return {**shared_font_props, **root_specific_props} # unpack and merge
     
     
     def get_toplevel_font_props(self) -> dict:
         shared_font_props: dict = self._get_shared_props(self._get_font_props())
-        toplevel_specific_props: dict = self._get_font_props().get(TSectionKeys.TOPLEVEL)
+        toplevel_specific_props: dict = self._get_font_props().get(SectionKeys.TOPLEVEL)
         return {**shared_font_props, **toplevel_specific_props}
     
     
     def get_root_widget_props(self) -> dict:
         shared_widget_props: dict = self._get_shared_props(self._get_widget_props())
-        root_specific_props: dict = self._get_widget_props().get(TSectionKeys.ROOT)
+        root_specific_props: dict = self._get_widget_props().get(SectionKeys.ROOT)
         return {**shared_widget_props, **root_specific_props}
     
     
     def get_toplevel_widget_props(self) -> dict:
         share_widget_props: dict = self._get_shared_props(self._get_widget_props())
-        toplevel_specific_props: dict = self._get_widget_props().get(TSectionKeys.TOPLEVEL)
+        toplevel_specific_props: dict = self._get_widget_props().get(SectionKeys.TOPLEVEL)
         return {**share_widget_props, **toplevel_specific_props}
     
     
@@ -81,8 +74,8 @@ class ThemeManager(IThemeManager):
     
     
     def _get_font_props(self) -> dict:
-        return self._sys_json_handler.get_data().get(TSectionKeys.FONT)
+        return self._sys_json_handler.get_data().get(SectionKeys.FONT)
     
     
     def _get_widget_props(self) -> dict:
-        return self._sys_json_handler.get_data().get(TSectionKeys.WIDGETS)
+        return self._sys_json_handler.get_data().get(SectionKeys.WIDGETS)

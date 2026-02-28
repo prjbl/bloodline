@@ -1,24 +1,18 @@
 from pathlib import Path
 
 from file_io.json import SystemJsonHandler
-from infrastructure import Directory
+from infrastructure.constants import HotkeyPaths
 from schemas.definitions import HotkeyModel
 
 class HotkeyManager:
     
     def __init__(self):
         self._sys_json_handler: SystemJsonHandler = SystemJsonHandler(
-            main_file_path=HotkeyManager._HK_FILE_PATH,
-            backup_file_path=HotkeyManager._BACKUP_FILE_PATH,
+            main_file_path=HotkeyPaths.MAIN_FILE_PATH,
+            backup_file_path=HotkeyPaths.BACKUP_FILE_PATH,
             default_data=HotkeyModel()
         )
         self._sys_json_handler.load_data()
-    
-    
-    _HK_FILE: str = "hotkeys.json"
-    _BACKUP_FILE: str = f"{_HK_FILE}.bak"
-    _HK_FILE_PATH: Path = Directory.get_roaming_data_path() / _HK_FILE
-    _BACKUP_FILE_PATH: Path = Directory.get_backup_path() / _BACKUP_FILE
     
     
     def set_new_keybind(self, hotkey: str, new_keybind: str) -> None:

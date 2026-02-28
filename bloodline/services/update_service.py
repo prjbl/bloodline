@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from itertools import zip_longest
 from json import JSONDecodeError
-from pathlib import Path
 from re import findall
 from typing import Any, List
 
@@ -9,29 +8,22 @@ from requests import get, Response, RequestException
 
 from .web_manager import WebManager
 from file_io.json import SystemJsonHandler
-from infrastructure import Directory, MessageHub
-from schemas.definitions import UpdateModel, UpdateKeys, RequestTime
+from infrastructure import MessageHub
+from infrastructure.constants import Metadata, UpdatePaths
+from schemas.definitions import UpdateModel
 
 class UpdateService:
     
-    def __init__(self, request_interval_minutes: float):
-        self._request_interval_minutes: float = request_interval_minutes
-        
-        self._update_file_exists: bool = UpdateService._UPDATE_FILE_PATH.exists() or UpdateService._BACKUP_FILE_PATH.exists()
+    def __init__(self):
+        self._update_file_exists: bool = UpdatePaths.MAIN_FILE_PATH.exists() or UpdatePaths.BACKUP_FILE_PATH.exists()
         self._msg_provider: MessageHub = MessageHub()
         
         self._sys_json_handler: SystemJsonHandler = SystemJsonHandler(
-            main_file_path=UpdateService._UPDATE_FILE_PATH,
-            backup_file_path=UpdateService._BACKUP_FILE_PATH,
+            main_file_path=UpdatePaths.MAIN_FILE_PATH,
+            backup_file_path=UpdatePaths.BACKUP_FILE_PATH,
             default_data=UpdateModel()
         )
         self._sys_json_handler.load_data()
-    
-    
-    _UPDATE_FILE: str = "update_state.json"
-    _BACKUP_FILE: str = f"{_UPDATE_FILE}.bak"
-    _UPDATE_FILE_PATH: Path = Directory.get_roaming_data_path() / _UPDATE_FILE
-    _BACKUP_FILE_PATH: Path = Directory.get_backup_path() / _BACKUP_FILE
     
     
     def check_for_update(self) -> None:
@@ -40,9 +32,9 @@ class UpdateService:
         
         try:
             response: Response = get(
-                url=WebManager.get_api_url(),
-                headers=WebManager.get_headers(),
-                timeout=5
+                url=Metadata.URL_API,
+                headers=WebManager.GITHUB_HEADERS,
+                timeout=Metadata.UPDATE_TIMEOUT_SECONDS
             )
             response.raise_for_status()
             
@@ -50,7 +42,7 @@ class UpdateService:
             latest_version: str = data.get("tag_name")
             
             if self._get_new_version_available(latest_version):
-                release_url: str = WebManager.get_release_url()
+                release_url: str = Metadata.URL_LATEST_RELEASE
                 self._msg_provider.invoke(f"A newer version \"{latest_version}\" is available to download at:", "note")
                 self._msg_provider.invoke(release_url, "hyperlink", release_url)
         except JSONDecodeError:
@@ -64,21 +56,21 @@ class UpdateService:
     def _get_check_allowed(self) -> bool:
         current_timestamp: datetime = datetime.now()
         update_state: dict = self._sys_json_handler.get_data()
-        last_api_request: datetime = datetime.strptime(update_state.get(UpdateKeys.LAST_API_REQUEST), RequestTime.TIME_FORMAT)
+        last_api_request: datetime = datetime.strptime(update_state.get(Metadata.LAST_API_REQUEST), Metadata.UPDATE_TIME_FORMAT)
         
         if not self._update_file_exists:
             return True
         
-        if current_timestamp < last_api_request + timedelta(minutes=self._request_interval_minutes):
+        if current_timestamp < last_api_request + timedelta(minutes=Metadata.UPDATE_INTERVAL_MINUTES):
             return False
         
-        update_state[UpdateKeys.LAST_API_REQUEST] = current_timestamp.strftime(RequestTime.TIME_FORMAT)
+        update_state[Metadata.LAST_API_REQUEST] = current_timestamp.strftime(Metadata.UPDATE_TIME_FORMAT)
         self._sys_json_handler.set_data(update_state)
         return True
     
     
     def _get_new_version_available(self, latest_version: str) -> bool:
-        curr_version: str = Directory.get_version()
+        curr_version: str = Metadata.VERSION
         parsed_curr_version: List[int] = self._parse_version(curr_version)
         parsed_latest_version: List[int] = self._parse_version(latest_version)
         

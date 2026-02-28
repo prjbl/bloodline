@@ -1,8 +1,8 @@
-from pathlib import Path
 from typing import List
 
 from file_io import DatabaseHandler
-from infrastructure import Directory, MessageHub
+from infrastructure import MessageHub
+from infrastructure.constants import SaveFilePaths
 
 class SaveFile:
     
@@ -10,21 +10,16 @@ class SaveFile:
         self._msg_provider: MessageHub = MessageHub()
         
         self._db_handler: DatabaseHandler = DatabaseHandler(
-            db_file_path=SaveFile._DB_FILE_PATH,
-            backup_file_path=SaveFile._BACKUP_FILE_PATH,
+            db_file_path=SaveFilePaths.MAIN_FILE_PATH,
+            backup_file_path=SaveFilePaths.BACKUP_FILE_PATH,
             latest_version=SaveFile._LATEST_VERSION,
-            db_structure=SaveFile._DB_STRUCURE,
+            db_structure=SaveFile._DB_STRUCTURE,
             db_updates=self._update_history
         )
     
     
-    _DB_FILE: str = "stats.sqlite"
-    _BACKUP_FILE: str = f"{_DB_FILE}.bak"
-    _DB_FILE_PATH: Path = Directory.get_roaming_data_path() / _DB_FILE
-    _BACKUP_FILE_PATH: Path = Directory.get_backup_path() / _BACKUP_FILE
-    
     _LATEST_VERSION: int = 1
-    _DB_STRUCURE: str = """
+    _DB_STRUCTURE: str = """
         CREATE TABLE IF NOT EXISTS Game (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT UNIQUE NOT NULL

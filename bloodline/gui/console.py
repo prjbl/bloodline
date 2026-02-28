@@ -10,10 +10,10 @@ from .shell_mechanics import ShellMechanics
 from .theme_manager import ThemeManager
 from .window_manager import WindowManager
 from core import CommandManager
-from infrastructure import Directory, MessageHub
+from infrastructure import MessageHub
+from infrastructure.constants import Metadata, WindowKeys, ThemeKeys
 from infrastructure.interfaces import IConsole
 from infrastructure.migration import MigrationPipeline
-from schemas.definitions import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 from services import UpdateService, WebManager
 
 class Application(IConsole):
@@ -45,14 +45,14 @@ class Application(IConsole):
         )
         self._shell_mechanics: ShellMechanics = ShellMechanics(self._cmd_manager.get_list_of_commands)
         self._setup_bindings()
-        UpdateService(request_interval_minutes=60.0).check_for_update()
+        UpdateService().check_for_update()
     
 
     _CURSOR_UNFOCUSED: str = "_"
     _PREFIX: chr = ">"
     _META: str = (
-        f"{Directory.get_app_name()} {Directory.get_version()}\n"
-        f"By {Directory.get_author()}\n"
+        f"{Metadata.APP_NAME} {Metadata.VERSION}\n"
+        f"By {Metadata.AUTHOR}\n"
         "----------------------------\n"
         f"{datetime.now().time().strftime('%H:%M:%S')}{_PREFIX} Use 'help' to get started"
     )
@@ -81,8 +81,8 @@ class Application(IConsole):
             self._root.state("zoomed")
         else:
             self._root.geometry(self._root_props.get(WindowKeys.GEOMETRY))
-        self._root.title(Directory.get_app_name())
-        self._root.config(bg=self._colors.get(ColorKeys.BACKGROUND))
+        self._root.title(Metadata.APP_NAME)
+        self._root.config(bg=self._colors.get(ThemeKeys.BACKGROUND))
     
     
     def _setup_entry_callback(self) -> None:
@@ -93,31 +93,31 @@ class Application(IConsole):
     def _setup_ui_elements(self) -> None:
         self._input_section: Frame = Frame(
             master=self._root,
-            bg=self._colors.get(ColorKeys.BACKGROUND)
+            bg=self._colors.get(ThemeKeys.BACKGROUND)
         )
         self._input_section.pack(
             fill="x",
             side="bottom",
-            padx=self._widget_props.get(WidgetKeys.PADDING),
-            pady=self._widget_props.get(WidgetKeys.PADDING)
+            padx=self._widget_props.get(ThemeKeys.PADDING),
+            pady=self._widget_props.get(ThemeKeys.PADDING)
         )
         
         self._input_prefix: Label = Label(
             master=self._input_section,
-            fg=self._colors.get(ColorKeys.COMMAND),
-            bg=self._colors.get(ColorKeys.BACKGROUND),
+            fg=self._colors.get(ThemeKeys.COMMAND),
+            bg=self._colors.get(ThemeKeys.BACKGROUND),
             text=Application._PREFIX
         )
         self._input_prefix.pack(side="left")
         
         self._input_entry: Entry = Entry(
             master=self._input_section,
-            fg=self._colors.get(ColorKeys.COMMAND),
-            bg=self._colors.get(ColorKeys.BACKGROUND),
-            insertbackground=self._colors.get(ColorKeys.COMMAND),
+            fg=self._colors.get(ThemeKeys.COMMAND),
+            bg=self._colors.get(ThemeKeys.BACKGROUND),
+            insertbackground=self._colors.get(ThemeKeys.COMMAND),
             relief="flat",
-            selectforeground=self._colors.get(ColorKeys.NORMAL),
-            selectbackground=self._colors.get(ColorKeys.SELECTION),
+            selectforeground=self._colors.get(ThemeKeys.NORMAL),
+            selectbackground=self._colors.get(ThemeKeys.SELECTION),
             textvariable=self._entry_var
         )
         self._input_entry.pack(
@@ -129,10 +129,10 @@ class Application(IConsole):
         
         self._console: ScrolledText = ScrolledText(
             master=self._root,
-            fg=self._colors.get(ColorKeys.NORMAL),
-            bg=self._colors.get(ColorKeys.BACKGROUND),
-            padx=self._widget_props.get(WidgetKeys.PADDING),
-            pady=self._widget_props.get(WidgetKeys.PADDING),
+            fg=self._colors.get(ThemeKeys.NORMAL),
+            bg=self._colors.get(ThemeKeys.BACKGROUND),
+            padx=self._widget_props.get(ThemeKeys.PADDING),
+            pady=self._widget_props.get(ThemeKeys.PADDING),
             relief="flat",
             wrap="word",
             state="disabled"
@@ -144,12 +144,12 @@ class Application(IConsole):
     
     
     def _setup_font(self) -> None:
-        desired_font_family: str = self._font_props.get(FontKeys.FAMILY)
+        desired_font_family: str = self._font_props.get(ThemeKeys.FAMILY)
         
         if desired_font_family in families():
             font_to_use: Font = Font(
                                     family=desired_font_family,
-                                    size=self._font_props.get(FontKeys.SIZE),
+                                    size=self._font_props.get(ThemeKeys.SIZE),
                                     weight="normal"
                                 )
         else:
@@ -168,19 +168,19 @@ class Application(IConsole):
     
     
     def _setup_console_tags(self) -> None:
-        self._console.tag_config("normal", foreground=self._colors.get(ColorKeys.NORMAL))
-        self._console.tag_config("list", foreground=self._colors.get(ColorKeys.NORMAL), lmargin1=self._char_width_in_px * 4, lmargin2=self._char_width_in_px * 9)
-        self._console.tag_config("command", foreground=self._colors.get(ColorKeys.COMMAND))
-        self._console.tag_config("success", foreground=self._colors.get(ColorKeys.SUCCESS))
-        self._console.tag_config("invalid", foreground=self._colors.get(ColorKeys.INVALID))
-        self._console.tag_config("note", foreground=self._colors.get(ColorKeys.NOTE))
-        self._console.tag_config("warning", foreground=self._colors.get(ColorKeys.WARNING))
-        self._console.tag_config("error", foreground=self._colors.get(ColorKeys.ERROR))
-        self._console.tag_config("hyperlink", foreground=self._colors.get(ColorKeys.HYPERLINK), underline=True)
+        self._console.tag_config("normal", foreground=self._colors.get(ThemeKeys.NORMAL))
+        self._console.tag_config("list", foreground=self._colors.get(ThemeKeys.NORMAL), lmargin1=self._char_width_in_px * 4, lmargin2=self._char_width_in_px * 9)
+        self._console.tag_config("command", foreground=self._colors.get(ThemeKeys.COMMAND))
+        self._console.tag_config("success", foreground=self._colors.get(ThemeKeys.SUCCESS))
+        self._console.tag_config("invalid", foreground=self._colors.get(ThemeKeys.INVALID))
+        self._console.tag_config("note", foreground=self._colors.get(ThemeKeys.NOTE))
+        self._console.tag_config("warning", foreground=self._colors.get(ThemeKeys.WARNING))
+        self._console.tag_config("error", foreground=self._colors.get(ThemeKeys.ERROR))
+        self._console.tag_config("hyperlink", foreground=self._colors.get(ThemeKeys.HYPERLINK), underline=True)
         
         # special tags
-        self._console.tag_config("preview_command", foreground=self._colors.get(ColorKeys.COMMAND))
-        self._console.tag_config("preview_selection", foreground=self._colors.get(ColorKeys.NORMAL), background=self._colors.get(ColorKeys.SELECTION))
+        self._console.tag_config("preview_command", foreground=self._colors.get(ThemeKeys.COMMAND))
+        self._console.tag_config("preview_selection", foreground=self._colors.get(ThemeKeys.NORMAL), background=self._colors.get(ThemeKeys.SELECTION))
     
     
     def _setup_text_config(self) -> None:

@@ -4,8 +4,8 @@ from typing import Any, override
 
 from .theme_manager import ThemeManager
 from .window_manager import WindowManager
+from infrastructure.constants import WindowKeys, ThemeKeys
 from infrastructure.interfaces import IOverlay
-from schemas.definitions import WindowKeys, ColorKeys, FontKeys, WidgetKeys
 
 class Overlay(IOverlay):
     
@@ -32,8 +32,8 @@ class Overlay(IOverlay):
     
     @override
     def display_lock_animation(self, animation_time: int, lock_state: bool) -> None:
-        self._toplevel.config(highlightbackground=self._colors.get(ColorKeys.ERROR) if lock_state else self._colors.get(ColorKeys.SUCCESS))
-        self.add_mainloop_task(animation_time, lambda: self._toplevel.config(highlightbackground=self._colors.get(ColorKeys.BACKGROUND)))
+        self._toplevel.config(highlightbackground=self._colors.get(ThemeKeys.ERROR) if lock_state else self._colors.get(ThemeKeys.SUCCESS))
+        self.add_mainloop_task(animation_time, lambda: self._toplevel.config(highlightbackground=self._colors.get(ThemeKeys.BACKGROUND)))
     
     
     @override
@@ -78,46 +78,46 @@ class Overlay(IOverlay):
         self._toplevel.attributes("-topmost", True)
         self._toplevel.overrideredirect(True)
         self._toplevel.config(
-            bg=self._colors.get(ColorKeys.BACKGROUND),
-            highlightthickness=self._widget_props.get(WidgetKeys.HIGHLIGHTTHICKNESS),
-            highlightbackground=self._colors.get(ColorKeys.BACKGROUND)
+            bg=self._colors.get(ThemeKeys.BACKGROUND),
+            highlightthickness=self._widget_props.get(ThemeKeys.HIGHLIGHTTHICKNESS),
+            highlightbackground=self._colors.get(ThemeKeys.BACKGROUND)
         )
     
     
     def _setup_ui_elements(self) -> None:
         self._container: Frame = Frame(
             master=self._toplevel,
-            bg=self._colors.get(ColorKeys.BACKGROUND)
+            bg=self._colors.get(ThemeKeys.BACKGROUND)
         )
         self._container.pack(
-            padx=self._widget_props.get(WidgetKeys.PADDING),
-            pady=self._widget_props.get(WidgetKeys.PADDING)
+            padx=self._widget_props.get(ThemeKeys.PADDING),
+            pady=self._widget_props.get(ThemeKeys.PADDING)
         )
         
         self._counter_label: Label = Label(
             master=self._container,
-            fg=self._colors.get(ColorKeys.NORMAL),
-            bg=self._colors.get(ColorKeys.BACKGROUND),
+            fg=self._colors.get(ThemeKeys.NORMAL),
+            bg=self._colors.get(ThemeKeys.BACKGROUND),
             text="No value yet"
         )
         self._counter_label.pack()
         
         self._timer_label: Label = Label(
             master=self._container,
-            fg=self._colors.get(ColorKeys.NORMAL),
-            bg=self._colors.get(ColorKeys.BACKGROUND),
+            fg=self._colors.get(ThemeKeys.NORMAL),
+            bg=self._colors.get(ThemeKeys.BACKGROUND),
             text="No value yet"
         )
         self._timer_label.pack()
     
     
     def _setup_font(self) -> None:
-        desired_font_family: str = self._font_props.get(FontKeys.FAMILY)
+        desired_font_family: str = self._font_props.get(ThemeKeys.FAMILY)
         
         if desired_font_family in families():
             font_to_use: Font = Font(
                                     family=desired_font_family,
-                                    size=self._font_props.get(FontKeys.SIZE),
+                                    size=self._font_props.get(ThemeKeys.SIZE),
                                     weight="normal"
                                 )
         else:

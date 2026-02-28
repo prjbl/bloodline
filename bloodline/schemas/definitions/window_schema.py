@@ -1,31 +1,16 @@
-from enum import Enum
-
 from pydantic import Field, field_validator
 from pydantic_core.core_schema import FieldValidationInfo
 
 from ..shared_models import AllowModel
 from ..validation_pattern import ValidationPattern
 from infrastructure import MessageHub
-
-class SectionKeys(str, Enum):
-    ROOT: str = "root"
-    TOPLEVEL: str = "toplevel"
-
-
-class WindowKeys(str, Enum):
-    GEOMETRY: str = "geometry"
-    MAXIMIZED: str = "maximized"
-    LOCKED: str = "locked"
-
+from infrastructure.constants import WindowSchema, WSectionKeys as SectionKeys
 
 _msg_provider: MessageHub = MessageHub()
 
-
-# Window schema
-
 class _RootWindow(AllowModel):
-    geometry: str = Field(default="600x350", alias=WindowKeys.GEOMETRY.value)
-    maximized: bool = Field(default=False, alias=WindowKeys.MAXIMIZED.value)
+    geometry: str = Field(default=WindowSchema.GEOMETRY_ROOT.default, alias=WindowSchema.GEOMETRY_ROOT.alias)
+    maximized: bool = Field(default=WindowSchema.MAXIMIZED.default, alias=WindowSchema.MAXIMIZED.alias)
     
     @field_validator("geometry")
     @classmethod
@@ -37,8 +22,8 @@ class _RootWindow(AllowModel):
 
 
 class _ToplevelWindow(AllowModel):
-    geometry: str = Field(default="+0+0", alias=WindowKeys.GEOMETRY.value)
-    locked: bool = Field(default=False, alias=WindowKeys.LOCKED.value)
+    geometry: str = Field(default=WindowSchema.GEOMETRY_TOPLEVEL.default, alias=WindowSchema.GEOMETRY_TOPLEVEL.alias)
+    locked: bool = Field(default=WindowSchema.LOCKED.default, alias=WindowSchema.LOCKED.alias)
     
     @field_validator("geometry")
     @classmethod
@@ -50,5 +35,5 @@ class _ToplevelWindow(AllowModel):
 
 
 class WindowModel(AllowModel):
-    root: _RootWindow = Field(default_factory=_RootWindow, alias=SectionKeys.ROOT.value)
-    toplevel: _ToplevelWindow = Field(default_factory=_ToplevelWindow, alias=SectionKeys.TOPLEVEL.value)
+    root: _RootWindow = Field(default_factory=_RootWindow, alias=SectionKeys.ROOT)
+    toplevel: _ToplevelWindow = Field(default_factory=_ToplevelWindow, alias=SectionKeys.TOPLEVEL)

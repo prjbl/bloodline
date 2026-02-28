@@ -3,7 +3,7 @@ from typing import List, Callable
 
 from .base_command import BaseInterceptCommand
 from file_io import CsvFileOperations
-from infrastructure import Directory
+from infrastructure.constants import Directory
 
 class StatsCommands(BaseInterceptCommand):
     
@@ -160,7 +160,7 @@ class StatsCommands(BaseInterceptCommand):
             return False
         
         file_name: str = f"{game_title.lower().replace(" ", "_")}.csv"
-        dst_file_path: Path = Directory.get_export_path() / file_name
+        dst_file_path: Path = Directory.EXPORT_PATH / file_name
         headers: List[str] = [header[0] for header in self._save_file.get_boss_table_description()]
         
         CsvFileOperations.perform_save(

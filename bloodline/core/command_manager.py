@@ -8,8 +8,8 @@ from .key_listener import KeyListener
 from .save_file import SaveFile
 from .timer import Timer
 from infrastructure import MessageHub
+from infrastructure.constants import HotkeyNames
 from infrastructure.interfaces import IConsole, IOverlay, IThemeManager, IWindowManager
-from schemas.definitions import HotkeyNames
 
 class CommandManager:
     
@@ -60,14 +60,14 @@ class CommandManager:
             "stats export": self._bind_method_params(self._stats_cmds.export_by, "id", "asc"),
             "keybinds": self._keybind_cmds.info,
             "keybinds list": self._keybind_cmds.list,
-            f"keybinds config {HotkeyNames.COUNTER_INC.value}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_INC),
-            f"keybinds config {HotkeyNames.COUNTER_DEC.value}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_DEC),
-            f"keybinds config {HotkeyNames.COUNTER_RESET.value}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_RESET),
-            f"keybinds config {HotkeyNames.TIMER_START.value}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_START),
-            f"keybinds config {HotkeyNames.TIMER_PAUSE.value}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_PAUSE),
-            f"keybinds config {HotkeyNames.TIMER_STOP.value}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_STOP),
-            f"keybinds config {HotkeyNames.TIMER_RESET.value}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_RESET),
-            f"keybinds config {HotkeyNames.LISTENER_END.value}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.LISTENER_END),
+            f"keybinds config {HotkeyNames.COUNTER_INC}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_INC),
+            f"keybinds config {HotkeyNames.COUNTER_DEC}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_DEC),
+            f"keybinds config {HotkeyNames.COUNTER_RESET}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_RESET),
+            f"keybinds config {HotkeyNames.TIMER_START}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_START),
+            f"keybinds config {HotkeyNames.TIMER_PAUSE}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_PAUSE),
+            f"keybinds config {HotkeyNames.TIMER_STOP}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_STOP),
+            f"keybinds config {HotkeyNames.TIMER_RESET}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_RESET),
+            f"keybinds config {HotkeyNames.LISTENER_END}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.LISTENER_END),
             "settings": self._settings_cmds.info,
             "settings lock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, True),
             "settings unlock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, False),
