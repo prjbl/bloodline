@@ -8,9 +8,8 @@ class HotkeyManager:
         self._sys_json_handler: SystemJsonHandler = SystemJsonHandler(
             main_file_path=SystemFiles.HOTKEYS.main_file_path,
             backup_file_path=SystemFiles.HOTKEYS.backup_file_path,
-            default_data=HotkeyModel()
+            validation_model=HotkeyModel()
         )
-        self._sys_json_handler.load_data()
     
     
     def set_new_keybind(self, hotkey: str, new_keybind: str) -> None:

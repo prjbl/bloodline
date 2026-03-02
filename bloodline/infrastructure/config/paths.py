@@ -29,8 +29,6 @@ class Directory:
     EXPORT_PATH: Path = DOCS_DATA_PATH / _EXPORT_DIR
     
     
-    # setup methods below
-    
     @classmethod
     def setup_all_dirs(cls) -> None:
         dirs: set = {
@@ -44,8 +42,6 @@ class Directory:
             dir.mkdir(parents=True, exist_ok=True)
     
     
-    # Roaming methods below
-    
     @classmethod
     def create_roaming_archive_dir(cls) -> None:
         cls.ROAMING_ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
@@ -56,14 +52,13 @@ class Directory:
         cls.LOGS_PATH.mkdir(parents=True, exist_ok=True)
     
     
-    # User documents methods below
-    
     @classmethod
     def create_docs_archive_dir(cls) -> None:
         cls.DOCS_ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
 
 
 class SystemFiles:
+    BLOODLINE_METADATA: _PathDef = _PathDef(".bloodline.metadata")
     UPDATE_STATE: _PathDef = _PathDef("update_state.json")
     WINDOW_STATE: _PathDef = _PathDef("window_state.json")
     THEME: _PathDef = _PathDef("theme.json")

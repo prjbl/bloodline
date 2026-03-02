@@ -20,10 +20,8 @@ class UpdateService:
         
         self._sys_json_handler: SystemJsonHandler = SystemJsonHandler(
             main_file_path=SystemFiles.UPDATE_STATE.main_file_path,
-            backup_file_path=SystemFiles.UPDATE_STATE.backup_file_path,
-            default_data=UpdateModel()
+            validation_model=UpdateModel()
         )
-        self._sys_json_handler.load_data()
     
     
     def check_for_update(self) -> None:

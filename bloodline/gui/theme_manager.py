@@ -19,9 +19,8 @@ class ThemeManager(IThemeManager):
             cls._instance._sys_json_handler = SystemJsonHandler(
                 main_file_path=SystemFiles.THEME.main_file_path,
                 backup_file_path=SystemFiles.THEME.backup_file_path,
-                default_data=ThemeModel()
+                validation_model=ThemeModel()
             )
-            cls._instance._sys_json_handler.load_data()
         return cls._instance
     
     

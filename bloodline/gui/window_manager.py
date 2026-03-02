@@ -19,9 +19,8 @@ class WindowManager(IWindowManager):
             cls._instance._sys_json_handler = SystemJsonHandler(
                 main_file_path=SystemFiles.WINDOW_STATE.main_file_path,
                 backup_file_path=SystemFiles.WINDOW_STATE.backup_file_path,
-                default_data=WindowModel()
+                validation_model=WindowModel()
             )
-            cls._instance._sys_json_handler.load_data()
         return cls._instance
     
     
