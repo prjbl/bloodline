@@ -15,7 +15,7 @@ class SettingsCommands(BaseInterceptCommand):
         self._msg_provider.invoke("This is a list of all settings commands:", "normal")
         self._msg_provider.invoke(
             "'settings unlock|lock overlay': Enables|Disables the ability to move the overlay\n"
-            "'settings import theme': Imports and changes the programs theme"
+            "'settings import theme': Imports and changes the programs theme\n"
             "'settings preview theme': Displays the current color theme", "list"
         )
     

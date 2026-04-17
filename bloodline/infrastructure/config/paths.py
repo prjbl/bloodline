@@ -6,26 +6,50 @@ from .metadata import Metadata
 
 class _PathDef:
     
-    def __init__(self, main_file_name: str):
-        self.main_file_path: Path = Directory.ROAMING_DATA_PATH / main_file_name
-        self.backup_file_path: Path = Directory.BACKUP_PATH / f"{main_file_name}.bak"
+    def __init__(self, file_name: str, has_backup: bool = True, provide_local: bool = False, provide_docs: bool = False):
+        self._main_file_path: Path = Directory.ROAMING_DATA_PATH / file_name
+        self._backup_file_path: Path | None = Directory.BACKUP_PATH / f"{file_name}.bak" if has_backup else None
+        self._local_file_path: Path | None = Directory.LOCAL_DATA_PATH / file_name if provide_local else None
+        self._docs_file_path: Path | None = Directory.DOCS_DATA_PATH / file_name if provide_docs else None
+    
+    
+    @property
+    def main_file_path(self) -> Path:
+        return self._main_file_path
+    
+    
+    @property
+    def backup_file_path(self) -> Path | None:
+        return self._backup_file_path
+    
+    
+    @property
+    def local_file_path(self) -> Path | None:
+        return self._local_file_path
+    
+    
+    @property
+    def docs_file_path(self) -> Path | None:
+        return self._docs_file_path
 
 
 class Directory:
-    _ARCHIVE_DIR: str = "_archive"
     _BACKUP_DIR: str = "backups"
+    _ARCHIVE_DIR: str = "_archive"
     _LOGS_DIR: str = "logs"
     _EXPORT_DIR: str = "exports"
     
     # Roaming
     ROAMING_DATA_PATH: Path = Path(user_data_dir(roaming=True)) / Metadata.AUTHOR / Metadata.APP_NAME
-    ROAMING_ARCHIVE_PATH: Path = ROAMING_DATA_PATH / _ARCHIVE_DIR
-    BACKUP_PATH: Path = ROAMING_DATA_PATH / _BACKUP_DIR
-    LOGS_PATH: Path = ROAMING_DATA_PATH / _LOGS_DIR
+    
+    # Local
+    LOCAL_DATA_PATH: Path = Path(user_data_dir(roaming=False)) / Metadata.AUTHOR / Metadata.APP_NAME
+    BACKUP_PATH: Path = LOCAL_DATA_PATH / _BACKUP_DIR
+    ARCHIVE_PATH: Path = LOCAL_DATA_PATH / _ARCHIVE_DIR
+    LOGS_PATH: Path = LOCAL_DATA_PATH / _LOGS_DIR
     
     # User documents
     DOCS_DATA_PATH: Path = Path(user_documents_dir()) / Metadata.AUTHOR / Metadata.APP_NAME
-    DOCS_ARCHIVE_PATH: Path = DOCS_DATA_PATH / _ARCHIVE_DIR
     EXPORT_PATH: Path = DOCS_DATA_PATH / _EXPORT_DIR
     
     
@@ -33,9 +57,9 @@ class Directory:
     def setup_all_dirs(cls) -> None:
         dirs: set = {
             cls.ROAMING_DATA_PATH,
+            cls.LOCAL_DATA_PATH,
             cls.BACKUP_PATH,
-            cls.DOCS_DATA_PATH,
-            cls.EXPORT_PATH
+            cls.DOCS_DATA_PATH
         }
         
         for dir in dirs:
@@ -43,8 +67,8 @@ class Directory:
     
     
     @classmethod
-    def create_roaming_archive_dir(cls) -> None:
-        cls.ROAMING_ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
+    def create_archive_dir(cls) -> None:
+        cls.ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
     
     
     @classmethod
@@ -53,12 +77,17 @@ class Directory:
     
     
     @classmethod
-    def create_docs_archive_dir(cls) -> None:
-        cls.DOCS_ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
+    def create_export_dir(cls) -> None:
+        cls.EXPORT_PATH.mkdir(parents=True, exist_ok=True)
 
 
 class SystemFiles:
-    BLOODLINE_METADATA: _PathDef = _PathDef(".bloodline.metadata")
+    BLOODLINE_METADATA: _PathDef = _PathDef(
+        file_name=".bloodline.metadata",
+        has_backup=False,
+        provide_local=True,
+        provide_docs=True
+    )
     UPDATE_STATE: _PathDef = _PathDef("update_state.json")
     WINDOW_STATE: _PathDef = _PathDef("window_state.json")
     THEME: _PathDef = _PathDef("theme.json")
