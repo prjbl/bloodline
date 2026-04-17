@@ -26,9 +26,9 @@ class WindowManager(IWindowManager):
     
     @override
     def set_toplevel_locked(self, new_lock_state: bool) -> bool:
-        window_state: dict = self._sys_json_handler.get_data()
+        window_state: dict = self._sys_json_handler.data
         
-        old_lock_state: bool = window_state.get(SectionKeys.TOPLEVEL).get(WindowKeys.LOCKED)
+        old_lock_state: bool = window_state[SectionKeys.TOPLEVEL][WindowKeys.LOCKED]
         
         if new_lock_state == old_lock_state:
             return False
@@ -39,18 +39,18 @@ class WindowManager(IWindowManager):
     
     
     def get_root_props(self) -> dict:
-        return self._sys_json_handler.get_data().get(SectionKeys.ROOT)
+        return self._sys_json_handler.data[SectionKeys.ROOT]
     
     
     def get_toplevel_props(self) -> dict:
-        return self._sys_json_handler.get_data().get(SectionKeys.TOPLEVEL)
+        return self._sys_json_handler.data[SectionKeys.TOPLEVEL]
     
     
     def set_root_props(self, new_geometry: str, new_max_state: bool) -> None:
-        window_state: dict = self._sys_json_handler.get_data()
+        window_state: dict = self._sys_json_handler.data
         
-        old_geometry: str = window_state.get(SectionKeys.ROOT).get(WindowKeys.GEOMETRY)
-        old_max_state: bool = window_state.get(SectionKeys.ROOT).get(WindowKeys.MAXIMIZED)
+        old_geometry: str = window_state[SectionKeys.ROOT][WindowKeys.GEOMETRY]
+        old_max_state: bool = window_state[SectionKeys.ROOT][WindowKeys.MAXIMIZED]
         
         if new_geometry == old_geometry and new_max_state == old_max_state:
             return
@@ -64,9 +64,9 @@ class WindowManager(IWindowManager):
     
     
     def set_toplevel_props(self, new_geometry: str) -> None:
-        window_state: dict = self._sys_json_handler.get_data()
+        window_state: dict = self._sys_json_handler.data
         
-        old_geometry: str = window_state.get(SectionKeys.TOPLEVEL).get(WindowKeys.GEOMETRY)
+        old_geometry: str = window_state[SectionKeys.TOPLEVEL][WindowKeys.GEOMETRY]
         
         if new_geometry == old_geometry:
             return

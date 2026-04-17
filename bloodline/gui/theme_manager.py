@@ -26,7 +26,7 @@ class ThemeManager(IThemeManager):
     
     @override
     def get_theme(self) -> dict:
-        return self._sys_json_handler.get_data()
+        return self._sys_json_handler.data
     
     
     @override
@@ -35,30 +35,30 @@ class ThemeManager(IThemeManager):
     
     
     def get_colors(self) -> dict:
-        return self._sys_json_handler.get_data().get(SectionKeys.COLORS)
+        return self._sys_json_handler.data[SectionKeys.COLORS]
     
     
     def get_root_font_props(self) -> dict:
         shared_font_props: dict = self._get_shared_props(self._get_font_props())
-        root_specific_props: dict = self._get_font_props().get(SectionKeys.ROOT)
+        root_specific_props: dict = self._get_font_props()[SectionKeys.ROOT]
         return {**shared_font_props, **root_specific_props} # unpack and merge
     
     
     def get_toplevel_font_props(self) -> dict:
         shared_font_props: dict = self._get_shared_props(self._get_font_props())
-        toplevel_specific_props: dict = self._get_font_props().get(SectionKeys.TOPLEVEL)
+        toplevel_specific_props: dict = self._get_font_props()[SectionKeys.TOPLEVEL]
         return {**shared_font_props, **toplevel_specific_props}
     
     
     def get_root_widget_props(self) -> dict:
         shared_widget_props: dict = self._get_shared_props(self._get_widget_props())
-        root_specific_props: dict = self._get_widget_props().get(SectionKeys.ROOT)
+        root_specific_props: dict = self._get_widget_props()[SectionKeys.ROOT]
         return {**shared_widget_props, **root_specific_props}
     
     
     def get_toplevel_widget_props(self) -> dict:
         share_widget_props: dict = self._get_shared_props(self._get_widget_props())
-        toplevel_specific_props: dict = self._get_widget_props().get(SectionKeys.TOPLEVEL)
+        toplevel_specific_props: dict = self._get_widget_props()[SectionKeys.TOPLEVEL]
         return {**share_widget_props, **toplevel_specific_props}
     
     
@@ -73,8 +73,8 @@ class ThemeManager(IThemeManager):
     
     
     def _get_font_props(self) -> dict:
-        return self._sys_json_handler.get_data().get(SectionKeys.FONT)
+        return self._sys_json_handler.data[SectionKeys.FONT]
     
     
     def _get_widget_props(self) -> dict:
-        return self._sys_json_handler.get_data().get(SectionKeys.WIDGETS)
+        return self._sys_json_handler.data[SectionKeys.WIDGETS]

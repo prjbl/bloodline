@@ -76,12 +76,12 @@ class Application(IConsole):
     
     
     def _setup_window(self) -> None:
-        if self._root_props.get(WindowKeys.MAXIMIZED):
+        if self._root_props[WindowKeys.MAXIMIZED]:
             self._root.state("zoomed")
         else:
-            self._root.geometry(self._root_props.get(WindowKeys.GEOMETRY))
+            self._root.geometry(self._root_props[WindowKeys.GEOMETRY])
         self._root.title(Metadata.APP_NAME)
-        self._root.config(bg=self._colors.get(ThemeKeys.BACKGROUND))
+        self._root.config(bg=self._colors[ThemeKeys.BACKGROUND])
     
     
     def _setup_entry_callback(self) -> None:
@@ -92,31 +92,31 @@ class Application(IConsole):
     def _setup_ui_elements(self) -> None:
         self._input_section: Frame = Frame(
             master=self._root,
-            bg=self._colors.get(ThemeKeys.BACKGROUND)
+            bg=self._colors[ThemeKeys.BACKGROUND]
         )
         self._input_section.pack(
             fill="x",
             side="bottom",
-            padx=self._widget_props.get(ThemeKeys.PADDING),
-            pady=self._widget_props.get(ThemeKeys.PADDING)
+            padx=self._widget_props[ThemeKeys.PADDING],
+            pady=self._widget_props[ThemeKeys.PADDING]
         )
         
         self._input_prefix: Label = Label(
             master=self._input_section,
-            fg=self._colors.get(ThemeKeys.COMMAND),
-            bg=self._colors.get(ThemeKeys.BACKGROUND),
+            fg=self._colors[ThemeKeys.COMMAND],
+            bg=self._colors[ThemeKeys.BACKGROUND],
             text=Application._PREFIX
         )
         self._input_prefix.pack(side="left")
         
         self._input_entry: Entry = Entry(
             master=self._input_section,
-            fg=self._colors.get(ThemeKeys.COMMAND),
-            bg=self._colors.get(ThemeKeys.BACKGROUND),
-            insertbackground=self._colors.get(ThemeKeys.COMMAND),
+            fg=self._colors[ThemeKeys.COMMAND],
+            bg=self._colors[ThemeKeys.BACKGROUND],
+            insertbackground=self._colors[ThemeKeys.COMMAND],
             relief="flat",
-            selectforeground=self._colors.get(ThemeKeys.NORMAL),
-            selectbackground=self._colors.get(ThemeKeys.SELECTION),
+            selectforeground=self._colors[ThemeKeys.NORMAL],
+            selectbackground=self._colors[ThemeKeys.SELECTION],
             textvariable=self._entry_var
         )
         self._input_entry.pack(
@@ -128,10 +128,10 @@ class Application(IConsole):
         
         self._console: ScrolledText = ScrolledText(
             master=self._root,
-            fg=self._colors.get(ThemeKeys.NORMAL),
-            bg=self._colors.get(ThemeKeys.BACKGROUND),
-            padx=self._widget_props.get(ThemeKeys.PADDING),
-            pady=self._widget_props.get(ThemeKeys.PADDING),
+            fg=self._colors[ThemeKeys.NORMAL],
+            bg=self._colors[ThemeKeys.BACKGROUND],
+            padx=self._widget_props[ThemeKeys.PADDING],
+            pady=self._widget_props[ThemeKeys.PADDING],
             relief="flat",
             wrap="word",
             state="disabled"
@@ -143,12 +143,12 @@ class Application(IConsole):
     
     
     def _setup_font(self) -> None:
-        desired_font_family: str = self._font_props.get(ThemeKeys.FAMILY)
+        desired_font_family: str = self._font_props[ThemeKeys.FAMILY]
         
         if desired_font_family in families():
             font_to_use: Font = Font(
                                     family=desired_font_family,
-                                    size=self._font_props.get(ThemeKeys.SIZE),
+                                    size=self._font_props[ThemeKeys.SIZE],
                                     weight="normal"
                                 )
         else:
@@ -167,19 +167,19 @@ class Application(IConsole):
     
     
     def _setup_console_tags(self) -> None:
-        self._console.tag_config("normal", foreground=self._colors.get(ThemeKeys.NORMAL))
-        self._console.tag_config("list", foreground=self._colors.get(ThemeKeys.NORMAL), lmargin1=self._char_width_in_px * 4, lmargin2=self._char_width_in_px * 9)
-        self._console.tag_config("command", foreground=self._colors.get(ThemeKeys.COMMAND))
-        self._console.tag_config("success", foreground=self._colors.get(ThemeKeys.SUCCESS))
-        self._console.tag_config("invalid", foreground=self._colors.get(ThemeKeys.INVALID))
-        self._console.tag_config("note", foreground=self._colors.get(ThemeKeys.NOTE))
-        self._console.tag_config("warning", foreground=self._colors.get(ThemeKeys.WARNING))
-        self._console.tag_config("error", foreground=self._colors.get(ThemeKeys.ERROR))
-        self._console.tag_config("hyperlink", foreground=self._colors.get(ThemeKeys.HYPERLINK), underline=True)
+        self._console.tag_config("normal", foreground=self._colors[ThemeKeys.NORMAL])
+        self._console.tag_config("list", foreground=self._colors[ThemeKeys.NORMAL], lmargin1=self._char_width_in_px * 4, lmargin2=self._char_width_in_px * 9)
+        self._console.tag_config("command", foreground=self._colors[ThemeKeys.COMMAND])
+        self._console.tag_config("success", foreground=self._colors[ThemeKeys.SUCCESS])
+        self._console.tag_config("invalid", foreground=self._colors[ThemeKeys.INVALID])
+        self._console.tag_config("note", foreground=self._colors[ThemeKeys.NOTE])
+        self._console.tag_config("warning", foreground=self._colors[ThemeKeys.WARNING])
+        self._console.tag_config("error", foreground=self._colors[ThemeKeys.ERROR])
+        self._console.tag_config("hyperlink", foreground=self._colors[ThemeKeys.HYPERLINK], underline=True)
         
         # special tags
-        self._console.tag_config("preview_command", foreground=self._colors.get(ThemeKeys.COMMAND))
-        self._console.tag_config("preview_selection", foreground=self._colors.get(ThemeKeys.NORMAL), background=self._colors.get(ThemeKeys.SELECTION))
+        self._console.tag_config("preview_command", foreground=self._colors[ThemeKeys.COMMAND])
+        self._console.tag_config("preview_selection", foreground=self._colors[ThemeKeys.NORMAL], background=self._colors[ThemeKeys.SELECTION])
     
     
     def _setup_text_config(self) -> None:

@@ -12,14 +12,14 @@ from infrastructure.interfaces import IOverlay, IThemeManager, IWindowManager
 class BaseCommand:
     
     def __init__(self, instances: dict):
-        self._overlay: IOverlay = instances.get("overlay")
-        self._theme_manager: IThemeManager = instances.get("theme_manager")
-        self._window_manager: IWindowManager = instances.get("window_manager")
-        self._hk_manager: HotkeyManager = instances.get("hk_manager")
-        self._counter: Counter = instances.get("counter")
-        self._timer: Timer = instances.get("timer")
-        self._key_listener: KeyListener = instances.get("key_listener")
-        self._save_file: SaveFile = instances.get("save_file")
+        self._overlay: IOverlay = instances["overlay"]
+        self._theme_manager: IThemeManager = instances["theme_manager"]
+        self._window_manager: IWindowManager = instances["window_manager"]
+        self._hk_manager: HotkeyManager = instances["hk_manager"]
+        self._counter: Counter = instances["counter"]
+        self._timer: Timer = instances["timer"]
+        self._key_listener: KeyListener = instances["key_listener"]
+        self._save_file: SaveFile = instances["save_file"]
         
         self._msg_provider: MessageHub = MessageHub()
 

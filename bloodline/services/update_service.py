@@ -37,7 +37,7 @@ class UpdateService:
             response.raise_for_status()
             
             data: dict = response.json()
-            latest_version: str = data.get("tag_name")
+            latest_version: str = data["tag_name"]
             
             if self._get_new_version_available(latest_version):
                 release_url: str = Metadata.URL_LATEST_RELEASE
@@ -53,8 +53,8 @@ class UpdateService:
     
     def _get_check_allowed(self) -> bool:
         current_timestamp: datetime = datetime.now()
-        update_state: dict = self._sys_json_handler.get_data()
-        last_api_request: datetime = datetime.strptime(update_state.get(Metadata.LAST_API_REQUEST), Metadata.UPDATE_TIME_FORMAT)
+        update_state: dict = self._sys_json_handler.data
+        last_api_request: datetime = datetime.strptime(update_state[Metadata.LAST_API_REQUEST], Metadata.UPDATE_TIME_FORMAT)
         
         if not self._update_file_exists:
             return True

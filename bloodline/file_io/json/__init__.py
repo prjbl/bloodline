@@ -1,3 +1,2 @@
 from .external_json_handler import ExternalJsonHandler
-from .migration_json_handler import MigrationJsonHandler
 from .system_json_handler import SystemJsonHandler

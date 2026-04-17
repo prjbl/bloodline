@@ -13,11 +13,11 @@ class HotkeyManager:
     
     
     def set_new_keybind(self, hotkey: str, new_keybind: str) -> None:
-        hotkeys: dict = self._sys_json_handler.get_data()
+        hotkeys: dict = self._sys_json_handler.data
         hotkeys[hotkey] = new_keybind
         
         self._sys_json_handler.set_data(hotkeys)
     
     
     def get_current_hotkeys(self) -> dict:
-        return self._sys_json_handler.get_data()
+        return self._sys_json_handler.data

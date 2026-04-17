@@ -32,8 +32,8 @@ class Overlay(IOverlay):
     
     @override
     def display_lock_animation(self, animation_time: int, lock_state: bool) -> None:
-        self._toplevel.config(highlightbackground=self._colors.get(ThemeKeys.ERROR) if lock_state else self._colors.get(ThemeKeys.SUCCESS))
-        self.add_mainloop_task(animation_time, lambda: self._toplevel.config(highlightbackground=self._colors.get(ThemeKeys.BACKGROUND)))
+        self._toplevel.config(highlightbackground=self._colors[ThemeKeys.ERROR] if lock_state else self._colors[ThemeKeys.SUCCESS])
+        self.add_mainloop_task(animation_time, lambda: self._toplevel.config(highlightbackground=self._colors[ThemeKeys.BACKGROUND]))
     
     
     @override
@@ -74,50 +74,50 @@ class Overlay(IOverlay):
     
     
     def _setup_window(self) -> None:
-        self._toplevel.geometry(self._toplevel_props.get(WindowKeys.GEOMETRY))
+        self._toplevel.geometry(self._toplevel_props[WindowKeys.GEOMETRY])
         self._toplevel.attributes("-topmost", True)
         self._toplevel.overrideredirect(True)
         self._toplevel.config(
-            bg=self._colors.get(ThemeKeys.BACKGROUND),
-            highlightthickness=self._widget_props.get(ThemeKeys.HIGHLIGHTTHICKNESS),
-            highlightbackground=self._colors.get(ThemeKeys.BACKGROUND)
+            bg=self._colors[ThemeKeys.BACKGROUND],
+            highlightthickness=self._widget_props[ThemeKeys.HIGHLIGHTTHICKNESS],
+            highlightbackground=self._colors[ThemeKeys.BACKGROUND]
         )
     
     
     def _setup_ui_elements(self) -> None:
         self._container: Frame = Frame(
             master=self._toplevel,
-            bg=self._colors.get(ThemeKeys.BACKGROUND)
+            bg=self._colors[ThemeKeys.BACKGROUND]
         )
         self._container.pack(
-            padx=self._widget_props.get(ThemeKeys.PADDING),
-            pady=self._widget_props.get(ThemeKeys.PADDING)
+            padx=self._widget_props[ThemeKeys.PADDING],
+            pady=self._widget_props[ThemeKeys.PADDING]
         )
         
         self._counter_label: Label = Label(
             master=self._container,
-            fg=self._colors.get(ThemeKeys.NORMAL),
-            bg=self._colors.get(ThemeKeys.BACKGROUND),
+            fg=self._colors[ThemeKeys.NORMAL],
+            bg=self._colors[ThemeKeys.BACKGROUND],
             text="No value yet"
         )
         self._counter_label.pack()
         
         self._timer_label: Label = Label(
             master=self._container,
-            fg=self._colors.get(ThemeKeys.NORMAL),
-            bg=self._colors.get(ThemeKeys.BACKGROUND),
+            fg=self._colors[ThemeKeys.NORMAL],
+            bg=self._colors[ThemeKeys.BACKGROUND],
             text="No value yet"
         )
         self._timer_label.pack()
     
     
     def _setup_font(self) -> None:
-        desired_font_family: str = self._font_props.get(ThemeKeys.FAMILY)
+        desired_font_family: str = self._font_props[ThemeKeys.FAMILY]
         
         if desired_font_family in families():
             font_to_use: Font = Font(
                                     family=desired_font_family,
-                                    size=self._font_props.get(ThemeKeys.SIZE),
+                                    size=self._font_props[ThemeKeys.SIZE],
                                     weight="normal"
                                 )
         else:
@@ -135,7 +135,7 @@ class Overlay(IOverlay):
     
     
     def _on_lmb_click(self, event: Any) -> None:
-        if self._toplevel_props.get(WindowKeys.LOCKED):
+        if self._toplevel_props[WindowKeys.LOCKED]:
             return
         
         self._offset_x = self._toplevel.winfo_pointerx() - self._toplevel.winfo_rootx()
@@ -143,7 +143,7 @@ class Overlay(IOverlay):
     
     
     def _on_lmb_drag(self, event: Any) -> None:
-        if self._toplevel_props.get(WindowKeys.LOCKED):
+        if self._toplevel_props[WindowKeys.LOCKED]:
             return
         
         pos_x: int = self._toplevel.winfo_pointerx() - self._offset_x
@@ -154,17 +154,17 @@ class Overlay(IOverlay):
     def _on_resize(self, event: Any) -> None:
         self._calc_alignment()
         
-        if self._alignment.get("left"):
+        if self._alignment["left"]:
             return # tkinters default is left aligned
         
         self._difference_width: int = self._init_width - self._toplevel.winfo_width()
         toplevel_x: int = self._toplevel.winfo_rootx()
         toplevle_y: int = self._toplevel.winfo_rooty()
         
-        if self._alignment.get("centered"):
+        if self._alignment["centered"]:
             self._difference_width = int(self._difference_width / 2)
             self._toplevel.geometry(f"+{toplevel_x + self._difference_width}+{toplevle_y}")
-        elif self._alignment.get("right"):
+        elif self._alignment["right"]:
             self._toplevel.geometry(f"+{toplevel_x + self._difference_width}+{toplevle_y}")
     
     

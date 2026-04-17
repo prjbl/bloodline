@@ -9,6 +9,7 @@ class StatsCommands(BaseInterceptCommand):
     
     def __init__(self, instances: dict):
         super().__init__(instances)
+        self._context: dict = {}
     
     
     _AVG_LABEL: str = "AVG"
@@ -148,27 +149,40 @@ class StatsCommands(BaseInterceptCommand):
             self._msg_provider.invoke("Please enter the <\"game title\"> you want the stats exported from <...>", "normal")
             return True
         
-        pattern_result: List[str] = self._get_input_pattern_result("single")
+        if self._current_step == 1:
+            pattern_result: List[str] = self._get_input_pattern_result("single")
+            
+            if not pattern_result:
+                return False
+            
+            game_title: str = pattern_result[0]
+            game_data: List[tuple] = self._save_file.get_bosses_from_game_by(game_title, sort_filter, order_filter)
+            
+            if not game_data:
+                return False
+            
+            self._context = {
+                "file_name": (file_name := f"{game_title.lower().replace(" ", "_")}.csv"),
+                "dst_file_path": str(Directory.EXPORT_PATH / file_name),
+                "headers": [header[0] for header in self._save_file.get_boss_table_description()],
+                "game_data": game_data
+            }
         
-        if not pattern_result:
+        active_process: bool | None = self._process_override_protection()
+        if active_process is None:
+            self._context.clear()
             return False
+        if active_process:
+            return True
         
-        game_title: str = pattern_result[0]
-        game_data: List[tuple] = self._save_file.get_bosses_from_game_by(game_title, sort_filter, order_filter)
-        
-        if not game_data:
-            return False
-        
-        file_name: str = f"{game_title.lower().replace(" ", "_")}.csv"
-        dst_file_path: Path = Directory.EXPORT_PATH / file_name
-        headers: List[str] = [header[0] for header in self._save_file.get_boss_table_description()]
-        
+        Directory.create_export_dir()
         CsvFileOperations.perform_save(
-            dst_file_path=dst_file_path,
-            headers=headers,
-            data=game_data
+            dst_file_path=self._context["dst_file_path"],
+            headers=self._context["headers"],
+            data=self._context["game_data"]
         )
-        self._msg_provider.invoke(f"The data was successfully written to the file \"{file_name}\"", "success")
+        self._msg_provider.invoke(f"The data was successfully written to the file \"{self._context["file_name"]}\"", "success")
+        self._context.clear()
         return False
     
     
@@ -247,6 +261,29 @@ class StatsCommands(BaseInterceptCommand):
         
         self._counter.set_question_answered()
         self.reset_step_count()
+        return False
+    
+    
+    def _process_override_protection(self) -> bool | None:
+        dst_file_path: Path = Path(self._context["dst_file_path"])
+        
+        if self._current_step < 1 or not dst_file_path.exists():
+            return False
+        
+        if self._current_step == 1 and dst_file_path.exists():
+            self._msg_provider.invoke(f"The file '{self._context["file_name"]}' already exists in the target directory", "note")
+            self._msg_provider.invoke("Please enter <y[es]|n[o]> whether the file should be overwritten or not <...>", "normal")
+            return True
+        
+        pattern_result: List[str] = self._get_input_pattern_result("yes_no")
+        
+        if not pattern_result:
+            return None
+        
+        decision: str = pattern_result[0]
+        if not self._check_yes_confirmation(decision):
+            self._msg_provider.invoke("The data export is being aborted", "normal")
+            return None
         return False
     
     

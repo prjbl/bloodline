@@ -190,7 +190,8 @@ class SystemJsonHandler(JsonFileOperations, ISystemJsonHandler):
             self._backup_strategy.handle_file_restore()
     
     
-    def get_data(self) -> dict:
+    @property
+    def data(self) -> dict:
         return self._data
     
     
