@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Any, List, Callable
 
-from .commands import BaseInterceptCommand, TrackingCommands, SetupCommands, StatsCommands, KeybindCommands, SettingsCommands
+from .commands import BaseInterceptCommand, SystemCommands, TrackingCommands, SetupCommands, StatsCommands, KeybindCommands, SettingsCommands
 from .counter import Counter
 from .hotkey_manager import HotkeyManager
 from .key_listener import KeyListener
@@ -26,8 +26,9 @@ class CommandManager:
         self._setup_input_vars()
         
         # category action -scope-filter arg1 -sort-filter arg2 -order-filter arg3
-        self._commands: dict = { # const that is only changed when cancel commands are added/deleted to/from itself
-            "help": self._help,
+        # const that is only changed when cancel commands are added/deleted to/from itself
+        self._commands: dict = {
+            "help": self._system_cmds.help,
             "tracking": self._tracking_cmds.info,
             "tracking new": self._tracking_cmds.new,
             "tracking continue": self._tracking_cmds.carry_on,
@@ -73,7 +74,7 @@ class CommandManager:
             "settings unlock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, False),
             "settings import theme": self._settings_cmds.import_theme,
             "settings preview theme": self._settings_cmds.preview_theme,
-            "quit": self.quit
+            "quit": self._system_cmds.quit
         }
         self._cancel_commands: dict = {"cancel": self._cancel}
         
@@ -95,6 +96,7 @@ class CommandManager:
     
     def _setup_command_instances(self) -> None:
         core_instances: dict = {
+            "console": self._console,
             "overlay": self._overlay,
             "theme_manager": self._theme_manager,
             "window_manager": self._window_manager,
@@ -105,6 +107,7 @@ class CommandManager:
             "save_file": self._save_file
         }
         
+        self._system_cmds: SystemCommands = SystemCommands(core_instances)
         self._tracking_cmds: TrackingCommands = TrackingCommands(core_instances)
         self._setup_cmds: SetupCommands = SetupCommands(core_instances)
         self._stats_cmds: StatsCommands = StatsCommands(core_instances)
@@ -192,21 +195,14 @@ class CommandManager:
     
     # command methods below
     
-    def _help(self) -> None:
-        self._msg_provider.invoke("This is a list of all command categories:", "normal")
-        self._msg_provider.invoke(
-            "tracking: Lists all tracking actions\n"
-            "setup: Lists all setup actions\n"
-            "stats: Lists all stats actions\n"
-            "keybinds: Lists all keybind actions\n"
-            "settings: Lists all settings actions\n"
-            "quit: Quits the application", "list"
-        )
-    
-    
+    # delegation method for the console WM_DELETE_WINDOW protocol
     def quit(self) -> None:
-        self._save_file.close_connection()
-        self._console.quit()
+        if self._intercept_next_input and self._last_command_executed == "quit":
+            self._active_category.increase_step_count()
+            self._system_cmds.quit(is_wm_delete=True)
+            return
+        
+        self.process_input("quit")
     
     
     def _cancel(self) -> None:

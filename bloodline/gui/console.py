@@ -200,7 +200,7 @@ class Application(IConsole):
     
     
     def _setup_bindings(self) -> None:
-        self._root.protocol("WM_DELETE_WINDOW", self._on_close)
+        self._root.protocol("WM_DELETE_WINDOW", self._cmd_manager.quit) # additionally checks for unsafed values and closes the db connection
         
         self._console.tag_bind("hyperlink", "<Enter>", self._on_enter_hyperlink)
         self._console.tag_bind("hyperlink", "<Leave>", self._on_leave_hyperlink)
@@ -214,10 +214,6 @@ class Application(IConsole):
         self._input_entry.bind("<Tab>", lambda event: self._shell_mechanics.auto_complete(self._input_entry))
         self._input_entry.bind("<Up>", lambda event: self._shell_mechanics.get_last_input(self._input_entry))
         self._input_entry.bind("<Down>", lambda event: self._shell_mechanics.get_prev_input(self._input_entry))
-    
-    
-    def _on_close(self) -> None:
-        self._cmd_manager.quit() # additionally closes the db connection
     
     
     def _on_enter_hyperlink(self, event: Event) -> None:

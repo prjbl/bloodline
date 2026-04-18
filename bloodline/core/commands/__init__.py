@@ -3,4 +3,5 @@ from .keybind_commands import KeybindCommands
 from .settings_commands import SettingsCommands
 from .setup_commands import SetupCommands
 from .stats_commands import StatsCommands
+from .system_commands import SystemCommands
 from .tracking_commands import TrackingCommands

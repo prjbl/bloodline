@@ -7,11 +7,12 @@ from ..key_listener import KeyListener
 from ..save_file import SaveFile
 from ..timer import Timer
 from infrastructure import MessageHub
-from infrastructure.interfaces import IOverlay, IThemeManager, IWindowManager
+from infrastructure.interfaces import IConsole, IOverlay, IThemeManager, IWindowManager
 
 class BaseCommand:
     
     def __init__(self, instances: dict):
+        self._console: IConsole = instances["console"]
         self._overlay: IOverlay = instances["overlay"]
         self._theme_manager: IThemeManager = instances["theme_manager"]
         self._window_manager: IWindowManager = instances["window_manager"]
@@ -67,3 +68,8 @@ class BaseInterceptCommand(BaseCommand):
             self._msg_provider.invoke("The input does not match the pattern. Make sure to correct the pattern and try again", "invalid")
             return []
         return list(map(str, result.groups()))
+    
+    
+    @staticmethod
+    def _check_yes_confirmation(decision: str) -> bool:
+        return decision.casefold() == "y" or decision.casefold() == "yes"

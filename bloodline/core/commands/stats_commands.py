@@ -271,7 +271,7 @@ class StatsCommands(BaseInterceptCommand):
             return False
         
         if self._current_step == 1 and dst_file_path.exists():
-            self._msg_provider.invoke(f"The file '{self._context["file_name"]}' already exists in the target directory", "note")
+            self._msg_provider.invoke(f"The file '{self._context["file_name"]}' already exists in the target directory", "warning")
             self._msg_provider.invoke("Please enter <y[es]|n[o]> whether the file should be overwritten or not <...>", "normal")
             return True
         
@@ -285,8 +285,3 @@ class StatsCommands(BaseInterceptCommand):
             self._msg_provider.invoke("The data export is being aborted", "normal")
             return None
         return False
-    
-    
-    @staticmethod
-    def _check_yes_confirmation(decision: str) -> bool:
-        return decision.casefold() == "y" or decision.casefold() == "yes"
