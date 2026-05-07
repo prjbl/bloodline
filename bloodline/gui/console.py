@@ -13,11 +13,13 @@ from core import CommandManager
 from infrastructure import MessageHub
 from infrastructure.config import Metadata, Directory, WindowKeys, ThemeKeys
 from infrastructure.interfaces import IConsole
+from infrastructure.migration import MigrationPipeline
 from services import UpdateService, WebManager
 
 class Application(IConsole):
     
     Directory.setup_all_dirs()
+    MigrationPipeline.handle_migration_process()
     
     def __init__(self):
         self._msg_provider: MessageHub = MessageHub()
