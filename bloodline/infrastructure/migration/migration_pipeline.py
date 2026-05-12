@@ -2,7 +2,10 @@ from pathlib import Path
 from shutil import make_archive, copytree, rmtree
 from typing import List, Tuple
 
+from platformdirs import user_data_dir, user_documents_dir
+
 from .legacy_data import LegacyData
+from .version_changes import VersionChanges
 from file_io.json import SystemJsonHandler, MigrationJsonHandler
 from infrastructure import MessageHub
 from infrastructure.config import Directory, MetadataSchema, Metadata, SystemFiles
@@ -12,39 +15,53 @@ class MigrationPipeline:
     
     _msg_provider: MessageHub = MessageHub()
     
-    _roaming_meta_handler: SystemJsonHandler = SystemJsonHandler(
-        main_file_path=SystemFiles.BLOODLINE_METADATA.main_file_path,
-        validation_model=MetadataModel()
-    )
-    _local_meta_handler: SystemJsonHandler = SystemJsonHandler(
-        main_file_path=SystemFiles.BLOODLINE_METADATA.local_file_path,
-        validation_model=MetadataModel()
-    )
-    _docs_meta_handler: SystemJsonHandler = SystemJsonHandler(
-        main_file_path=SystemFiles.BLOODLINE_METADATA.docs_file_path,
-        validation_model=MetadataModel()
-    )
-    
     _MIGRATIONS: List[LegacyData] = [
         LegacyData(
             version="0.9.0-beta",
             schema_version=0,
-            migration_method=lambda: (),
+            migration_method=VersionChanges.migrate_v090_to_091,
             roaming_dirs="Bloodline/0.9.0-beta",
             docs_dirs="Bloodline",
             backup_docs=True,
             alt_signature=["ui_config.json", "save_file.sqlite"]
         ),
+        # LegacyData(
+        #   ... 
+        # ),
+        
+        # current version
         LegacyData(
-            version="0.9.1-testversion",
-            schema_version=1,
+            version=MetadataSchema.VERSION.default,
+            schema_version=MetadataSchema.SCHEMA_VERSION.default,
             migration_method=lambda: (),
-            roaming_dirs="NME/Bloodline",
-            local_dirs="NME/Bloodline",
-            docs_dirs="NME/Bloodline",
-            metadata=".bloodline.metadata"
+            roaming_dirs=Directory.ROAMING_DATA_PATH.relative_to(Path(user_data_dir(roaming=True))),
+            local_dirs=Directory.LOCAL_DATA_PATH.relative_to(Path(user_data_dir(roaming=False))),
+            docs_dirs=Directory.DOCS_DATA_PATH.relative_to(Path(user_documents_dir())),
+            backup_roaming=False,
+            backup_local=False,
+            backup_docs=False,
+            metadata=SystemFiles.BLOODLINE_METADATA.file_name
         )
     ]
+    
+    
+    @classmethod
+    def setup_meta_files(cls) -> None:
+        """
+        Handler are only generated to ensure file existence and validation
+        """
+        roaming_meta_handler: SystemJsonHandler = SystemJsonHandler(
+            main_file_path=SystemFiles.BLOODLINE_METADATA.main_file_path,
+            validation_model=MetadataModel()
+        )
+        local_meta_handler: SystemJsonHandler = SystemJsonHandler(
+            main_file_path=SystemFiles.BLOODLINE_METADATA.local_file_path,
+            validation_model=MetadataModel()
+        )
+        docs_meta_handler: SystemJsonHandler = SystemJsonHandler(
+            main_file_path=SystemFiles.BLOODLINE_METADATA.docs_file_path,
+            validation_model=MetadataModel()
+        )
     
     
     @classmethod
@@ -59,10 +76,12 @@ class MigrationPipeline:
         
         cls._archive_legacy_backup(first_pending, remaining_pending)
         
-        for legacy_data in remaining_pending:
+        for index, legacy_data in enumerate(remaining_pending[:-1]):
             try:
-                legacy_data.migration_method(legacy_data)
-                cls._update_schema_version(legacy_data)
+                next_legacy_data: LegacyData = remaining_pending[index + 1]
+                
+                legacy_data.migration_method(legacy_data, next_legacy_data)
+                cls._update_schema_version(next_legacy_data)
             except Exception as e:
                 return cls._msg_provider.invoke(
                     f"An unexpected error occured while migrating the data to version \"{legacy_data.version}\".\n"
@@ -107,7 +126,7 @@ class MigrationPipeline:
         
         if any(migration.backup_roaming for migration in remaining_pending):
             src_paths.append((first_pending.roaming_data_path, "roaming"))
-        if any(migration.backup_local for migration in remaining_pending):
+        if any(migration.backup_local for migration in remaining_pending) and first_pending.local_data_path is not None:
             src_paths.append((first_pending.local_data_path, "appdata_local"))
         if any(migration.backup_docs for migration in remaining_pending):
             src_paths.append((first_pending.docs_data_path, "user_documents"))
@@ -137,11 +156,26 @@ class MigrationPipeline:
     
     
     @classmethod
-    def _update_schema_version(cls, legacy_data: LegacyData) -> None:
-        data: dict = cls._roaming_meta_handler.data
-        data[MetadataSchema.VERSION.alias] = legacy_data.version
-        data[MetadataSchema.SCHEMA_VERSION.alias] = legacy_data.schema_version
+    def _update_schema_version(cls, next_legacy_data: LegacyData) -> None:
+        data_paths: List[Path] = [
+            next_legacy_data.roaming_data_path,
+            next_legacy_data.docs_data_path
+        ]
         
-        cls._roaming_meta_handler.set_data(data)
-        cls._local_meta_handler.set_data(data)
-        cls._docs_meta_handler.set_data(data)
+        if next_legacy_data.local_data_path is not None:
+            data_paths.append(next_legacy_data.local_data_path)
+        
+        if next_legacy_data.metadata is None:
+            return
+        
+        for path in data_paths:
+            meta_handler: SystemJsonHandler = SystemJsonHandler(
+                main_file_path=path / next_legacy_data.metadata,
+                validation_model=MetadataModel()
+            )
+            
+            data: dict = meta_handler.data
+            data[MetadataSchema.VERSION.alias] = next_legacy_data.version
+            data[MetadataSchema.SCHEMA_VERSION.alias] = next_legacy_data.schema_version
+            
+            meta_handler.set_data(data)

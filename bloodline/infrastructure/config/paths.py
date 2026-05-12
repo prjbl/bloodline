@@ -7,10 +7,16 @@ from .metadata import Metadata
 class _PathDef:
     
     def __init__(self, file_name: str, has_backup: bool = True, provide_local: bool = False, provide_docs: bool = False):
+        self._file_name: str = file_name
         self._main_file_path: Path = Directory.ROAMING_DATA_PATH / file_name
         self._backup_file_path: Path | None = Directory.BACKUP_PATH / f"{file_name}.bak" if has_backup else None
         self._local_file_path: Path | None = Directory.LOCAL_DATA_PATH / file_name if provide_local else None
         self._docs_file_path: Path | None = Directory.DOCS_DATA_PATH / file_name if provide_docs else None
+    
+    
+    @property
+    def file_name(self) -> str:
+        return self._file_name
     
     
     @property

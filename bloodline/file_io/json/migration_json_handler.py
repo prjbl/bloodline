@@ -10,10 +10,15 @@ class MigrationJsonHandler(JsonFileOperations):
     
     @classmethod
     def load_raw(cls, src_file_path: Path) -> dict | None:
+        if not src_file_path.exists():
+            cls._msg_provider.invoke(f"The path \"{src_file_path}\" does not exist. Migration step will be skipped", "warning")
+            return None
+        
         try:
             return cls._perform_load(src_file_path)
-        except (JSONDecodeError, TypeError):
-            cls._msg_provider.invoke("Error (migration_json_handler.py, line 16)", "error")
+        except JSONDecodeError:
+            cls._msg_provider.invoke(f"The file \"{src_file_path.name}\" is corrupted. Please make sure to check it and restart the application", "error")
+            return None
     
     
     @classmethod

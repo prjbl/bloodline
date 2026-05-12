@@ -19,6 +19,7 @@ from services import UpdateService, WebManager
 class Application(IConsole):
     
     Directory.setup_all_dirs()
+    MigrationPipeline.setup_meta_files()
     MigrationPipeline.handle_migration_process()
     
     def __init__(self):

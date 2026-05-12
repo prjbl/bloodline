@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List
@@ -8,7 +10,7 @@ from platformdirs import user_data_dir, user_documents_dir
 class LegacyData:
     version: str
     schema_version: int
-    migration_method: Callable[..., None]
+    migration_method: Callable[[LegacyData, LegacyData], None]
     roaming_dirs: str
     docs_dirs: str
     local_dirs: str | None = None
@@ -30,7 +32,9 @@ class LegacyData:
     
     @property
     def local_data_path(self) -> Path | None:
-        return Path(user_data_dir(roaming=False)) / self.local_dirs if self.local_dirs is not None else None
+        if self.local_dirs is None:
+            return None
+        return Path(user_data_dir(roaming=False)) / self.local_dirs
     
     
     @property
