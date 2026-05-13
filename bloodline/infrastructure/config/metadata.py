@@ -4,7 +4,7 @@ from .field_definition import FieldDef
 
 class Metadata:
     APP_NAME: str = "Bloodline"
-    AUTHOR: str = "Project Bloodline"
+    AUTHOR: str = "NME"
     VERSION: str = "0.9.1-beta"
     
     _GITHUB_USER: str = "prjbl"
