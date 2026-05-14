@@ -65,6 +65,7 @@ class Directory:
             cls.ROAMING_DATA_PATH,
             cls.LOCAL_DATA_PATH,
             cls.BACKUP_PATH,
+            cls.LOGS_PATH,
             cls.DOCS_DATA_PATH
         }
         
@@ -75,11 +76,6 @@ class Directory:
     @classmethod
     def create_archive_dir(cls) -> None:
         cls.ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
-    
-    
-    @classmethod
-    def create_logs_dir(cls) -> None:
-        cls.LOGS_PATH.mkdir(parents=True, exist_ok=True)
     
     
     @classmethod
