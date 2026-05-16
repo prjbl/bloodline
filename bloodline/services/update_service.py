@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from itertools import zip_longest
 from json import JSONDecodeError
+from logging import getLogger
 from re import findall
 from typing import Any, List
 
@@ -45,6 +46,7 @@ class UpdateService:
                 self._msg_provider.invoke(release_url, "hyperlink", release_url)
         except JSONDecodeError:
             self._msg_provider.invoke("The fetched update data is corrupted or invalid. The update check is being aborted", "error")
+            getLogger(__name__).error("Update check failed: invalid fetch data")
         except RequestException:
             pass
     

@@ -1,3 +1,4 @@
+from logging import Logger, getLogger
 from pathlib import Path
 from shutil import make_archive, copytree, rmtree
 from typing import List, Tuple
@@ -14,6 +15,7 @@ from schemas.definitions import MetadataModel
 class MigrationPipeline:
     
     _msg_provider: MessageHub = MessageHub()
+    _logger: Logger = getLogger(__name__)
     
     _MIGRATIONS: List[LegacyData] = [
         LegacyData(
@@ -79,14 +81,17 @@ class MigrationPipeline:
         for index, legacy_data in enumerate(remaining_pending[:-1]):
             try:
                 next_legacy_data: LegacyData = remaining_pending[index + 1]
+                cls._logger.info(f"Migration started: v{legacy_data.version} -> v{next_legacy_data.version}")
                 
                 legacy_data.migration_method(legacy_data, next_legacy_data)
                 cls._update_schema_version(next_legacy_data)
+                cls._logger.info("Migration successful")
             except Exception as e:
-                return cls._msg_provider.invoke(
+                cls._msg_provider.invoke(
                     f"An unexpected error occured while migrating the data to version \"{legacy_data.version}\".\n"
                     f"Exception: {e}", "error"
                 )
+                return cls._logger.exception("Migration failed: unexpected error")
     
     
     # helper methods below

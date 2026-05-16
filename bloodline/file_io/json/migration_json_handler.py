@@ -1,4 +1,5 @@
 from json import JSONDecodeError
+from logging import getLogger
 from pathlib import Path
 
 from .json_file_operations import JsonFileOperations
@@ -18,6 +19,7 @@ class MigrationJsonHandler(JsonFileOperations):
             return cls._perform_load(src_file_path)
         except JSONDecodeError:
             cls._msg_provider.invoke(f"The file \"{src_file_path.name}\" is corrupted. Please make sure to check it and restart the application", "error")
+            getLogger(__name__).error("Migration file load failed: corrupted file")
             return None
     
     
