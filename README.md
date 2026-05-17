@@ -17,6 +17,7 @@ Record deaths and encounter times using global hotkeys and evaluate your perform
 - [💡 Technical Notes](#-technical-notes)
 - [📟 Commands](#-commands)
 - [⌨️ Default Keybinds](#️-default-keybinds)
+- [🐛 Submitting Issues](#-submitting-issues)
 - [🔗 Dependencies](#-dependencies)
 - [🛡️ Compatibility & Security](#️-compatibility--security)
 - [📜 License & Usage](#-license--usage)
@@ -53,7 +54,7 @@ The program allows you to precisely evaluate your stored data. A typical workflo
 ## 📥 Download
 
 ### Releases
-You can always find the latest versions on the [releases page](https://github.com/prjbl/bloodline/releases).  
+You can always find the latest versions on the [Releases](https://github.com/prjbl/bloodline/releases) page.  
 Currently Bloodline is only available for **Windows** as a standalone file. Linux support is planned as a universal `.flatpak` package for the future.
 
 ### Preset & Theme Templates
@@ -141,6 +142,23 @@ Keybinds can be set using the `Shift L` / `Shift R` modifiers.
 
 ---
 
+## 🐛 Submitting Issues
+
+Since the project is currently in its Beta-Phase, reporting bugs is all the more important to improve the user experience. If you encounter any bug, crash, or strange behavior, please let me know!
+
+### How to Report a Bug
+Check the [Issues](https://github.com/prjbl/bloodline/issues) page first to see if the bug has already been reported. If that's not the case, report the bug via the *"New issue"* button.  
+Please include the following information in your report to make it as easy as possible to understand and fix the problem:
+
+1. **Clear Title:** Make it easier for others who experience the same bug to find it.
+2. **Short Description:** Explain in a brief summary what the problem is.
+3. **Reproducible? (optional):** Steps on how to reproduce the bug.
+4. **Log Files:** Affected log files attached to the issue.
+
+On Windows, the log files can be found under: `%LOCALAPPDATA%\NME\Bloodline\logs`.
+
+---
+
 ## 🔗 Dependencies
 
 Bloodline is *built with Python 3.13* and relies on the following external libraries:
@@ -168,6 +186,6 @@ Additionally, since the program utilizes global hotkeys via the pynput library, 
 
 As this project is primarily intended to provide easy access for users and friends, no official open-source license is currently attached. Standard copyright law applies with the following express permissions:
 
-- **Private Use:** You are free to use the [source code](./bloodline) and [releases](https://github.com/prjbl/bloodline/releases) for personal, non-commercial purposes.
+- **Private Use:** You are free to use the [source code](./bloodline) and [Releases](https://github.com/prjbl/bloodline/releases) for personal, non-commercial purposes.
 
 - **Commercial Use:** Commercial use of the code or the resulting application is not permitted without prior written consent.

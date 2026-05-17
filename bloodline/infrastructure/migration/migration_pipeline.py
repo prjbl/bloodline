@@ -91,7 +91,7 @@ class MigrationPipeline:
                     f"An unexpected error occured while migrating the data to version \"{legacy_data.version}\".\n"
                     f"Exception: {e}", "error"
                 )
-                return cls._logger.exception("Migration failed: unexpected error")
+                return cls._logger.exception("Migration failed")
     
     
     # helper methods below

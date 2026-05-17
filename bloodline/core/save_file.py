@@ -1,3 +1,4 @@
+from logging import Logger, getLogger
 from typing import List
 
 from file_io import DatabaseHandler
@@ -8,6 +9,7 @@ class SaveFile:
     
     def __init__(self):
         self._msg_provider: MessageHub = MessageHub()
+        self._logger: Logger = getLogger(__name__)
         
         self._db_handler: DatabaseHandler = DatabaseHandler(
             db_file_path=SystemFiles.STATS.main_file_path,
@@ -74,6 +76,7 @@ class SaveFile:
             params=(game_title,),
             success_msg=f"The game \"{game_title}\" was added to the save file",
             error_msg=f"An unexpected error occurred while adding the game \"{game_title}\" to the save file",
+            error_log_msg=f"Adding game failed (\"{game_title}\")",
             ensure_backup=False
         )
     
@@ -96,6 +99,7 @@ class SaveFile:
             params=(boss_name, game_title),
             success_msg=f"The boss \"{boss_name}\" was added to the game \"{cased_game_title}\"",
             error_msg=f"An unexpected error occurred while adding the boss \"{boss_name}\" to the game \"{cased_game_title}\"",
+            error_log_msg=f"Adding boss failed: \"{boss_name}\" -> \"{cased_game_title}\"",
             ensure_backup=ensure_backup
         )
     
@@ -193,7 +197,8 @@ class SaveFile:
             sql=sql,
             params=(new_game_title, game_title),
             success_msg=f"The game \"{old_game_title}\" was renamed to \"{new_game_title}\"",
-            error_msg=f"An unexpected error occurred while renaming the game \"{old_game_title}\" to \"{new_game_title}\""
+            error_msg=f"An unexpected error occurred while renaming the game \"{old_game_title}\" to \"{new_game_title}\"",
+            error_log_msg=f"Renaming game failed: \"{old_game_title}\" -> \"{new_game_title}\""
         )
     
     
@@ -234,7 +239,8 @@ class SaveFile:
             sql=sql,
             params=(game_title,),
             success_msg=f"The game \"{removed_game}\" was deleted",
-            error_msg=f"An unexpected error occurred while removing the game \"{self._get_cased_game_title(game_title)}\" from the save file"
+            error_msg=f"An unexpected error occurred while removing the game \"{self._get_cased_game_title(game_title)}\" from the save file",
+            error_log_msg=f"Removing game failed (\"{self._get_cased_game_title(game_title)}\")"
         )
     
     
@@ -256,7 +262,8 @@ class SaveFile:
             sql=sql,
             params=(boss_name, game_title),
             success_msg=f"The boss \"{removed_boss}\" of the game \"{self._get_cased_game_title(game_title)}\" was removed",
-            error_msg=f"An unexpected error occurred while removing the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self._get_cased_game_title(game_title)}\""
+            error_msg=f"An unexpected error occurred while removing the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self._get_cased_game_title(game_title)}\"",
+            error_log_msg=f"Removing boss failed (\"{self._get_cased_boss_name(boss_name, game_title)}\", \"{self._get_cased_game_title(game_title)}\")"
         )
     
     
@@ -277,7 +284,8 @@ class SaveFile:
             sql=sql,
             params=(deaths, required_time, boss_name, game_title),
             success_msg=f"The boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self._get_cased_game_title(game_title)}\" was updated with the following values: Deaths {deaths}, Req. time {required_time}",
-            error_msg=f"An unexpected error occurred while saving the stats to the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self._get_cased_game_title(game_title)}\""
+            error_msg=f"An unexpected error occurred while saving the stats to the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self._get_cased_game_title(game_title)}\"",
+            error_log_msg=f"Saving stats failed (\"{self._get_cased_boss_name(boss_name, game_title)}\", \"{self._get_cased_game_title(game_title)}\")"
         )
     
     
@@ -439,7 +447,7 @@ class SaveFile:
     
     # helper methods below
     
-    def _execute_and_report_dml(self, sql: str, params: tuple, success_msg: str | None, error_msg: str, ensure_backup: bool = True) -> bool:
+    def _execute_and_report_dml(self, sql: str, params: tuple, success_msg: str | None, error_msg: str, error_log_msg: str, ensure_backup: bool = True) -> bool:
         try:
             self._db_handler.execute_dml(sql, *params)
             
@@ -454,6 +462,7 @@ class SaveFile:
                 f"{error_msg}.\n"
                 f"Exception: {e}", "error"
             )
+            self._logger.exception(error_log_msg)
             return False
     
     
@@ -524,6 +533,7 @@ class SaveFile:
             params=(new_boss_name, boss_name, game_title),
             success_msg=None,
             error_msg=f"An unexpected error occurred while renaming the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self._get_cased_game_title(game_title)}\" to \"{new_boss_name}\"",
+            error_log_msg=f"Renaming boss failed: \"{self._get_cased_boss_name(boss_name, game_title)}\", \"{self._get_cased_game_title(game_title)}\" -> \"{new_boss_name}\", _",
             ensure_backup=ensure_backup
         )
     
@@ -539,6 +549,7 @@ class SaveFile:
             params=(new_game_title, boss_name, game_title),
             success_msg=None,
             error_msg=f"An unexpected error occurred while moving the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self._get_cased_game_title(game_title)}\" to \"{new_game_title}\"",
+            error_log_msg=f"Moving boss failed: \"{self._get_cased_boss_name(boss_name, game_title)}\", \"{self._get_cased_game_title(game_title)}\" -> _, \"{new_game_title}\"",
             ensure_backup=ensure_backup
         )
     

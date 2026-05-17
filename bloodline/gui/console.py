@@ -1,6 +1,6 @@
 from datetime import datetime
 from inspect import signature, Signature
-from logging import Logger, getLogger
+from logging import getLogger
 from tkinter import Tk, Frame, Label, Entry, StringVar, Event
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
@@ -20,7 +20,6 @@ class Application(IConsole):
     
     def __init__(self):
         self._msg_provider: MessageHub = MessageHub()
-        self._logger: Logger = getLogger(__name__)
         self._theme_manager: ThemeManager = ThemeManager()
         self._window_manager: WindowManager = WindowManager()
         self._setup_config_vars()
@@ -65,7 +64,7 @@ class Application(IConsole):
     @override
     def quit(self):
         self._window_manager.set_root_props(self._root.winfo_geometry(), True if self._root.state() == "zoomed" else False)
-        self._logger.info(f"{Metadata.APP_NAME} exited")
+        getLogger(__name__).info(f"{Metadata.APP_NAME} exited")
         self._root.destroy()
     
     
@@ -159,7 +158,6 @@ class Application(IConsole):
                 "Make sure to select an already installed font using the 'setup import theme' command.\n"
                 "Tip: Use a monospaced font for best visual results", "note"
             )
-            self._logger.warning("Loading font failed: unknown family")
         
         self._input_prefix.config(font=font_to_use)
         self._input_entry.config(font=font_to_use)

@@ -23,7 +23,6 @@ class DatabaseHandler:
         self._conn: Connection | None = None
         self._cursor: Cursor | None = None
         
-        self._logger.info(f"Database handler initialized ('{self._db_file_name}')")
         self._setup_files()
     
     
@@ -68,7 +67,6 @@ class DatabaseHandler:
             self._handle_backup_process()
         except DatabaseError:
             self._msg_provider.invoke(f"The file \"{self._backup_file_name}\" is corrupted. It will be re-initialized", "error")
-            self._logger.error("Save file backup failed: corrupted file")
             self._reinitialize_backup_file()
     
     
@@ -92,7 +90,6 @@ class DatabaseHandler:
             self._create_tables()
         except DatabaseError:
             self._msg_provider.invoke(f"The file \"{self._db_file_name}\" is corrupted. An attempt is made to load the last backup", "error")
-            self._logger.error("Save file integrity failed: corrupted file")
             self._handle_file_restore()
     
     
@@ -119,7 +116,6 @@ class DatabaseHandler:
     def _handle_file_restore(self) -> None:
         if not self._backup_file_path.exists():
             self._msg_provider.invoke("No save file backup could be found. Both files will be re-initialized", "error")
-            self._logger.error("Save file load failed (backup): no file found")
             self._reinitialize_db_file()
             self._reinitialize_backup_file()
             return
@@ -134,10 +130,8 @@ class DatabaseHandler:
             self._load_backup()
             self._open_connection()
             self._msg_provider.invoke(f"Loading the backup from \"{self._backup_file_name}\" was successful", "success")
-            self._logger.warning("Save file restored from backup")
         except DatabaseError:
             self._msg_provider.invoke(f"The file \"{self._backup_file_name}\" is corrupted. Both files will be re-initialized", "error")
-            self._logger.error("Save file load failed (backup): corrupted file")
             self._reinitialize_db_file()
             self._reinitialize_backup_file()
             
@@ -183,13 +177,12 @@ class DatabaseHandler:
             self._open_connection()
             self._create_tables()
             self._msg_provider.invoke(f"The file \"{self._db_file_name}\" was re-initialized successfully", "success")
-            self._logger.warning("Save file reset: default restored")
         except Exception as e:
             self._msg_provider.invoke(
                 f"An unexpected error occurred while re-initializing the file \"{self._db_file_name}\".\n"
                 f"Exception: {e}", "error"
             )
-            self._logger.exception("Save file reset failed: unexpected error")
+            self._logger.exception(f"Save file reset failed (\"{self._db_file_name}\")")
     
     
     def _reinitialize_backup_file(self) -> None:
@@ -197,10 +190,9 @@ class DatabaseHandler:
             self._backup_file_path.unlink(missing_ok=True)
             self._handle_backup_process()
             self._msg_provider.invoke(f"The file \"{self._backup_file_name}\" was re-initialized successfully", "success")
-            self._logger.warning("Save file backup reset: default restored")
         except Exception as e:
             self._msg_provider.invoke(
                 f"An unexpected error occurred while re-initializing the file \"{self._backup_file_name}\".\n"
                 f"Exception: {e}", "error"
             )
-            self._logger.exception("Save file backup reset failed: unexpected error")
+            self._logger.exception(f"Save file backup reset failed (\"{self._backup_file_name}\")")

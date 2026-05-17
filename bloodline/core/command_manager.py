@@ -1,4 +1,5 @@
 from functools import partial
+from logging import Logger, getLogger
 from typing import Any, List, Callable
 
 from .commands import BaseInterceptCommand, SystemCommands, TrackingCommands, SetupCommands, StatsCommands, KeybindCommands, SettingsCommands
@@ -20,6 +21,7 @@ class CommandManager:
         self._window_manager: IWindowManager = window_manager
         
         self._msg_provider: MessageHub = MessageHub()
+        self._logger: Logger = getLogger(__name__)
         
         self._setup_core_instances()
         self._setup_command_instances()
@@ -155,12 +157,14 @@ class CommandManager:
     
     def _handle_intercepted_input(self, console_input: str, cleaned_console_input: str) -> bool:
         if cleaned_console_input in self._cancel_commands:
+            self._logger.info(f"Cancel command executed: '{cleaned_console_input}'")
             self._cancel_commands.get(cleaned_console_input)()
             return False
         
         self._active_category.set_console_input(console_input)
         self._active_category.increase_step_count()
         self._msg_provider.invoke(console_input, "request")
+        self._logger.info(f"Console request input: {console_input}")
         return self._commands.get(self._last_command_executed)()
     
     
@@ -171,6 +175,7 @@ class CommandManager:
             self._msg_provider.invoke("Unknown input. Please use 'help' to get a list of all working command categories", "invalid")
             return
         
+        self._logger.info(f"Command executed: '{cleaned_console_input}'")
         self._last_command_executed: str = cleaned_console_input
         command_method: Callable[..., bool | None] = self._commands.get(cleaned_console_input)
         isInterceptMethod: bool | None = command_method()

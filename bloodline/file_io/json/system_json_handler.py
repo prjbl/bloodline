@@ -39,14 +39,13 @@ class _ActiveBackup(ISystemBackupStrategy):
                 f"An unexpected error occurred while loading the backup to the file \"{main_file_name}\".\n"
                 f"Exception: {e}", "error"
             )
-            _logger.exception("System file load failed (backup): unexpected error")
+            _logger.exception(f"System file backup load failed: \"{self._backup_file_name}\" -> \"{main_file_name}\"")
     
     
     @override
     def handle_file_restore(self) -> None:
         if not self.backup_exists():
             _msg_provider.invoke("No backup could be found. Both files will be re-initialized", "error")
-            _logger.error("System file load failed (backup): no file found")
             self._sys_json_handler._reinitialize_main_file()
             self._reinitialize_backup_file()
             return
@@ -58,10 +57,8 @@ class _ActiveBackup(ISystemBackupStrategy):
             self._load_backup()
             self._sys_json_handler._load_validate_and_synchronize()
             _msg_provider.invoke(f"Loading the backup from \"{self._backup_file_name}\" was successful", "success")
-            _logger.warning("System file restored from backup")
         except JSONDecodeError:
             _msg_provider.invoke(f"The file \"{self._backup_file_name}\" is corrupted. Both files will be re-initialized", "error")
-            _logger.error("System file load failed (backup): corrupted file")
             self._sys_json_handler._reinitialize_main_file()
             self._reinitialize_backup_file()
     
@@ -73,13 +70,12 @@ class _ActiveBackup(ISystemBackupStrategy):
             self._backup_file_path.unlink(missing_ok=True)
             self.sync_backup()
             _msg_provider.invoke(f"The file \"{self._backup_file_name}\" was re-initialized successfully", "success")
-            _logger.warning("System file backup reset: default restored")
         except Exception as e:
             _msg_provider.invoke(
                 f"An unexpected error occurred while re-initializing the file \"{self._backup_file_name}\".\n"
                 f"Exception: {e}", "error"
             )
-            _logger.exception("System file backup reset failed: unexpected error")
+            _logger.exception(f"System file backup reset failed (\"{self._backup_file_name}\")")
     
     
     def _load_backup(self) -> None:
@@ -120,7 +116,6 @@ class SystemJsonHandler(JsonFileOperations, ISystemJsonHandler):
         
         self._main_file_name: str = main_file_path.name
         
-        _logger.info(f"System json handler initialized ('{self._main_file_name}')")
         self._setup_files()
         self._load_data()
     
@@ -159,13 +154,12 @@ class SystemJsonHandler(JsonFileOperations, ISystemJsonHandler):
             self._main_file_path.unlink(missing_ok=True)
             self._create_main_file()
             _msg_provider.invoke(f"The file \"{self._main_file_name}\" was re-initialized successfully", "success")
-            _logger.warning("System file reset: default restored")
         except Exception as e:
             _msg_provider.invoke(
                 f"An unexpected error occurred while re-initializing the file \"{self._main_file_name}\".\n"
                 f"Exception: {e}", "error"
             )
-            _logger.exception("System file reset failed: unexpected error")
+            _logger.exception(f"System file reset failed (\"{self._main_file_name}\")")
     
     
     def _setup_files(self) -> None:
@@ -198,7 +192,6 @@ class SystemJsonHandler(JsonFileOperations, ISystemJsonHandler):
             else:
                 _msg_provider.invoke(f"The file \"{self._main_file_name}\" is corrupted. An attempt is made to load the last backup", "error")
             
-            _logger.error("System file integrity failed: corrupted file")
             self._backup_strategy.handle_file_restore()
     
     

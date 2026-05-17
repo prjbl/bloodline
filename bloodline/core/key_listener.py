@@ -1,3 +1,4 @@
+from logging import getLogger
 from threading import Thread
 from typing import Callable, Set
 
@@ -64,6 +65,7 @@ class KeyListener:
             self._msg_provider.invoke(
                 f"An unexpected error occurred while pressing the key \"{cleaned_key_input}\".\n"
                 f"Exception: {e}", "error")
+            getLogger(__name__).exception(f"Key press handling failed (\"{cleaned_key_input}\")")
     
     
     # keybind change methods below
