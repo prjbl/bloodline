@@ -98,6 +98,9 @@ class MigrationPipeline:
     
     @classmethod
     def _get_first_pending(cls) -> Tuple[int, LegacyData] | None:
+        if cls._check_early_exit():
+            return None
+        
         for index, legacy_data in enumerate(cls._MIGRATIONS):
             roaming_data_path: Path = legacy_data.roaming_data_path
             
@@ -122,7 +125,27 @@ class MigrationPipeline:
             
             if correct_dir and migration_required:
                 return index, legacy_data
+        
+        cls._update_schema_version(cls._MIGRATIONS[-1])
         return None
+    
+    
+    @classmethod
+    def _check_early_exit(cls) -> bool:
+        curr_data: LegacyData = cls._MIGRATIONS[-1]
+        
+        metadata_file: Path = curr_data.roaming_data_path / curr_data.metadata
+        if not metadata_file.exists():
+            return False
+        
+        raw_data: dict | None = MigrationJsonHandler.load_raw(metadata_file)
+        if raw_data is None:
+            return False
+        
+        correct_dir: bool = raw_data.get(MetadataSchema.SIGNATURE.alias) == Metadata.URL_REPO
+        up_to_date: bool = raw_data.get(MetadataSchema.SCHEMA_VERSION.alias) == MetadataSchema.SCHEMA_VERSION.default
+        
+        return correct_dir and up_to_date
     
     
     @classmethod

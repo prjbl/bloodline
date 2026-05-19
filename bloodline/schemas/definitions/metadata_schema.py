@@ -8,7 +8,7 @@ from infrastructure.config import MetadataSchema
 class MetadataModel(AllowModel):
     signature: str = Field(default=MetadataSchema.SIGNATURE.default, alias=MetadataSchema.SIGNATURE.alias)
     version: str = Field(default=MetadataSchema.VERSION.default, alias=MetadataSchema.VERSION.alias)
-    schema_version: int = Field(default=MetadataSchema.SCHEMA_VERSION.default, alias=MetadataSchema.SCHEMA_VERSION.alias)
+    schema_version: int = Field(default=0, alias=MetadataSchema.SCHEMA_VERSION.alias)
     
     @field_validator("signature")
     @classmethod
@@ -29,6 +29,6 @@ class MetadataModel(AllowModel):
     def _validate_schema_version(cls, schema_version: int) -> int:
         curr_schema_version: int = MetadataSchema.SCHEMA_VERSION.default
         
-        if schema_version <= 0 or schema_version > curr_schema_version:
+        if schema_version < 0 or schema_version > curr_schema_version:
             return curr_schema_version
         return schema_version

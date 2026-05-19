@@ -91,7 +91,7 @@ class _NoBackup(ISystemBackupStrategy):
     
     @override
     def backup_exists(self) -> bool:
-        return True
+        return False
     
     
     @override
