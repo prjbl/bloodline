@@ -54,7 +54,8 @@ class VersionChanges:
         entries_to_delete: List[Path] = [
             new_roaming_path / "ui_config.json",
             new_backup_path / "ui_config.json.bak",
-            old_roaming_path,
+            new_docs_path / "exports",
+            old_roaming_path.parent,
             old_backup_path,
             old_docs_path
         ]
