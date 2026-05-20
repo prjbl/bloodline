@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import override
+from typing import override, Callable
 
 from file_io.json import SystemJsonHandler
 from infrastructure.config import TSectionKeys as SectionKeys, SystemFiles
@@ -11,6 +11,7 @@ class ThemeManager(IThemeManager):
     
     _instance: ThemeManager | None = None
     _sys_json_handler: SystemJsonHandler | None = None
+    _reload_widgets: Callable[..., None] | None = None
     
     def __new__(cls):
         if cls._instance is None:
@@ -32,6 +33,11 @@ class ThemeManager(IThemeManager):
     @override
     def set_theme(self, loaded_theme: dict) -> None:
         self._sys_json_handler.set_data(loaded_theme)
+        self._reload_widgets()
+    
+    
+    def link_callback(self, callback_method: Callable[..., None]) -> None:
+        self._reload_widgets = callback_method
     
     
     def get_colors(self) -> dict:

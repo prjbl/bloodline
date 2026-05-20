@@ -1,8 +1,6 @@
 from datetime import datetime, timedelta
-from itertools import zip_longest
 from json import JSONDecodeError
-from re import findall
-from typing import Any, List
+from packaging.version import Version
 
 from requests import get, Response, RequestException
 
@@ -69,18 +67,8 @@ class UpdateService:
     
     def _get_new_version_available(self, latest_version: str) -> bool:
         curr_version: str = Metadata.VERSION
-        parsed_curr_version: List[int] = self._parse_version(curr_version)
-        parsed_latest_version: List[int] = self._parse_version(latest_version)
+        latest_version = latest_version.removeprefix("v")
         
-        for curr, latest in zip_longest(parsed_curr_version, parsed_latest_version, fillvalue=0):
-            if curr > latest:
-                return False
-            if latest > curr:
-                return True
+        if Version(latest_version) > Version(curr_version):
+            return True
         return False
-    
-    
-    @staticmethod
-    def _parse_version(version: str) -> List[int]:
-        numbers: List[Any] = findall(r"\d+", version)
-        return [int(x) for x in numbers]

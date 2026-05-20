@@ -59,7 +59,7 @@ class SettingsCommands(BaseInterceptCommand):
             return False
         
         self._theme_manager.set_theme(loaded_theme)
-        self._msg_provider.invoke("The imported theme was applied. Make sure to restart the program for the changes to display", "success")
+        self._msg_provider.invoke("The imported theme was applied", "success")
         return False
     
     

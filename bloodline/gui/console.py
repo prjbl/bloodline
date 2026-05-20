@@ -28,12 +28,12 @@ class Application(IConsole):
         self._setup_window()
         self._setup_entry_callback()
         self._setup_ui_elements()
-        self._setup_font()
-        self._setup_console_tags()
+        self._apply_theme()
         self._setup_text_config()
         
         self._print_output(Application._META, "normal")
         self._msg_provider.link_callback(self._print_output) # also iterates over the msg buffer to prevent the texts from being displayed in the wrong order
+        self._theme_manager.link_callback(self._apply_theme)
         
         self._cmd_manager: CommandManager = CommandManager(
             console=self,
@@ -57,12 +57,17 @@ class Application(IConsole):
     
     
     @override
-    def add_to_input_history(self, console_input: str):
+    def add_to_input_history(self, console_input: str) -> None:
         self._shell_mechanics.add_input_to_history(console_input)
     
     
     @override
-    def quit(self):
+    def update_widgets(self) -> None:
+        self._apply_theme()
+    
+    
+    @override
+    def quit(self) -> None:
         self._window_manager.set_root_props(self._root.winfo_geometry(), True if self._root.state() == "zoomed" else False)
         getLogger(__name__).info(f"{Metadata.APP_NAME} exited")
         self._root.destroy()
@@ -81,7 +86,6 @@ class Application(IConsole):
         else:
             self._root.geometry(self._root_props[WindowKeys.GEOMETRY])
         self._root.title(Metadata.APP_NAME)
-        self._root.config(bg=self._colors[ThemeKeys.BACKGROUND])
     
     
     def _setup_entry_callback(self) -> None:
@@ -90,33 +94,21 @@ class Application(IConsole):
     
     
     def _setup_ui_elements(self) -> None:
-        self._input_section: Frame = Frame(
-            master=self._root,
-            bg=self._colors[ThemeKeys.BACKGROUND]
-        )
+        self._input_section: Frame = Frame(master=self._root)
         self._input_section.pack(
             fill="x",
-            side="bottom",
-            padx=self._widget_props[ThemeKeys.PADDING],
-            pady=self._widget_props[ThemeKeys.PADDING]
+            side="bottom"
         )
         
         self._input_prefix: Label = Label(
             master=self._input_section,
-            fg=self._colors[ThemeKeys.COMMAND],
-            bg=self._colors[ThemeKeys.BACKGROUND],
             text=Application._PREFIX
         )
         self._input_prefix.pack(side="left")
         
         self._input_entry: Entry = Entry(
             master=self._input_section,
-            fg=self._colors[ThemeKeys.COMMAND],
-            bg=self._colors[ThemeKeys.BACKGROUND],
-            insertbackground=self._colors[ThemeKeys.COMMAND],
             relief="flat",
-            selectforeground=self._colors[ThemeKeys.NORMAL],
-            selectbackground=self._colors[ThemeKeys.SELECTION],
             textvariable=self._entry_var
         )
         self._input_entry.pack(
@@ -128,10 +120,6 @@ class Application(IConsole):
         
         self._console: ScrolledText = ScrolledText(
             master=self._root,
-            fg=self._colors[ThemeKeys.NORMAL],
-            bg=self._colors[ThemeKeys.BACKGROUND],
-            padx=self._widget_props[ThemeKeys.PADDING],
-            pady=self._widget_props[ThemeKeys.PADDING],
             relief="flat",
             wrap="word",
             state="disabled"
@@ -140,6 +128,41 @@ class Application(IConsole):
             fill="both",
             expand=True
         )
+    
+    
+    def _apply_theme(self) -> None:
+        self._setup_config_vars()
+        
+        self._root.config(bg=self._colors[ThemeKeys.BACKGROUND])
+        
+        self._input_section.config(bg=self._colors[ThemeKeys.BACKGROUND])
+        self._input_section.pack(
+            padx=self._widget_props[ThemeKeys.PADDING],
+            pady=self._widget_props[ThemeKeys.PADDING]
+        )
+        
+        self._input_prefix.config(
+            fg=self._colors[ThemeKeys.COMMAND],
+            bg=self._colors[ThemeKeys.BACKGROUND]
+        )
+        
+        self._input_entry.config(
+            fg=self._colors[ThemeKeys.COMMAND],
+            bg=self._colors[ThemeKeys.BACKGROUND],
+            insertbackground=self._colors[ThemeKeys.COMMAND],
+            selectforeground=self._colors[ThemeKeys.NORMAL],
+            selectbackground=self._colors[ThemeKeys.SELECTION]
+        )
+        
+        self._console.config(
+            fg=self._colors[ThemeKeys.NORMAL],
+            bg=self._colors[ThemeKeys.BACKGROUND],
+            padx=self._widget_props[ThemeKeys.PADDING],
+            pady=self._widget_props[ThemeKeys.PADDING]
+        )
+        
+        self._setup_font()
+        self._setup_console_tags()
     
     
     def _setup_font(self) -> None:
