@@ -28,7 +28,7 @@ class Application(IConsole):
         self._setup_window()
         self._setup_entry_callback()
         self._setup_ui_elements()
-        self._apply_theme()
+        self._apply_theme(0)
         self._setup_text_config()
         
         self._print_output(Application._META, "normal")
@@ -59,11 +59,6 @@ class Application(IConsole):
     @override
     def add_to_input_history(self, console_input: str) -> None:
         self._shell_mechanics.add_input_to_history(console_input)
-    
-    
-    @override
-    def update_widgets(self) -> None:
-        self._apply_theme()
     
     
     @override
@@ -130,39 +125,42 @@ class Application(IConsole):
         )
     
     
-    def _apply_theme(self) -> None:
+    def _apply_theme(self, update_delay: int) -> None:
         self._setup_config_vars()
         
-        self._root.config(bg=self._colors[ThemeKeys.BACKGROUND])
+        def update_input_section() -> None:
+            self._input_section.config(bg=self._colors[ThemeKeys.BACKGROUND])
+            self._input_section.pack(
+                padx=self._widget_props[ThemeKeys.PADDING],
+                pady=self._widget_props[ThemeKeys.PADDING]
+            )
         
-        self._input_section.config(bg=self._colors[ThemeKeys.BACKGROUND])
-        self._input_section.pack(
-            padx=self._widget_props[ThemeKeys.PADDING],
-            pady=self._widget_props[ThemeKeys.PADDING]
-        )
+        widget_configs: List[Callable] = [
+            lambda: self._root.config(bg=self._colors[ThemeKeys.BACKGROUND]),
+            lambda: update_input_section(),
+            lambda: self._input_prefix.config(
+                fg=self._colors[ThemeKeys.COMMAND],
+                bg=self._colors[ThemeKeys.BACKGROUND]
+            ),
+            lambda: self._input_entry.config(
+                fg=self._colors[ThemeKeys.COMMAND],
+                bg=self._colors[ThemeKeys.BACKGROUND],
+                insertbackground=self._colors[ThemeKeys.COMMAND],
+                selectforeground=self._colors[ThemeKeys.NORMAL],
+                selectbackground=self._colors[ThemeKeys.SELECTION]
+            ),
+            lambda: self._console.config(
+                fg=self._colors[ThemeKeys.NORMAL],
+                bg=self._colors[ThemeKeys.BACKGROUND],
+                padx=self._widget_props[ThemeKeys.PADDING],
+                pady=self._widget_props[ThemeKeys.PADDING]
+            ),
+            lambda: self._setup_font(),
+            lambda: self._setup_console_tags()
+        ]
         
-        self._input_prefix.config(
-            fg=self._colors[ThemeKeys.COMMAND],
-            bg=self._colors[ThemeKeys.BACKGROUND]
-        )
-        
-        self._input_entry.config(
-            fg=self._colors[ThemeKeys.COMMAND],
-            bg=self._colors[ThemeKeys.BACKGROUND],
-            insertbackground=self._colors[ThemeKeys.COMMAND],
-            selectforeground=self._colors[ThemeKeys.NORMAL],
-            selectbackground=self._colors[ThemeKeys.SELECTION]
-        )
-        
-        self._console.config(
-            fg=self._colors[ThemeKeys.NORMAL],
-            bg=self._colors[ThemeKeys.BACKGROUND],
-            padx=self._widget_props[ThemeKeys.PADDING],
-            pady=self._widget_props[ThemeKeys.PADDING]
-        )
-        
-        self._setup_font()
-        self._setup_console_tags()
+        for index, config in enumerate(widget_configs):
+            self._root.after(update_delay + (update_delay * index), config)
     
     
     def _setup_font(self) -> None:

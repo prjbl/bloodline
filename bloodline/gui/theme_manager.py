@@ -11,7 +11,7 @@ class ThemeManager(IThemeManager):
     
     _instance: ThemeManager | None = None
     _sys_json_handler: SystemJsonHandler | None = None
-    _reload_widgets: Callable[..., None] | None = None
+    _reload_widgets: Callable[[int], None] | None = None
     
     def __new__(cls):
         if cls._instance is None:
@@ -33,10 +33,10 @@ class ThemeManager(IThemeManager):
     @override
     def set_theme(self, loaded_theme: dict) -> None:
         self._sys_json_handler.set_data(loaded_theme)
-        self._reload_widgets()
+        self._reload_widgets(50)
     
     
-    def link_callback(self, callback_method: Callable[..., None]) -> None:
+    def link_callback(self, callback_method: Callable[[int], None]) -> None:
         self._reload_widgets = callback_method
     
     
