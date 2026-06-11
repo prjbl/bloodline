@@ -3,12 +3,14 @@ from typing import List, Callable, Tuple
 
 from .base_command import BaseInterceptCommand
 from file_io.json import ExternalJsonHandler
+from infrastructure.config import Directory
 from schemas.definitions import PresetModel
 
 class SetupCommands(BaseInterceptCommand):
     
     def __init__(self, instances: dict):
         super().__init__(instances)
+        self._context: dict = {}
     
     
     def info(self) -> None:
@@ -104,6 +106,48 @@ class SetupCommands(BaseInterceptCommand):
             return False
         
         self._save_file.add_preset(loaded_preset)
+        return False
+    
+    
+    def export_preset_by(self, sort_filter: str, order_filter: str) -> bool:
+        if self._current_step == 0:
+            self._msg_provider.invoke("Please enter the <\"game title\"> you want the bosses exported as a preset from <...>", "normal")
+            return True
+        
+        if self._current_step == 1:
+            pattern_result: List[str] = self._get_input_pattern_result("single")
+            
+            if not pattern_result:
+                return False
+            
+            game_title: str = pattern_result[0]
+            game_data: List[tuple] = self._save_file.get_bosses_from_game_by(game_title, sort_filter, order_filter)
+            
+            if not game_data:
+                return False
+            
+            self._context = {
+                "file_name": (file_name := f"{game_title.lower().replace(" ", "_")}_preset.json"),
+                "dst_file_path": str(Directory.EXPORT_PATH / file_name),
+                "game_title": self._save_file.get_cased_game_title(game_title),
+                "bosses": [boss[0] for boss in game_data]
+            }
+            
+        active_process: bool | None = self._process_override_protection(self._context, self._current_step)
+        if active_process is None:
+            self._context.clear()
+            return False
+        if active_process:
+            return True
+        
+        preset_data: dict = {
+            f"{self._context["game_title"]}": self._context["bosses"]
+        }
+        
+        Directory.create_export_dir()
+        ExternalJsonHandler.save_data(self._context["dst_file_path"], preset_data)
+        self._msg_provider.invoke(f"The data was successfully written to the file \"{self._context["file_name"]}\"", "success")
+        self._context.clear()
         return False
     
     

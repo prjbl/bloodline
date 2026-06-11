@@ -1,3 +1,4 @@
+from pathlib import Path
 from re import compile, fullmatch, Match, IGNORECASE
 from typing import List
 
@@ -73,3 +74,26 @@ class BaseInterceptCommand(BaseCommand):
     @staticmethod
     def _check_yes_confirmation(decision: str) -> bool:
         return decision.casefold() == "y" or decision.casefold() == "yes"
+    
+    
+    def _process_override_protection(self, context: dict, current_step: int) -> bool | None:
+        dst_file_path: Path = Path(context["dst_file_path"])
+        
+        if current_step < 1 or not dst_file_path.exists():
+            return False
+        
+        if current_step == 1 and dst_file_path.exists():
+            self._msg_provider.invoke(f"The file '{context["file_name"]}' already exists in the target directory", "warning")
+            self._msg_provider.invoke("Please enter <y[es]|n[o]> whether the file should be overwritten or not <...>", "normal")
+            return True
+        
+        pattern_result: List[str] = self._get_input_pattern_result("yes_no")
+        
+        if not pattern_result:
+            return None
+        
+        decision: str = pattern_result[0]
+        if not self._check_yes_confirmation(decision):
+            self._msg_provider.invoke("The data export is being aborted", "normal")
+            return None
+        return False

@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import List, Callable
 
 from .base_command import BaseInterceptCommand
@@ -168,7 +167,7 @@ class StatsCommands(BaseInterceptCommand):
                 "game_data": game_data
             }
         
-        active_process: bool | None = self._process_override_protection()
+        active_process: bool | None = self._process_override_protection(self._context, self._current_step)
         if active_process is None:
             self._context.clear()
             return False
@@ -261,27 +260,4 @@ class StatsCommands(BaseInterceptCommand):
         
         self._counter.set_question_answered()
         self.reset_step_count()
-        return False
-    
-    
-    def _process_override_protection(self) -> bool | None:
-        dst_file_path: Path = Path(self._context["dst_file_path"])
-        
-        if self._current_step < 1 or not dst_file_path.exists():
-            return False
-        
-        if self._current_step == 1 and dst_file_path.exists():
-            self._msg_provider.invoke(f"The file '{self._context["file_name"]}' already exists in the target directory", "warning")
-            self._msg_provider.invoke("Please enter <y[es]|n[o]> whether the file should be overwritten or not <...>", "normal")
-            return True
-        
-        pattern_result: List[str] = self._get_input_pattern_result("yes_no")
-        
-        if not pattern_result:
-            return None
-        
-        decision: str = pattern_result[0]
-        if not self._check_yes_confirmation(decision):
-            self._msg_provider.invoke("The data export is being aborted", "normal")
-            return None
         return False

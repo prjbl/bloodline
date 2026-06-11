@@ -22,6 +22,11 @@ class ExternalJsonHandler(JsonFileOperations):
     
     
     @classmethod
+    def save_data(cls, dst_file_path: Path, raw_data: dict) -> None:
+        cls._perform_save(dst_file_path, raw_data)
+    
+    
+    @classmethod
     def check_external_file_props(cls, src_file_path: Path) -> bool:
         if not src_file_path.exists():
             cls._msg_provider.invoke(f"The path \"{src_file_path}\" does not exist. Process is beeing canceled", "invalid")

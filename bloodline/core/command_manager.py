@@ -41,6 +41,7 @@ class CommandManager:
             "setup delete boss": self._setup_cmds.delete_boss,
             "setup delete game": self._setup_cmds.delete_game,
             "setup import preset": self._setup_cmds.import_preset,
+            "setup export preset": self._bind_method_params(self._setup_cmds.export_preset_by, "id", "asc"),
             "stats": self._stats_cmds.info,
             "stats list bosses": self._bind_method_params(self._stats_cmds.list_bosses_by, "id", "asc"),
             "stats list bosses -s deaths -o desc": self._bind_method_params(self._stats_cmds.list_bosses_by, "deaths", "desc"),
