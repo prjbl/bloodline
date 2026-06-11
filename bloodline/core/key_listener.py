@@ -26,6 +26,11 @@ class KeyListener:
         self._helper_keys: Set[str] = {str(Key.shift_l), str(Key.shift_r)}
     
     
+    def link_callbacks(self, enable_commands_method: Callable[[], None], disable_commands_method: Callable[[], None]) -> None:
+        self._enable_tracking_commands: Callable[[], None] = enable_commands_method
+        self._disable_tracking_commands: Callable[[], None] = disable_commands_method
+    
+    
     def start_key_listener(self) -> None:
         self._start_listener(
             target_method=self._on_key_listener,
@@ -34,9 +39,12 @@ class KeyListener:
     
     
     def _on_key_listener(self) -> None:
+        self._disable_tracking_commands()
         self._on_start_listener(on_press_method=self._on_press)
+        
         self._overlay.destroy_instance()
         self._timer.check_timer_stopped()
+        self._enable_tracking_commands()
         self._msg_provider.invoke("Make sure to save the data using the 'stats save' command", "note")
     
     

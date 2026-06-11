@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Callable
 
 class IOverlay(ABC):
     
@@ -20,6 +20,11 @@ class IOverlay(ABC):
     
     @abstractmethod
     def display_lock_animation(self, animation_time: int, lock_state: bool) -> None:
+        pass
+    
+    
+    @abstractmethod
+    def link_callbacks(self, enable_commands_method: Callable[[], None], disable_commands_method: Callable[[], None]) -> None:
         pass
     
     

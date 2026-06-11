@@ -1,6 +1,6 @@
 from tkinter import Toplevel, Frame, Label
 from tkinter.font import Font, families, nametofont
-from typing import Any, override
+from typing import Any, Callable, override
 
 from .theme_manager import ThemeManager
 from .window_manager import WindowManager
@@ -37,6 +37,12 @@ class Overlay(IOverlay):
     
     
     @override
+    def link_callbacks(self, enable_commands_method: Callable[[], None], disable_commands_method: Callable[[], None]) -> None:
+        self._enable_overlay_commands: Callable[[], None] = enable_commands_method
+        self._disable_overlay_commands: Callable[[], None] = disable_commands_method
+    
+    
+    @override
     def create_instance(self) -> None:
         self._toplevel: Toplevel = Toplevel()
         self._setup_window()
@@ -47,12 +53,14 @@ class Overlay(IOverlay):
         self._init_width = self._toplevel.winfo_width()
         
         self._setup_bindings()
+        self._enable_overlay_commands()
     
     
     @override
     def destroy_instance(self) -> None:
         self._window_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx() - self._difference_width}+{self._toplevel.winfo_rooty()}")
         self._difference_width = 0
+        self._disable_overlay_commands()
         self._toplevel.destroy()
     
     

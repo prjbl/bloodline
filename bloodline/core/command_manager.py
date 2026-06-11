@@ -32,8 +32,6 @@ class CommandManager:
         self._commands: dict = {
             "help": self._system_cmds.help,
             "tracking": self._tracking_cmds.info,
-            "tracking new": self._tracking_cmds.new,
-            "tracking continue": self._tracking_cmds.carry_on,
             "setup": self._setup_cmds.info,
             "setup add": self._setup_cmds.add,
             "setup identify boss": self._setup_cmds.identify_boss,
@@ -72,15 +70,22 @@ class CommandManager:
             f"keybinds config {HotkeyNames.TIMER_RESET}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_RESET),
             f"keybinds config {HotkeyNames.LISTENER_END}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.LISTENER_END),
             "settings": self._settings_cmds.info,
-            "settings lock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, True),
-            "settings unlock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, False),
             "settings import theme": self._settings_cmds.import_theme,
             "settings preview theme": self._settings_cmds.preview_theme,
             "quit": self._system_cmds.quit
         }
+        self._dynamic_tracking_commands: dict = {
+            "tracking new": self._tracking_cmds.new,
+            "tracking continue": self._tracking_cmds.carry_on,
+        }
+        self._dynamic_overlay_commands: dict = {
+            "settings lock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, True),
+            "settings unlock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, False)
+        }
         self._cancel_commands: dict = {"cancel": self._cancel}
         
-        self._list_of_commands: List[str] = list(self._commands.keys()) # const that is only changed when cancel commands are added/deleted from _commands
+        self._setup_dynamic_commands() # has to be called after init dynamic commands to be able to execute enable for specific commands
+        self._list_of_commands: List[str] = list(self._commands.keys()) # const that is only changed when commands are added/deleted from _commands
     
     
     def _setup_core_instances(self) -> None:
@@ -123,8 +128,22 @@ class CommandManager:
         self._active_category: BaseInterceptCommand | None = None
     
     
+    def _setup_dynamic_commands(self) -> None:
+        self._overlay.link_callbacks(
+            enable_commands_method=lambda: self._enable_dynamic_commands(self._dynamic_overlay_commands),
+            disable_commands_method=lambda: self._disable_dynamic_commands(self._dynamic_overlay_commands)
+        )
+        self._key_listener.link_callbacks(
+            enable_commands_method=lambda: self._enable_dynamic_commands(self._dynamic_tracking_commands),
+            disable_commands_method=lambda: self._disable_dynamic_commands(self._dynamic_tracking_commands)
+        )
+        
+        # should be available at launch
+        self._enable_dynamic_commands(self._dynamic_tracking_commands)
+    
+    
     @staticmethod
-    def _bind_method_params(target_method: Callable[..., bool | None], *params: Any) -> partial:
+    def _bind_method_params(target_method: Callable[..., bool | None], *params: Any) -> Callable[[], Any]:
         partial_method = partial(target_method, *params)
         partial_method.__self__ = target_method.__self__
         return partial_method
@@ -183,16 +202,16 @@ class CommandManager:
         if isInterceptMethod:
             self._intercept_next_input = True
             self._active_category = command_method.__self__
-            self._activate_cancel_commands()
+            self._enable_dynamic_commands(self._cancel_commands)
     
     
-    def _activate_cancel_commands(self) -> None:
-        self._commands.update(self._cancel_commands)
+    def _enable_dynamic_commands(self, dynamic_commands: dict) -> None:
+        self._commands.update(dynamic_commands)
         self._list_of_commands = list(self._commands.keys())
     
     
-    def _deactivate_cancel_commands(self) -> None:
-        for command in self._cancel_commands:
+    def _disable_dynamic_commands(self, dynamic_commands: dict) -> None:
+        for command in dynamic_commands:
             del self._commands[command]
         
         self._list_of_commands = list(self._commands.keys())
@@ -211,5 +230,5 @@ class CommandManager:
     
     
     def _cancel(self) -> None:
-        self._deactivate_cancel_commands()
+        self._disable_dynamic_commands(self._cancel_commands)
         self._msg_provider.invoke("The process was cancelled", "normal")
