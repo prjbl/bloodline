@@ -31,3 +31,13 @@ class IOverlay(ABC):
     @abstractmethod
     def destroy_instance(self) -> None:
         pass
+    
+    
+    @abstractmethod
+    def hide(self) -> None:
+        pass
+    
+    
+    @abstractmethod
+    def show(self) -> None:
+        pass

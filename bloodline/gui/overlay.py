@@ -13,43 +13,37 @@ class Overlay(IOverlay):
         self._theme_manager: ThemeManager = ThemeManager()
         self._window_manager: WindowManager = WindowManager()
         
-        self._toplevel: Toplevel | None = None
         self._setup_config_vars()
     
     
     @override
     def update_counter_label(self, count: int) -> None:
-        if self._toplevel is None:
-            return
         self._counter_label.config(text=count)
     
     
     @override
     def update_timer_label(self, formated_time: str) -> None:
-        if self._toplevel is None:
-            return
         self._timer_label.config(text=formated_time)
     
     
     @override
     def add_mainloop_task(self, delay: int, task: Any) -> None:
-        if self._toplevel is None:
-            return
         self._toplevel.after(delay, task)
     
     
     @override
     def display_lock_animation(self, animation_time: int, lock_state: bool) -> None:
-        if self._toplevel is None:
-            return
-        
         self._toplevel.config(highlightbackground=self._colors[ThemeKeys.ERROR] if lock_state else self._colors[ThemeKeys.SUCCESS])
         self.add_mainloop_task(animation_time, lambda: self._toplevel.config(highlightbackground=self._colors[ThemeKeys.BACKGROUND]))
     
     
     @override
     def create_instance(self) -> None:
-        self._toplevel = Toplevel()
+        self._toplevel: Toplevel = Toplevel()
+        
+        if not self._toplevel_props[WindowKeys.ENABLED]:
+            self.hide()
+        
         self._setup_window()
         self._setup_ui_elements()
         self._setup_font()
@@ -62,13 +56,20 @@ class Overlay(IOverlay):
     
     @override
     def destroy_instance(self) -> None:
-        if self._toplevel is None:
-            return
-        
         self._window_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx() - self._difference_width}+{self._toplevel.winfo_rooty()}")
         self._difference_width = 0
         self._toplevel.destroy()
-        self._toplevel = None
+    
+    
+    @override
+    def hide(self) -> None:
+        self._toplevel.withdraw()
+    
+    
+    @override
+    def show(self) -> None:
+        self._toplevel.update()
+        self._toplevel.deiconify()
     
     
     def _setup_config_vars(self) -> None:
@@ -150,6 +151,8 @@ class Overlay(IOverlay):
     
     
     def _on_lmb_click(self, event: Any) -> None:
+        if not self._toplevel_props[WindowKeys.ENABLED]:
+            return
         if self._toplevel_props[WindowKeys.LOCKED]:
             return
         
@@ -158,6 +161,8 @@ class Overlay(IOverlay):
     
     
     def _on_lmb_drag(self, event: Any) -> None:
+        if not self._toplevel_props[WindowKeys.ENABLED]:
+            return
         if self._toplevel_props[WindowKeys.LOCKED]:
             return
         

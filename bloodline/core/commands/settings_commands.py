@@ -26,6 +26,13 @@ class SettingsCommands(BaseInterceptCommand):
             self._msg_provider.invoke(f"The overlay is already {"enabled" if enabled else "disabled"}", "invalid")
             return
         self._msg_provider.invoke(f"The overlay has been {"enabled" if enabled else "disabled"}", "normal")
+        
+        if not self._shared_context["tracking_active"]:
+            return
+        
+        if not enabled:
+            return self._overlay.hide()
+        self._overlay.show()
     
     
     def set_overlay_locked(self, locked: bool) -> None:

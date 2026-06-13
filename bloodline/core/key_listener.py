@@ -31,19 +31,26 @@ class KeyListener:
         self._disable_tracking_commands: Callable[[], None] = disable_commands_method
     
     
+    def link_context(self, shared_cmd_context: dict) -> None:
+        self._shared_cmd_context: dict = shared_cmd_context
+        self._shared_cmd_context["tracking_active"] = False
+    
+    
     def start_key_listener(self) -> None:
         self._start_listener(
             target_method=self._on_key_listener,
-            start_msg="A key listener started in a seperat thread"
+            start_msg="A key listener started in a separate thread"
         )
     
     
     def _on_key_listener(self) -> None:
         self._disable_tracking_commands()
+        self._shared_cmd_context["tracking_active"] = True
         self._on_start_listener(on_press_method=self._on_press)
         
         self._overlay.destroy_instance()
         self._timer.check_timer_stopped()
+        self._shared_cmd_context["tracking_active"] = False
         self._enable_tracking_commands()
         self._msg_provider.invoke("Make sure to save the data using the 'stats save' command", "note")
     
@@ -82,7 +89,7 @@ class KeyListener:
         self._start_listener(
             target_method=self._on_hotkey_config_listener,
             start_msg=(
-                "A key listener started in a seperat thread\n"
+                "A key listener started in a separate thread\n"
                 "Press a key to change the keybind of the selected hotkey <...>"
             )
         )

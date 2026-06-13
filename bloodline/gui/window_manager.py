@@ -30,12 +30,6 @@ class WindowManager(IWindowManager):
     
     
     @override
-    @property
-    def toplevel_enabled(self) -> bool:
-        return self._sys_json_handler.data[SectionKeys.TOPLEVEL][WindowKeys.ENABLED]
-    
-    
-    @override
     def set_toplevel_locked(self, new_lock_state: bool) -> bool:
         return self._set_toplevel_state(new_lock_state, WindowKeys.LOCKED)
     

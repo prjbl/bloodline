@@ -24,6 +24,9 @@ class BaseCommand:
         self._save_file: SaveFile = instances["save_file"]
         
         self._msg_provider: MessageHub = MessageHub()
+        
+        self._shared_context: dict = {}
+        self._key_listener.link_context(self._shared_context)
 
 
 class BaseInterceptCommand(BaseCommand):

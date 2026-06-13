@@ -7,12 +7,6 @@ class IWindowManager(ABC):
         pass
     
     
-    @property
-    @abstractmethod
-    def toplevel_enabled(self) -> bool:
-        pass
-    
-    
     @abstractmethod
     def set_toplevel_locked(self, new_lock_state: bool) -> bool:
         pass
