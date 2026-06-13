@@ -168,6 +168,7 @@ class CommandManager:
                 self._intercept_next_input = False
                 self._active_category.reset_step_count()
                 self._active_category = None
+                self._disable_dynamic_commands(self._cancel_commands)
             return
         
         self._handle_standard_input(console_input, cleaned_console_input)
@@ -213,7 +214,8 @@ class CommandManager:
     
     def _disable_dynamic_commands(self, dynamic_commands: dict) -> None:
         for command in dynamic_commands:
-            del self._commands[command]
+            if command in self._commands:
+                del self._commands[command]
         
         self._list_of_commands = list(self._commands.keys())
     
