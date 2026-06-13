@@ -18,7 +18,10 @@ class TrackingCommands(BaseInterceptCommand):
     
     def new(self) -> None:
         self._save_file.add_unknown()
-        self._overlay.create_instance()
+        
+        if self._window_manager.toplevel_enabled:
+            self._overlay.create_instance()
+        
         self._counter.set_count_already_required(None)
         self._timer.set_time_already_required(None)
         self._key_listener.start_key_listener()
@@ -42,7 +45,9 @@ class TrackingCommands(BaseInterceptCommand):
             self._msg_provider.invoke(f"There is no boss \"{boss_name}\" of the game \"{game_title}\" in the save file so far", "invalid")
             return False
         
-        self._overlay.create_instance()
+        if  self._window_manager.toplevel_enabled:
+            self._overlay.create_instance()
+        
         self._counter.set_count_already_required(self._save_file.get_boss_deaths(boss_name, game_title))
         self._timer.set_time_already_required(self._save_file.get_boss_time(boss_name, game_title))
         self._key_listener.start_key_listener()

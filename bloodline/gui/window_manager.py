@@ -25,17 +25,19 @@ class WindowManager(IWindowManager):
     
     
     @override
+    def set_toplevel_enabled(self, new_enable_state: bool) -> bool:
+        return self._set_toplevel_state(new_enable_state, WindowKeys.ENABLED)
+    
+    
+    @override
+    @property
+    def toplevel_enabled(self) -> bool:
+        return self._sys_json_handler.data[SectionKeys.TOPLEVEL][WindowKeys.ENABLED]
+    
+    
+    @override
     def set_toplevel_locked(self, new_lock_state: bool) -> bool:
-        window_state: dict = self._sys_json_handler.data
-        
-        old_lock_state: bool = window_state[SectionKeys.TOPLEVEL][WindowKeys.LOCKED]
-        
-        if new_lock_state == old_lock_state:
-            return False
-        window_state[SectionKeys.TOPLEVEL][WindowKeys.LOCKED] = new_lock_state
-        
-        self._sys_json_handler.set_data(window_state)
-        return True
+        return self._set_toplevel_state(new_lock_state, WindowKeys.LOCKED)
     
     
     def get_root_props(self) -> dict:
@@ -73,3 +75,18 @@ class WindowManager(IWindowManager):
         window_state[SectionKeys.TOPLEVEL][WindowKeys.GEOMETRY] = new_geometry
         
         self._sys_json_handler.set_data(window_state)
+    
+    
+    # helper methods below
+    
+    def _set_toplevel_state(self, new_state: bool, window_key: str) -> bool:
+        window_state: dict = self._sys_json_handler.data
+        
+        old_state: bool = window_state[SectionKeys.TOPLEVEL][window_key]
+        
+        if new_state == old_state:
+            return False
+        window_state[SectionKeys.TOPLEVEL][window_key] = new_state
+        
+        self._sys_json_handler.set_data(window_state)
+        return True

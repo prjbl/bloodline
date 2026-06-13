@@ -71,6 +71,10 @@ class CommandManager:
             f"keybinds config {HotkeyNames.TIMER_RESET}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_RESET),
             f"keybinds config {HotkeyNames.LISTENER_END}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.LISTENER_END),
             "settings": self._settings_cmds.info,
+            "settings enable overlay": self._bind_method_params(self._settings_cmds.set_overlay_enabled, True),
+            "settings disable overlay": self._bind_method_params(self._settings_cmds.set_overlay_enabled, False),
+            "settings lock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, True),
+            "settings unlock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, False),
             "settings import theme": self._settings_cmds.import_theme,
             "settings preview theme": self._settings_cmds.preview_theme,
             "quit": self._system_cmds.quit
@@ -78,10 +82,6 @@ class CommandManager:
         self._dynamic_tracking_commands: dict = {
             "tracking new": self._tracking_cmds.new,
             "tracking continue": self._tracking_cmds.carry_on,
-        }
-        self._dynamic_overlay_commands: dict = {
-            "settings lock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, True),
-            "settings unlock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, False)
         }
         self._cancel_commands: dict = {"cancel": self._cancel}
         
@@ -130,10 +130,6 @@ class CommandManager:
     
     
     def _setup_dynamic_commands(self) -> None:
-        self._overlay.link_callbacks(
-            enable_commands_method=lambda: self._enable_dynamic_commands(self._dynamic_overlay_commands),
-            disable_commands_method=lambda: self._disable_dynamic_commands(self._dynamic_overlay_commands)
-        )
         self._key_listener.link_callbacks(
             enable_commands_method=lambda: self._enable_dynamic_commands(self._dynamic_tracking_commands),
             disable_commands_method=lambda: self._disable_dynamic_commands(self._dynamic_tracking_commands)

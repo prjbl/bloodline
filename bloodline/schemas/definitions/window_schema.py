@@ -22,6 +22,7 @@ class _RootWindow(AllowModel):
 
 
 class _ToplevelWindow(AllowModel):
+    enabled: bool = Field(default=WindowSchema.ENABLED.default, alias=WindowSchema.ENABLED.alias)
     geometry: str = Field(default=WindowSchema.GEOMETRY_TOPLEVEL.default, alias=WindowSchema.GEOMETRY_TOPLEVEL.alias)
     locked: bool = Field(default=WindowSchema.LOCKED.default, alias=WindowSchema.LOCKED.alias)
     

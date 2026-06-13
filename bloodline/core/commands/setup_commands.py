@@ -21,7 +21,8 @@ class SetupCommands(BaseInterceptCommand):
             "'setup move boss': Moves a boss to another game\n"
             "'setup rename boss|game': Renames a boss|game\n"
             "'setup delete boss|game': Deletes a boss|game\n"
-            "'setup import preset': Imports and adds game data to the save file", "list"
+            "'setup import preset': Imports and adds game data to the save file\n"
+            "'setup export preset': Exports all bosses from the selected game as a preset to a .json file", "list"
         )
     
     

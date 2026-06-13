@@ -1,6 +1,6 @@
 from tkinter import Toplevel, Frame, Label
 from tkinter.font import Font, families, nametofont
-from typing import Any, Callable, override
+from typing import Any, override
 
 from .theme_manager import ThemeManager
 from .window_manager import WindowManager
@@ -12,39 +12,44 @@ class Overlay(IOverlay):
     def __init__(self):
         self._theme_manager: ThemeManager = ThemeManager()
         self._window_manager: WindowManager = WindowManager()
+        
+        self._toplevel: Toplevel | None = None
         self._setup_config_vars()
     
     
     @override
     def update_counter_label(self, count: int) -> None:
+        if self._toplevel is None:
+            return
         self._counter_label.config(text=count)
     
     
     @override
     def update_timer_label(self, formated_time: str) -> None:
+        if self._toplevel is None:
+            return
         self._timer_label.config(text=formated_time)
     
     
     @override
     def add_mainloop_task(self, delay: int, task: Any) -> None:
+        if self._toplevel is None:
+            return
         self._toplevel.after(delay, task)
     
     
     @override
     def display_lock_animation(self, animation_time: int, lock_state: bool) -> None:
+        if self._toplevel is None:
+            return
+        
         self._toplevel.config(highlightbackground=self._colors[ThemeKeys.ERROR] if lock_state else self._colors[ThemeKeys.SUCCESS])
         self.add_mainloop_task(animation_time, lambda: self._toplevel.config(highlightbackground=self._colors[ThemeKeys.BACKGROUND]))
     
     
     @override
-    def link_callbacks(self, enable_commands_method: Callable[[], None], disable_commands_method: Callable[[], None]) -> None:
-        self._enable_overlay_commands: Callable[[], None] = enable_commands_method
-        self._disable_overlay_commands: Callable[[], None] = disable_commands_method
-    
-    
-    @override
     def create_instance(self) -> None:
-        self._toplevel: Toplevel = Toplevel()
+        self._toplevel = Toplevel()
         self._setup_window()
         self._setup_ui_elements()
         self._setup_font()
@@ -53,15 +58,17 @@ class Overlay(IOverlay):
         self._init_width = self._toplevel.winfo_width()
         
         self._setup_bindings()
-        self._enable_overlay_commands()
     
     
     @override
     def destroy_instance(self) -> None:
+        if self._toplevel is None:
+            return
+        
         self._window_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx() - self._difference_width}+{self._toplevel.winfo_rooty()}")
         self._difference_width = 0
-        self._disable_overlay_commands()
         self._toplevel.destroy()
+        self._toplevel = None
     
     
     def _setup_config_vars(self) -> None:

@@ -14,18 +14,26 @@ class SettingsCommands(BaseInterceptCommand):
     def info(self) -> None:
         self._msg_provider.invoke("This is a list of all settings commands:", "normal")
         self._msg_provider.invoke(
+            "'settings enable|disable overlay': Enabled|Disables the overlay\n"
             "'settings unlock|lock overlay': Enables|Disables the ability to move the overlay\n"
             "'settings import theme': Imports and changes the programs theme\n"
             "'settings preview theme': Displays the current color theme", "list"
         )
     
     
-    def set_overlay_locked(self, lock_state: bool) -> None:
-        if not self._window_manager.set_toplevel_locked(lock_state):
-            self._msg_provider.invoke(f"The overlay is already {"locked" if lock_state else "unlocked"}", "invalid")
+    def set_overlay_enabled(self, enabled: bool) -> None:
+        if not self._window_manager.set_toplevel_enabled(enabled):
+            self._msg_provider.invoke(f"The overlay is already {"enabled" if enabled else "disabled"}", "invalid")
             return
-        self._msg_provider.invoke(f"The overlay has been {"locked" if lock_state else "unlocked"}", "normal")
-        self._overlay.display_lock_animation(1500, lock_state)
+        self._msg_provider.invoke(f"The overlay has been {"enabled" if enabled else "disabled"}", "normal")
+    
+    
+    def set_overlay_locked(self, locked: bool) -> None:
+        if not self._window_manager.set_toplevel_locked(locked):
+            self._msg_provider.invoke(f"The overlay is already {"locked" if locked else "unlocked"}", "invalid")
+            return
+        self._msg_provider.invoke(f"The overlay has been {"locked" if locked else "unlocked"}", "normal")
+        self._overlay.display_lock_animation(1500, locked)
     
     
     def import_theme(self) -> bool:
