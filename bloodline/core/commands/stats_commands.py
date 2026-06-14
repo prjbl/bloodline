@@ -164,7 +164,7 @@ class StatsCommands(BaseInterceptCommand):
                 "file_name": (file_name := f"{game_title.lower().replace(" ", "_")}.csv"),
                 "dst_file_path": str(Directory.EXPORT_PATH / file_name),
                 "headers": [header[0] for header in self._save_file.get_boss_table_description()],
-                "game_data": game_data
+                "game_data": self._get_formated_csv_data(game_title, game_data)
             }
         
         active_process: bool | None = self._process_override_protection(self._context, self._current_step)
@@ -175,12 +175,16 @@ class StatsCommands(BaseInterceptCommand):
             return True
         
         Directory.create_export_dir()
-        CsvFileOperations.perform_save(
-            dst_file_path=self._context["dst_file_path"],
-            headers=self._context["headers"],
-            data=self._context["game_data"]
-        )
-        self._msg_provider.invoke(f"The data was successfully written to the file \"{self._context["file_name"]}\"", "success")
+        try:
+            CsvFileOperations.perform_save(
+                dst_file_path=self._context["dst_file_path"],
+                headers=self._context["headers"],
+                data=self._context["game_data"]
+            )
+            self._msg_provider.invoke(f"The data was successfully written to the file \"{self._context["file_name"]}\"", "success")
+        except PermissionError:
+            self._msg_provider.invoke(f"The data could not be written because the file \"{self._context["file_name"]}\" is currently open", "invalid")
+        
         self._context.clear()
         return False
     
@@ -216,16 +220,29 @@ class StatsCommands(BaseInterceptCommand):
         return f"{label}  " + f"{formatted_deaths.ljust(max_deaths_len)}  {formatted_time}".replace(" ", "\u00A0")
     
     
+    def _get_formated_csv_data(self, game_title: str, game_data: List[tuple]) -> None:
+        for index, boss in enumerate(game_data):
+            name, deaths, time = boss
+            game_data[index] = (name, self._format_deaths(deaths, prefix=False), self._format_time(time))
+            
+        game_avg: tuple = self._save_file.get_game_avg(game_title)[0]
+        game_sum: tuple = self._save_file.get_game_sum(game_title)[0]
+            
+        game_data[0] = game_data[0] + ("", StatsCommands._AVG_LABEL, self._format_deaths(game_avg[0]), self._format_time(game_avg[1]))
+        game_data[1] = game_data[1] + ("", StatsCommands._SUM_LABEL, self._format_deaths(game_sum[0]), self._format_time(game_sum[1]))
+        return game_data
+    
+    
     @staticmethod
     def _get_max_len(iterable: List[tuple], lambda_expression: Callable[..., str] | str) -> int:
         return max(len(lambda_expression(item)) for item in iterable)
     
     
     @staticmethod
-    def _format_deaths(deaths: int | float | None) -> str:
+    def _format_deaths(deaths: int | float | None, prefix: bool = True) -> str:
         if deaths is None:
-            return "D N/A"
-        return f"D {deaths:,}"
+            return "D N/A" if prefix else "N/A"
+        return f"D {deaths:,}" if prefix else f"{deaths:,}"
     
     
     @staticmethod
