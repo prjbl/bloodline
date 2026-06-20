@@ -63,6 +63,8 @@ class BaseInterceptCommand(BaseCommand):
             valid_input_pattern = compile(r"\"([^\"]+)\" -> \"([^\"]+)\", \"([^\"]+)\"$")
         elif pattern_type == "double_single":
             valid_input_pattern = compile(r"\"([^\"]+)\", \"([^\"]+)\" -> \"([^\"]+)\"$")
+        elif pattern_type == "double_double":
+            valid_input_pattern = compile(r"\"([^\"]+)\", \"([^\"]+)\" \+ \"([^\"]+)\", \"([^\"]+)\"$")
         elif pattern_type == "yes_no":
             valid_input_pattern = compile(r"((?:y(?:es)?)|(?:n(?:o)?))", IGNORECASE) # ?: ignores group so only one group is returning
         

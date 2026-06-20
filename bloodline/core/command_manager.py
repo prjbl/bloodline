@@ -59,6 +59,7 @@ class CommandManager:
             "stats list games -s time -o desc": self._bind_method_params(self._stats_cmds.list_games_by, "requiredTime", "desc"),
             "stats list games -s time -o asc": self._bind_method_params(self._stats_cmds.list_games_by, "requiredTime", "asc"),
             "stats save": self._stats_cmds.save,
+            "stats merge": self._stats_cmds.merge,
             "stats export": self._bind_method_params(self._stats_cmds.export_by, "id", "asc"),
             "keybinds": self._keybind_cmds.info,
             "keybinds list": self._keybind_cmds.list,

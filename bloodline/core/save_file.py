@@ -1,5 +1,5 @@
 from logging import Logger, getLogger
-from typing import List
+from typing import List, Tuple
 
 from file_io import DatabaseHandler
 from infrastructure import MessageHub
@@ -81,9 +81,9 @@ class SaveFile:
         )
     
     
-    def add_boss(self, boss_name: str, game_title: str, ensure_backup: bool = True) -> bool:
+    def add_boss(self, boss_name: str, game_title: str, ensure_backup: bool = True, show_success: bool = True) -> bool:
         if self.get_boss_exists(boss_name, game_title):
-            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self.get_cased_game_title(game_title)}\" already exists in the save file", "invalid")
+            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(boss_name, game_title)}\" already exists in the game \"{self.get_cased_game_title(game_title)}\"", "invalid")
             return False
         
         self._add_game(game_title)
@@ -97,7 +97,7 @@ class SaveFile:
         return self._execute_and_report_dml(
             sql=sql,
             params=(boss_name, game_title),
-            success_msg=f"The boss \"{boss_name}\" was added to the game \"{cased_game_title}\"",
+            success_msg=f"The boss \"{boss_name}\" was added to the game \"{cased_game_title}\"" if show_success else None,
             error_msg=f"An unexpected error occurred while adding the boss \"{boss_name}\" to the game \"{cased_game_title}\"",
             error_log_msg=f"Adding boss failed: \"{boss_name}\" -> \"{cased_game_title}\"",
             ensure_backup=ensure_backup
@@ -244,7 +244,7 @@ class SaveFile:
         )
     
     
-    def delete_boss(self, boss_name: str, game_title: str) -> None:
+    def delete_boss(self, boss_name: str, game_title: str, show_success: bool = True) -> None:
         if not self._get_game_exists(game_title):
             self._msg_provider.invoke(f"The game \"{game_title}\" you selected to delete a boss from does not exist in the save file so far", "invalid")
             return
@@ -261,7 +261,7 @@ class SaveFile:
         self._execute_and_report_dml(
             sql=sql,
             params=(boss_name, game_title),
-            success_msg=f"The boss \"{removed_boss}\" of the game \"{self.get_cased_game_title(game_title)}\" was removed",
+            success_msg=f"The boss \"{removed_boss}\" of the game \"{self.get_cased_game_title(game_title)}\" was removed" if show_success else None,
             error_msg=f"An unexpected error occurred while removing the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self.get_cased_game_title(game_title)}\"",
             error_log_msg=f"Removing boss failed (\"{self._get_cased_boss_name(boss_name, game_title)}\", \"{self.get_cased_game_title(game_title)}\")"
         )
@@ -287,6 +287,46 @@ class SaveFile:
             error_msg=f"An unexpected error occurred while saving the stats to the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self.get_cased_game_title(game_title)}\"",
             error_log_msg=f"Saving stats failed (\"{self._get_cased_boss_name(boss_name, game_title)}\", \"{self.get_cased_game_title(game_title)}\")"
         )
+    
+    
+    def merge_bosses(self, bosses_to_merge: List[Tuple[str, str]], new_boss_name: str, new_game_title: str) -> None:
+        (
+            (first_boss_name, first_game_title),
+            (second_boss_name, second_game_title)
+        ) = bosses_to_merge
+        
+        game_missing_msg: str = "The game \"{}\" you selected a boss to merge from does not exist in the save file so far"
+        boss_missing_msg: str = "The boss \"{}\" you selected to merge with does not exist in the game \"{}\" so far"
+        
+        if not self._get_game_exists(first_game_title):
+            self._msg_provider.invoke(game_missing_msg.format(first_game_title), "invalid")
+            return
+        elif not self.get_boss_exists(first_boss_name, first_game_title):
+            self._msg_provider.invoke(boss_missing_msg.format(first_boss_name, self.get_cased_game_title(first_game_title)), "invalid")
+            return
+        elif not self._get_game_exists(second_game_title):
+            self._msg_provider.invoke(game_missing_msg.format(second_game_title), "invalid")
+            return
+        elif not self.get_boss_exists(second_boss_name, second_game_title):
+            self._msg_provider.invoke(boss_missing_msg.format(second_boss_name, self.get_cased_game_title(second_game_title)), "invalid")
+            return
+        elif (new_boss_exists := self.get_boss_exists(new_boss_name, new_game_title)) and not self._is_part_of_merge(bosses_to_merge, new_boss_name):
+            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(new_boss_name, new_game_title)}\" already exists in the game \"{self.get_cased_game_title(new_game_title)}\"", "invalid")
+            return
+        
+        if new_boss_exists:
+            # update boss with both boss values added (override the old value)
+            # same method for updating boss when tracking and saving to existing boss -> add values insteaf of override
+            return
+        
+        if not self.add_boss(new_boss_name, new_game_title, show_success=False):
+            return
+        
+        if not self._merge_bosses_operation(bosses_to_merge, new_boss_name, new_game_title):
+            return
+        
+        for boss in bosses_to_merge:
+            self.delete_boss(boss[0], boss[1], show_success=False)
     
     
     # db selection methods below
@@ -522,6 +562,16 @@ class SaveFile:
         return unknown_boss_nums
     
     
+    @staticmethod
+    def _is_part_of_merge(bosses_to_merge: List[Tuple[str, str]], new_boss_name: str) -> bool:
+        for boss in bosses_to_merge:
+            boss_name: str = boss[0]
+            
+            if boss_name.casefold() == new_boss_name.casefold():
+                return True
+        return False
+    
+    
     def _rename_boss_operation(self, boss_name: str, game_title: str, new_boss_name: str, ensure_backup: bool = True) -> bool:
         sql: str = """
             UPDATE Boss
@@ -551,6 +601,44 @@ class SaveFile:
             error_msg=f"An unexpected error occurred while moving the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self.get_cased_game_title(game_title)}\" to \"{new_game_title}\"",
             error_log_msg=f"Moving boss failed: \"{self._get_cased_boss_name(boss_name, game_title)}\", \"{self.get_cased_game_title(game_title)}\" -> _, \"{new_game_title}\"",
             ensure_backup=ensure_backup
+        )
+    
+    
+    def _merge_bosses_operation(self, bosses_to_merge: List[Tuple[str, str]], new_boss_name: str, new_game_title: str) -> bool:
+        (
+            (first_boss_name, first_game_title),
+            (second_boss_name, second_game_title)
+        ) = bosses_to_merge
+        
+        sql: str = """
+            UPDATE Boss
+                SET
+                    deaths = merged.deaths,
+                    requiredTime = merged.requiredTime
+                FROM (
+                    SELECT SUM(b.deaths) AS deaths, SUM(b.requiredTime) AS requiredTime FROM Boss b
+                        JOIN Game g ON b.gameId = g.id
+                        WHERE (b.name = (?) COLLATE NOCASE AND g.title = (?) COLLATE NOCASE) OR (b.name = (?) COLLATE NOCASE AND g.title = (?) COLLATE NOCASE)
+                ) AS merged
+                WHERE Boss.name = (?) COLLATE NOCASE AND Boss.gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)"""
+        
+        cased_first_boss_name: str = self._get_cased_boss_name(first_boss_name, first_game_title)
+        cased_first_game_title: str = self.get_cased_game_title(first_game_title)
+        cased_second_boss_name: str = self._get_cased_boss_name(second_boss_name, second_game_title)
+        cased_second_game_title: str = self.get_cased_game_title(second_game_title)
+        
+        return self._execute_and_report_dml(
+            sql=sql,
+            params=(first_boss_name, first_game_title, second_boss_name, second_game_title, new_boss_name, new_game_title),
+            success_msg=(
+                f"The bosses \"{cased_first_boss_name}\" of the game \"{cased_first_game_title}\" and \"{cased_second_boss_name}\" of the game \"{cased_second_game_title}\" were merged to "
+                f"\"{new_boss_name}\" of the game \"{new_game_title}\""
+            ),
+            error_msg=(
+                f"An unexpected error occurred while merging the bosses \"{cased_first_boss_name}\" of the game \"{cased_first_game_title}\" and "
+                f"\"{cased_second_boss_name}\" of the game \"{cased_second_game_title}\""
+            ),
+            error_log_msg=f"Merging bosses failed: \"{cased_first_boss_name}\", \"{cased_first_game_title}\" + \"{cased_second_boss_name}\", \"{cased_second_game_title}\""
         )
     
     
