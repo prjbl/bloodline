@@ -164,9 +164,9 @@ class StatsCommands(BaseInterceptCommand):
             self._msg_provider.invoke("Please enter the <\"boss name\", \"game title\"> of the merged boss <...>", "normal")
             return True
         
-        second_pattern_result: List[str] = self._get_input_pattern_result("double")
+        pattern_result: List[str] = self._get_input_pattern_result("double")
         
-        if not second_pattern_result:
+        if not pattern_result:
             return False
         
         self._save_file.merge_bosses(
@@ -174,8 +174,8 @@ class StatsCommands(BaseInterceptCommand):
                 (self._context["first_boss_name"], self._context["first_game_title"]),
                 (self._context["second_boss_name"], self._context["second_game_title"])
             ],
-            new_boss_name=second_pattern_result[0],
-            new_game_title=second_pattern_result[1]
+            new_boss_name=pattern_result[0],
+            new_game_title=pattern_result[1]
         )
         return False
     
