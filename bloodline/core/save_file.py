@@ -83,7 +83,7 @@ class SaveFile:
     
     def add_boss(self, boss_name: str, game_title: str, ensure_backup: bool = True, show_success: bool = True) -> bool:
         if self.get_boss_exists(boss_name, game_title):
-            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(boss_name, game_title)}\" already exists in the game \"{self.get_cased_game_title(game_title)}\"", "invalid")
+            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(boss_name, game_title)}\" ({self.get_cased_game_title(game_title)}) already exists in the save file", "invalid")
             return False
         
         self._add_game(game_title)
@@ -97,8 +97,8 @@ class SaveFile:
         return self._execute_and_report_dml(
             sql=sql,
             params=(boss_name, game_title),
-            success_msg=f"The boss \"{boss_name}\" was added to the game \"{cased_game_title}\"" if show_success else None,
-            error_msg=f"An unexpected error occurred while adding the boss \"{boss_name}\" to the game \"{cased_game_title}\"",
+            success_msg=f"The boss \"{boss_name}\" ({cased_game_title}) was added to the save file" if show_success else None,
+            error_msg=f"An unexpected error occurred while adding the boss \"{boss_name}\" ({cased_game_title}) to the save file",
             error_log_msg=f"Adding boss failed: \"{boss_name}\" -> \"{cased_game_title}\"",
             ensure_backup=ensure_backup
         )
@@ -143,20 +143,20 @@ class SaveFile:
             self._msg_provider.invoke(f"The game \"{SaveFile._UNKNOWN_GAME_TITLE}\" you selected to identify a boss from does not exist in the save file so far", "invalid")
             return
         elif not self.get_boss_exists(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE):
-            self._msg_provider.invoke(f"The boss \"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}\" you selected to identify does not exist in the game \"{SaveFile._UNKNOWN_GAME_TITLE}\" so far", "invalid")
+            self._msg_provider.invoke(f"The boss \"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}\" ({SaveFile._UNKNOWN_GAME_TITLE}) you selected to identify does not exist in the save file so far", "invalid")
             return
         elif not self._get_game_exists(new_game_title):
             self._add_game(new_game_title)
         elif self.get_boss_exists(new_boss_name, new_game_title):
-            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(new_boss_name, new_game_title)}\" already exists in the game \"{self.get_cased_game_title(new_game_title)}\"", "invalid")
+            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(new_boss_name, new_game_title)}\" ({self.get_cased_game_title(new_game_title)}) already exists in the save file", "invalid")
             return
         
-        if not self._rename_boss_operation(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE, new_boss_name, False):
+        if not self._rename_boss_operation(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE, new_boss_name, ensure_backup=False):
             return
         if not self._move_boss_operation(new_boss_name, SaveFile._UNKNOWN_GAME_TITLE, new_game_title):
             return
         
-        self._msg_provider.invoke(f"The boss \"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}\" was identified as \"{new_boss_name}\" from the game \"{self.get_cased_game_title(new_game_title)}\"", "success")
+        self._msg_provider.invoke(f"The boss \"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}\" was identified as \"{new_boss_name}\" ({self.get_cased_game_title(new_game_title)})", "success")
     
     
     def rename_boss(self, boss_name: str, game_title: str, new_boss_name: str) -> None:
@@ -164,18 +164,19 @@ class SaveFile:
             self._msg_provider.invoke(f"The game \"{game_title}\" you selected to rename a boss from does not exist in the save file so far", "invalid")
             return
         elif not self.get_boss_exists(boss_name, game_title):
-            self._msg_provider.invoke(f"The boss \"{boss_name}\" you selected to rename does not exist in the game \"{self.get_cased_game_title(game_title)}\" so far", "invalid")
+            self._msg_provider.invoke(f"The boss \"{boss_name}\" ({self.get_cased_game_title(game_title)}) you selected to rename does not exist in the save file so far", "invalid")
             return
         elif self.get_boss_exists(new_boss_name, game_title):
-            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(new_boss_name, game_title)}\" already exists in the game \"{self.get_cased_game_title(game_title)}\"", "invalid")
+            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(new_boss_name, game_title)}\" ({self.get_cased_game_title(game_title)}) already exists in the save file", "invalid")
             return
         
         old_boss_name: str = self._get_cased_boss_name(boss_name, game_title)
+        cased_game_title: str = self.get_cased_game_title(game_title)
         
         if not self._rename_boss_operation(boss_name, game_title, new_boss_name):
             return
         
-        self._msg_provider.invoke(f"The boss \"{old_boss_name}\" of the game \"{self.get_cased_game_title(game_title)}\" was renamed to \"{new_boss_name}\"", "success")
+        self._msg_provider.invoke(f"The boss \"{old_boss_name}\" ({cased_game_title}) was renamed to \"{new_boss_name}\" ({cased_game_title})", "success")
     
     
     def rename_game(self, game_title: str, new_game_title: str) -> None:
@@ -207,13 +208,13 @@ class SaveFile:
             self._msg_provider.invoke(f"The game \"{game_title}\" you selected to move a boss from does not exist in the save file so far", "invalid")
             return
         elif not self.get_boss_exists(boss_name, game_title):
-            self._msg_provider.invoke(f"The boss \"{boss_name}\" you selected to move does not exist in the game \"{self.get_cased_game_title(game_title)}\" so far", "invalid")
+            self._msg_provider.invoke(f"The boss \"{boss_name}\" ({self.get_cased_game_title(game_title)}) you selected to move does not exist in the save file so far", "invalid")
             return
         elif not self._get_game_exists(new_game_title):
             self._msg_provider.invoke(f"The game \"{new_game_title}\" you selected to move a boss to does not exist in the save file so far", "invalid")
             return
         elif self.get_boss_exists(boss_name, new_game_title):
-            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(boss_name, game_title)}\" already exists in the game \"{self.get_cased_game_title(new_game_title)}\"", "invalid")
+            self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(boss_name, game_title)}\" ({self.get_cased_game_title(new_game_title)}) already exists in the save file", "invalid")
             return
         
         old_game_title: str = self.get_cased_game_title(game_title)
@@ -221,7 +222,7 @@ class SaveFile:
         if not self._move_boss_operation(boss_name, game_title, new_game_title):
             return
         
-        self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(boss_name, new_game_title)}\" was moved from the game \"{old_game_title}\" to \"{self.get_cased_game_title(new_game_title)}\"", "success")
+        self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(boss_name, new_game_title)}\" ({old_game_title}) was moved to the game \"{self.get_cased_game_title(new_game_title)}\"", "success")
     
     
     def delete_game(self, game_title: str) -> None:
@@ -249,7 +250,7 @@ class SaveFile:
             self._msg_provider.invoke(f"The game \"{game_title}\" you selected to delete a boss from does not exist in the save file so far", "invalid")
             return
         elif not self.get_boss_exists(boss_name, game_title):
-            self._msg_provider.invoke(f"The boss \"{boss_name}\" you selected to delete does not exist in the game \"{self.get_cased_game_title(game_title)}\"", "invalid")
+            self._msg_provider.invoke(f"The boss \"{boss_name}\" ({self.get_cased_game_title(game_title)}) you selected to delete does not exist in the save file", "invalid")
             return
         
         sql: str = """
@@ -261,9 +262,9 @@ class SaveFile:
         self._execute_and_report_dml(
             sql=sql,
             params=(boss_name, game_title),
-            success_msg=f"The boss \"{removed_boss}\" of the game \"{self.get_cased_game_title(game_title)}\" was removed" if show_success else None,
-            error_msg=f"An unexpected error occurred while removing the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self.get_cased_game_title(game_title)}\"",
-            error_log_msg=f"Removing boss failed (\"{self._get_cased_boss_name(boss_name, game_title)}\", \"{self.get_cased_game_title(game_title)}\")"
+            success_msg=f"The boss \"{removed_boss}\" ({self.get_cased_game_title(game_title)}) was removed" if show_success else None,
+            error_msg=f"An unexpected error occurred while removing the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" ({self.get_cased_game_title(game_title)}) from the save file",
+            error_log_msg=f"Removing boss failed (\"{self._get_cased_boss_name(boss_name, game_title)}\" ({self.get_cased_game_title(game_title)}))"
         )
     
     
@@ -272,7 +273,7 @@ class SaveFile:
             self._msg_provider.invoke(f"The game \"{game_title}\" you selected a boss from to save the stats to does not exist in the save file so far", "invalid")
             return False
         elif not self.get_boss_exists(boss_name, game_title):
-            self._msg_provider.invoke(f"The boss \"{boss_name}\" you selected to save the stats to does not exist in the game \"{self.get_cased_game_title(game_title)}\" so far", "invalid")
+            self._msg_provider.invoke(f"The boss \"{boss_name}\" ({self.get_cased_game_title(game_title)}) you selected to save the stats to does not exist in the save file so far", "invalid")
             return False
         
         death_update: str = "deaths + (?)" if append_values else "(?)"
@@ -289,12 +290,9 @@ class SaveFile:
         return self._execute_and_report_dml(
             sql=sql,
             params=(deaths, required_time, boss_name, game_title),
-            success_msg=(
-                f"The boss \"{cased_boss_name}\" of the game \"{cased_game_title}\" was {"increased by" if append_values else "updated with" } the following values:\n"
-                f"D {deaths}  {required_time}"
-            ),
-            error_msg=f"An unexpected error occurred while saving the stats to the boss \"{cased_boss_name}\" of the game \"{cased_game_title}\"",
-            error_log_msg=f"Saving stats failed (\"{cased_boss_name}\", \"{cased_game_title}\")"
+            success_msg=f"The boss \"{cased_boss_name}\" ({cased_game_title}) was {"increased by" if append_values else "updated with" } the following values: D {deaths}  {required_time}",
+            error_msg=f"An unexpected error occurred while saving the stats to the boss \"{cased_boss_name}\" ({cased_game_title})",
+            error_log_msg=f"Saving stats failed (\"{cased_boss_name}\" ({cased_game_title}))"
         )
     
     
@@ -305,7 +303,7 @@ class SaveFile:
         ) = bosses_to_merge
         
         game_missing_msg: str = "The game \"{}\" you selected a boss to merge from does not exist in the save file so far"
-        boss_missing_msg: str = "The boss \"{}\" you selected to merge with does not exist in the game \"{}\" so far"
+        boss_missing_msg: str = "The boss \"{}\" ({}) you selected to merge with does not exist in the save file so far"
         
         if not self._get_game_exists(first_game_title):
             self._msg_provider.invoke(game_missing_msg.format(first_game_title), "invalid")
@@ -569,12 +567,14 @@ class SaveFile:
                 SET name = (?)
                 WHERE name = (?) COLLATE NOCASE AND gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)"""
         
+        cased_game_title: str = self.get_cased_game_title(game_title)
+        
         return self._execute_and_report_dml(
             sql=sql,
             params=(new_boss_name, boss_name, game_title),
             success_msg=None,
-            error_msg=f"An unexpected error occurred while renaming the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" of the game \"{self.get_cased_game_title(game_title)}\" to \"{new_boss_name}\"",
-            error_log_msg=f"Renaming boss failed: \"{self._get_cased_boss_name(boss_name, game_title)}\", \"{self.get_cased_game_title(game_title)}\" -> \"{new_boss_name}\", _",
+            error_msg=f"An unexpected error occurred while renaming the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" ({cased_game_title}) to \"{new_boss_name}\" ({cased_game_title})",
+            error_log_msg=f"Renaming boss failed: \"{self._get_cased_boss_name(boss_name, game_title)}\" ({cased_game_title}) -> \"{new_boss_name}\", _",
             ensure_backup=ensure_backup
         )
     
@@ -590,7 +590,7 @@ class SaveFile:
             params=(new_game_title, boss_name, game_title),
             success_msg=None,
             error_msg=f"An unexpected error occurred while moving the boss \"{self._get_cased_boss_name(boss_name, game_title)}\" from the game \"{self.get_cased_game_title(game_title)}\" to \"{new_game_title}\"",
-            error_log_msg=f"Moving boss failed: \"{self._get_cased_boss_name(boss_name, game_title)}\", \"{self.get_cased_game_title(game_title)}\" -> _, \"{new_game_title}\"",
+            error_log_msg=f"Moving boss failed: \"{self._get_cased_boss_name(boss_name, game_title)}\" ({self.get_cased_game_title(game_title)}) -> _, ({new_game_title})",
             ensure_backup=ensure_backup
         )
     
@@ -634,8 +634,8 @@ class SaveFile:
             sql=sql,
             params=(first_boss_name, first_game_title, second_boss_name, second_game_title, new_boss_name, new_game_title),
             success_msg=success_msg,
-            error_msg=f"An unexpected error occurred while merging the bosses \"{cased_first_boss}\" of the game \"{cased_first_game}\" and \"{cased_second_boss}\" of the game \"{cased_second_game}\"",
-            error_log_msg=f"Merging bosses failed: \"{cased_first_boss}\", \"{cased_first_game}\" + \"{cased_second_boss}\", \"{cased_second_game}\""
+            error_msg=f"An unexpected error occurred while merging the bosses \"{cased_first_boss}\" ({cased_first_game}) and \"{cased_second_boss}\" ({cased_second_game})",
+            error_log_msg=f"Merging bosses failed: \"{cased_first_boss}\" ({cased_first_game}) + \"{cased_second_boss}\" ({cased_second_game})"
         )
     
     
