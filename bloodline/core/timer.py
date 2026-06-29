@@ -77,6 +77,9 @@ class Timer:
         if self._timer_active:
             self._msg_provider.invoke("The timer must first be stopped for the reset to work", "invalid")
             return
+        
+        if hard_reset:
+            self._time_already_required = None
         elif self.get_is_none():
             return
         
@@ -85,10 +88,9 @@ class Timer:
         self._total_time = 0
         self._timer_active, self._timer_paused = False, False
         
-        if hard_reset:
-            self._time_already_required = None
-        else:
+        if not hard_reset: # second hard reset check because values have to be reset before executing the following code
             self._msg_provider.invoke("The timer has been reset", "normal")
+            self._overlay.update_timer_label(SharedFormatter.format_time(self._total_time))
     
     
     def get_end_time(self) -> int | None:

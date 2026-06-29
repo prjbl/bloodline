@@ -27,9 +27,17 @@ class CommandManager:
         self._setup_command_instances()
         self._setup_input_vars()
         
+        self._commands: dict = self._get_base_commands() # only changed when dynamic/cancel commands are added/deleted to/from itself
+        self._dynamic_commands: dict = self._get_dynamic_commands()
+        self._cancel_commands: dict = {"cancel": self._cancel}
+        
+        self._setup_dynamic_commands() # has to be called after init dynamic commands to be able to execute enable for specific commands
+        self._list_of_commands: List[str] = list(self._commands.keys()) # only changed when commands are added/deleted from _commands
+    
+    
+    def _get_base_commands(self) -> dict:
         # category action -scope-filter arg1 -sort-filter arg2 -order-filter arg3
-        # const that is only changed when cancel commands are added/deleted to/from itself
-        self._commands: dict = {
+        return {
             "help": self._system_cmds.help,
             "tracking": self._tracking_cmds.info,
             "setup": self._setup_cmds.info,
@@ -58,19 +66,10 @@ class CommandManager:
             "stats list games -s deaths -o asc": self._bind_method_params(self._stats_cmds.list_games_by, "deaths", "asc"),
             "stats list games -s time -o desc": self._bind_method_params(self._stats_cmds.list_games_by, "requiredTime", "desc"),
             "stats list games -s time -o asc": self._bind_method_params(self._stats_cmds.list_games_by, "requiredTime", "asc"),
-            "stats save": self._stats_cmds.save,
             "stats merge": self._stats_cmds.merge,
             "stats export": self._bind_method_params(self._stats_cmds.export_by, "id", "asc"),
             "keybinds": self._keybind_cmds.info,
             "keybinds list": self._keybind_cmds.list,
-            f"keybinds config {HotkeyNames.COUNTER_INC}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_INC),
-            f"keybinds config {HotkeyNames.COUNTER_DEC}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_DEC),
-            f"keybinds config {HotkeyNames.COUNTER_RESET}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_RESET),
-            f"keybinds config {HotkeyNames.TIMER_START}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_START),
-            f"keybinds config {HotkeyNames.TIMER_PAUSE}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_PAUSE),
-            f"keybinds config {HotkeyNames.TIMER_STOP}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_STOP),
-            f"keybinds config {HotkeyNames.TIMER_RESET}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_RESET),
-            f"keybinds config {HotkeyNames.LISTENER_END}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.LISTENER_END),
             "settings": self._settings_cmds.info,
             "settings enable overlay": self._bind_method_params(self._settings_cmds.set_overlay_enabled, True),
             "settings disable overlay": self._bind_method_params(self._settings_cmds.set_overlay_enabled, False),
@@ -80,14 +79,22 @@ class CommandManager:
             "settings preview theme": self._settings_cmds.preview_theme,
             "quit": self._system_cmds.quit
         }
-        self._dynamic_tracking_commands: dict = {
+    
+    
+    def _get_dynamic_commands(self) -> dict:
+        return {
             "tracking new": self._tracking_cmds.new,
             "tracking continue": self._tracking_cmds.carry_on,
+            "stats save": self._stats_cmds.save,
+            f"keybinds config {HotkeyNames.COUNTER_INC}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_INC),
+            f"keybinds config {HotkeyNames.COUNTER_DEC}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_DEC),
+            f"keybinds config {HotkeyNames.COUNTER_RESET}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_RESET),
+            f"keybinds config {HotkeyNames.TIMER_START}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_START),
+            f"keybinds config {HotkeyNames.TIMER_PAUSE}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_PAUSE),
+            f"keybinds config {HotkeyNames.TIMER_STOP}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_STOP),
+            f"keybinds config {HotkeyNames.TIMER_RESET}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_RESET),
+            f"keybinds config {HotkeyNames.LISTENER_END}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.LISTENER_END)
         }
-        self._cancel_commands: dict = {"cancel": self._cancel}
-        
-        self._setup_dynamic_commands() # has to be called after init dynamic commands to be able to execute enable for specific commands
-        self._list_of_commands: List[str] = list(self._commands.keys()) # const that is only changed when commands are added/deleted from _commands
     
     
     def _setup_core_instances(self) -> None:
@@ -132,12 +139,12 @@ class CommandManager:
     
     def _setup_dynamic_commands(self) -> None:
         self._key_listener.link_callbacks(
-            enable_commands_method=lambda: self._enable_dynamic_commands(self._dynamic_tracking_commands),
-            disable_commands_method=lambda: self._disable_dynamic_commands(self._dynamic_tracking_commands)
+            enable_commands_method=lambda: self._enable_dynamic_commands(self._dynamic_commands),
+            disable_commands_method=lambda: self._disable_dynamic_commands(self._dynamic_commands)
         )
         
         # should be available at launch
-        self._enable_dynamic_commands(self._dynamic_tracking_commands)
+        self._enable_dynamic_commands(self._dynamic_commands)
     
     
     @staticmethod
@@ -224,6 +231,11 @@ class CommandManager:
         if self._intercept_next_input and self._last_command_executed == "quit":
             self._active_category.increase_step_count()
             self._system_cmds.quit(is_wm_delete=True)
+            return
+        
+        if self._intercept_next_input:
+            self.process_input("cancel")
+            self.process_input("quit")
             return
         
         self.process_input("quit")
