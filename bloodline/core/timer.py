@@ -2,6 +2,7 @@ from time import time
 
 from infrastructure import MessageHub
 from infrastructure.interfaces import IOverlay
+from utils import SharedFormatter
 
 class Timer:
     
@@ -22,7 +23,7 @@ class Timer:
     def set_time_already_required(self, time: int | None) -> None:
         if time is not None:
             self._time_already_required = time
-            self._overlay.update_timer_label(self._format_time(time))
+            self._overlay.update_timer_label(SharedFormatter.format_time(time))
     
     
     def start(self) -> None:
@@ -113,7 +114,7 @@ class Timer:
             return
         
         live_time: int = self._calc_live_time()
-        formated_time: str = self._format_time(live_time)
+        formated_time: str = SharedFormatter.format_time(live_time)
         self._overlay.update_timer_label(formated_time)
         self._overlay.add_mainloop_task(1000, self._run_live_timer)
     
@@ -126,13 +127,3 @@ class Timer:
         else:
             elapsed_time: float = current_time - self._start_time
         return self._total_time + int(elapsed_time) + (self._time_already_required if self._time_already_required is not None else 0)
-    
-    
-    # helper methods below
-    
-    @staticmethod
-    def _format_time(time: int) -> str:
-        seconds: int = time % 60
-        minutes: int = int(time / 60) % 60
-        hours: int = int(time / 3600)
-        return f"{hours:02}:{minutes:02}:{seconds:02}"

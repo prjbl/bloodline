@@ -4,6 +4,7 @@ from typing import List, Tuple
 from file_io import DatabaseHandler
 from infrastructure import MessageHub
 from infrastructure.config import Metadata, SystemFiles
+from utils import SharedFormatter
 
 class SaveFile:
     
@@ -268,7 +269,7 @@ class SaveFile:
         )
     
     
-    def update_boss(self, boss_name: str, game_title: str, deaths: int | None, required_time: int | None, append_values: bool = False) -> bool:
+    def update_boss(self, boss_name: str, game_title: str, deaths: int | None, required_time: int | None) -> bool:
         if not self._get_game_exists(game_title):
             self._msg_provider.invoke(f"The game \"{game_title}\" you selected a boss from to save the stats to does not exist in the save file so far", "invalid")
             return False
@@ -276,12 +277,9 @@ class SaveFile:
             self._msg_provider.invoke(f"The boss \"{boss_name}\" ({self.get_cased_game_title(game_title)}) you selected to save the stats to does not exist in the save file so far", "invalid")
             return False
         
-        death_update: str = "deaths + (?)" if append_values else "(?)"
-        time_update: str = "requiredTime + (?)" if append_values else "(?)"
-        
-        sql: str = f"""
+        sql: str = """
             UPDATE Boss
-                SET deaths = {death_update}, requiredTime = {time_update}
+                SET deaths = (?), requiredTime = (?)
                 WHERE name = (?) COLLATE NOCASE AND gameId = (SELECT id FROM Game WHERE title = (?) COLLATE NOCASE)"""
         
         cased_boss_name: str = self._get_cased_boss_name(boss_name, game_title)
@@ -290,7 +288,7 @@ class SaveFile:
         return self._execute_and_report_dml(
             sql=sql,
             params=(deaths, required_time, boss_name, game_title),
-            success_msg=f"The boss \"{cased_boss_name}\" ({cased_game_title}) was {"increased by" if append_values else "updated with" } the following values: D {deaths}  {required_time}",
+            success_msg=f"The boss \"{cased_boss_name}\" ({cased_game_title}) was updated with the following values: {SharedFormatter.format_deaths(deaths)}  {SharedFormatter.format_time(required_time)}",
             error_msg=f"An unexpected error occurred while saving the stats to the boss \"{cased_boss_name}\" ({cased_game_title})",
             error_log_msg=f"Saving stats failed (\"{cased_boss_name}\" ({cased_game_title}))"
         )
@@ -325,7 +323,13 @@ class SaveFile:
             return
         
         for boss in bosses_to_merge:
-            self.delete_boss(boss[0], boss[1], show_success=False)
+            boss_name: str = boss[0]
+            game_title: str = boss[1]
+            
+            if new_boss_exists and boss_name.casefold() == new_boss_name.casefold():
+                continue
+            
+            self.delete_boss(boss_name, game_title, show_success=False)
     
     
     # db selection methods below
@@ -604,16 +608,10 @@ class SaveFile:
         sql: str = """
             UPDATE Boss
                 SET
-                    deaths = CASE
-                        WHEN Boss.deaths IS NULL THEN merged.deaths
-                        ELSE Boss.deaths + COALESCE(merged.deaths, 0)
-                    END,
-                    requiredTime = CASE
-                        WHEN Boss.requiredTime IS NULL THEN merged.requiredTime
-                        ELSE Boss.requiredTime + COALESCE(merged.requiredTime, 0)
-                    END
+                    deaths = merged.deaths,
+                    requiredTime = merged.requiredTime
                 FROM (
-                    SELECT SUM(b.deaths) AS deaths, SUM(b.requiredTime) AS requiredTime FROM Boss b
+                    SELECT SUM(b.deaths) AS deaths, SUM(b.requiredTime) AS requiredTime From Boss b
                         JOIN Game g ON b.gameId = g.id
                         WHERE (b.name = (?) COLLATE NOCASE AND g.title = (?) COLLATE NOCASE) OR (b.name = (?) COLLATE NOCASE AND g.title = (?) COLLATE NOCASE)
                 ) AS merged
@@ -624,8 +622,10 @@ class SaveFile:
         cased_second_boss: str = self._get_cased_boss_name(second_boss_name, second_game_title)
         cased_second_game: str = self.get_cased_game_title(second_game_title)
         
-        success_msg: str = (
-            f"The stats of the bosses \"{cased_first_boss}\" ({cased_first_game}) and \"{cased_second_boss}\" ({cased_second_game}) were merged and added to the existing boss \"{new_boss_name}\" ({new_game_title})"
+        success_msg: str = ((
+            f"The stats of the bosses \"{cased_first_boss}\" ({cased_first_game}) and \"{cased_second_boss}\" ({cased_second_game}) were merged and added to the existing boss "
+            f"\"{self._get_cased_boss_name(new_boss_name, new_game_title)}\" ({self.get_cased_game_title(new_game_title)})"
+            )
             if new_boss_exists else
             f"The bosses \"{cased_first_boss}\" ({cased_first_game}) and \"{cased_second_boss}\" ({cased_second_game}) were merged into the new boss \"{new_boss_name}\" ({new_game_title})"
         )

@@ -3,6 +3,7 @@ from typing import List, Callable
 from .base_command import BaseInterceptCommand
 from file_io import CsvFileOperations
 from infrastructure.config import Directory
+from utils import SharedFormatter
 
 class StatsCommands(BaseInterceptCommand):
     
@@ -21,6 +22,7 @@ class StatsCommands(BaseInterceptCommand):
             "'stats list bosses [-a] [-s deaths|time -o desc|asc]': Lists bosses by the selected filters. By default all bosses will be listed in the order they were added\n"
             "'stats list games [-s deaths|time -o desc|asc]': Lists all games by the selected filters. By default the games will be listed in the order they were added\n"
             "'stats save': Saves the tracking values to the selected boss in the save file\n"
+            "'stats merge': Combines the values of two selected bosses into one\n"
             "'stats export': Exports all bosses with their corresponding values from the selected game to a .csv file", "list"
         )
     
@@ -47,7 +49,7 @@ class StatsCommands(BaseInterceptCommand):
         )
         max_deaths_len: int = self._get_max_len(
             iterable=list_of_bosses,
-            lambda_expression=lambda deaths: self._format_deaths(deaths[1])
+            lambda_expression=lambda deaths: SharedFormatter.format_deaths(deaths[1])
         )
         
         for boss in list_of_bosses:
@@ -73,7 +75,7 @@ class StatsCommands(BaseInterceptCommand):
         )
         max_deaths_len: int = self._get_max_len(
             iterable=list_of_bosses,
-            lambda_expression=lambda deaths: self._format_deaths(deaths[2])
+            lambda_expression=lambda deaths: SharedFormatter.format_deaths(deaths[2])
         )
         
         for boss in list_of_bosses:
@@ -98,7 +100,7 @@ class StatsCommands(BaseInterceptCommand):
         )
         max_deaths_len: int = self._get_max_len(
             iterable=list_of_games,
-            lambda_expression=lambda deaths: self._format_deaths(deaths[1])
+            lambda_expression=lambda deaths: SharedFormatter.format_deaths(deaths[1])
         )
         
         for game in list_of_games:
@@ -237,14 +239,14 @@ class StatsCommands(BaseInterceptCommand):
     
     def _get_formatted_stats(self, deaths: int | None, time: int | None, max_deaths_len: int) -> str:
         # uses unicode non-breaking space so word wrap does not split values in half
-        return f"{self._format_deaths(deaths).ljust(max_deaths_len)}  {self._format_time(time)}".replace(" ", "\u00A0")
+        return f"{SharedFormatter.format_deaths(deaths).ljust(max_deaths_len)}  {SharedFormatter.format_time(time)}".replace(" ", "\u00A0")
     
     
     def _get_total_summary_block(self, avg_value: List[tuple], sum_value: List[tuple]) -> str:
         total_summary_stats: List[tuple] = [*avg_value, *sum_value]
         max_deaths_len: int = self._get_max_len(
             iterable=total_summary_stats,
-            lambda_expression=lambda deaths: self._format_deaths(deaths[0])
+            lambda_expression=lambda deaths: SharedFormatter.format_deaths(deaths[0])
         )
         formatted_avg_stats: str = self._get_formatted_summary_stats(StatsCommands._AVG_LABEL, avg_value, max_deaths_len)
         formatted_sum_stats: str = self._get_formatted_summary_stats(StatsCommands._SUM_LABEL, sum_value, max_deaths_len)
@@ -252,45 +254,27 @@ class StatsCommands(BaseInterceptCommand):
     
     
     def _get_formatted_summary_stats(self, label: str, value: List[tuple], max_deaths_len: int) -> str:
-        formatted_deaths: str = self._format_deaths(value[0][0])
-        formatted_time: str = self._format_time(value[0][1])
+        formatted_deaths: str = SharedFormatter.format_deaths(value[0][0])
+        formatted_time: str = SharedFormatter.format_time(value[0][1])
         return f"{label}  " + f"{formatted_deaths.ljust(max_deaths_len)}  {formatted_time}".replace(" ", "\u00A0")
     
     
     def _get_formated_csv_data(self, game_title: str, game_data: List[tuple]) -> None:
         for index, boss in enumerate(game_data):
             name, deaths, time = boss
-            game_data[index] = (name, self._format_deaths(deaths, prefix=False), self._format_time(time))
+            game_data[index] = (name, SharedFormatter.format_deaths(deaths, prefix=False), SharedFormatter.format_time(time))
             
         game_avg: tuple = self._save_file.get_game_avg(game_title)[0]
         game_sum: tuple = self._save_file.get_game_sum(game_title)[0]
             
-        game_data[0] = game_data[0] + ("", StatsCommands._AVG_LABEL, self._format_deaths(game_avg[0]), self._format_time(game_avg[1]))
-        game_data[1] = game_data[1] + ("", StatsCommands._SUM_LABEL, self._format_deaths(game_sum[0]), self._format_time(game_sum[1]))
+        game_data[0] = game_data[0] + ("", StatsCommands._AVG_LABEL, SharedFormatter.format_deaths(game_avg[0]), SharedFormatter.format_time(game_avg[1]))
+        game_data[1] = game_data[1] + ("", StatsCommands._SUM_LABEL, SharedFormatter.format_deaths(game_sum[0]), SharedFormatter.format_time(game_sum[1]))
         return game_data
     
     
     @staticmethod
     def _get_max_len(iterable: List[tuple], lambda_expression: Callable[..., str] | str) -> int:
         return max(len(lambda_expression(item)) for item in iterable)
-    
-    
-    @staticmethod
-    def _format_deaths(deaths: int | float | None, prefix: bool = True) -> str:
-        if deaths is None:
-            return "D N/A" if prefix else "N/A"
-        return f"D {deaths:,}" if prefix else f"{deaths:,}"
-    
-    
-    @staticmethod
-    def _format_time(time: int | None) -> str:
-        if time is None:
-            return "N/A"
-        
-        seconds: int = time % 60
-        minutes: int = int(time / 60) % 60
-        hours: int = int(time / 3600)
-        return f"{hours:02}:{minutes:02}:{seconds:02}"
     
     
     # helper methods below
