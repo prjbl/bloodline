@@ -10,8 +10,8 @@ from schemas.definitions import ThemeModel
 class ThemeManager(IThemeManager):
     
     _instance: ThemeManager | None = None
-    _sys_json_handler: SystemJsonHandler | None = None
-    _reload_widgets: Callable[[int], None] | None = None
+    _sys_json_handler: SystemJsonHandler
+    _reload_widgets: Callable[[int], None] | None
     
     def __new__(cls):
         if cls._instance is None:
@@ -22,6 +22,7 @@ class ThemeManager(IThemeManager):
                 backup_file_path=SystemFiles.THEME.backup_file_path,
                 validation_model=ThemeModel()
             )
+            cls._instance._reload_widgets = None
         return cls._instance
     
     

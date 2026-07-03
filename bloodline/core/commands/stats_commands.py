@@ -9,6 +9,8 @@ class StatsCommands(BaseInterceptCommand):
     
     def __init__(self, instances: dict):
         super().__init__(instances)
+        self._key_listener.link_autosave_callback(lambda: self._console.add_mainloop_task(50, self._autosave))
+        
         self._context: dict = {}
     
     
@@ -143,6 +145,22 @@ class StatsCommands(BaseInterceptCommand):
             self._counter.reset(hard_reset=True)
             self._timer.reset(hard_reset=True)
         return False
+    
+    
+    def _autosave(self) -> None:
+        if self._counter.get_is_none() and self._timer.get_is_none():
+            self._msg_provider.invoke("There are no values to be saved. Make sure to start tracking and try saving again afterwards", "invalid")
+            return False
+        
+        update_successful: bool = self._save_file.update_boss(
+            boss_name=self._shared_context["boss_name"],
+            game_title=self._shared_context["game_title"],
+            deaths=self._counter.get_count(),
+            required_time=self._timer.get_end_time()
+        )
+        if update_successful:
+            self._counter.reset(hard_reset=True)
+            self._timer.reset(hard_reset=True)
     
     
     def merge(self) -> bool:

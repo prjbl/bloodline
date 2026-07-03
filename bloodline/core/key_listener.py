@@ -7,33 +7,40 @@ from pynput.keyboard import Listener, Key, KeyCode
 from .counter import Counter
 from .hotkey_manager import HotkeyManager
 from .timer import Timer
-from infrastructure import MessageHub
+from infrastructure import MessageHub, SettingsManager
 from infrastructure.config import HotkeyNames
 from infrastructure.interfaces import IOverlay
 
 class KeyListener:
     
-    def __init__(self, hk_manager: HotkeyManager, counter: Counter, timer: Timer, overlay: IOverlay):
+    def __init__(
+        self,
+        hk_manager: HotkeyManager,
+        counter: Counter,
+        timer: Timer,
+        overlay: IOverlay,
+        shared_cmd_context: dict,
+        enable_tracking_commands: Callable[[], None],
+        disable_tracking_commands: Callable[[], None]
+    ):
         self._hk_manager: HotkeyManager = hk_manager
         self._counter: Counter = counter
         self._timer: Timer = timer
         self._overlay: IOverlay = overlay
+        self._shared_cmd_context: dict = shared_cmd_context
+        self._enable_tracking_commands: Callable[[], None] = enable_tracking_commands
+        self._disable_tracking_commands: Callable[[], None] = disable_tracking_commands
         
         self._msg_provider: MessageHub = MessageHub()
+        self._settings_manager: SettingsManager = SettingsManager()
         self._key_listener: Listener | None = None
         self._listener_thread: Thread | None = None
         
         self._helper_keys: Set[str] = {str(Key.shift_l), str(Key.shift_r)}
     
     
-    def link_callbacks(self, enable_commands_method: Callable[[], None], disable_commands_method: Callable[[], None]) -> None:
-        self._enable_tracking_commands: Callable[[], None] = enable_commands_method
-        self._disable_tracking_commands: Callable[[], None] = disable_commands_method
-    
-    
-    def link_context(self, shared_cmd_context: dict) -> None:
-        self._shared_cmd_context: dict = shared_cmd_context
-        self._shared_cmd_context["tracking_active"] = False
+    def link_autosave_callback(self, autosave_stats_method: Callable[[], None]) -> None:
+        self._autosave_stats: Callable[[], None] = autosave_stats_method
     
     
     def start_key_listener(self) -> None:
@@ -52,6 +59,11 @@ class KeyListener:
         self._timer.check_timer_stopped()
         self._shared_cmd_context["tracking_active"] = False
         self._enable_tracking_commands()
+        
+        if self._settings_manager.get_autosave():
+            self._autosave_stats()
+            return
+        
         self._msg_provider.invoke("Make sure to save the data using the 'stats save' command", "note")
     
     

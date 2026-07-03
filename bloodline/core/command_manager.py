@@ -27,11 +27,10 @@ class CommandManager:
         self._setup_command_instances()
         self._setup_input_vars()
         
-        self._commands: dict = self._get_base_commands() # only changed when dynamic/cancel commands are added/deleted to/from itself
-        self._dynamic_commands: dict = self._get_dynamic_commands()
+        self._dynamic_commands: dict = self._get_dynamic_commands() # has to be called first to be able to unpack them into commands
+        self._commands: dict = { **self._get_base_commands(), **self._dynamic_commands } # only changed when dynamic/cancel commands are added/deleted to/from itself
         self._cancel_commands: dict = {"cancel": self._cancel}
         
-        self._setup_dynamic_commands() # has to be called after init dynamic commands to be able to execute enable for specific commands
         self._list_of_commands: List[str] = list(self._commands.keys()) # only changed when commands are added/deleted from _commands
     
     
@@ -71,6 +70,8 @@ class CommandManager:
             "keybinds": self._keybind_cmds.info,
             "keybinds list": self._keybind_cmds.list,
             "settings": self._settings_cmds.info,
+            "settings enable autosave": self._bind_method_params(self._settings_cmds.set_autosave_enabled, True),
+            "settings disable autosave": self._bind_method_params(self._settings_cmds.set_autosave_enabled, False),
             "settings enable overlay": self._bind_method_params(self._settings_cmds.set_overlay_enabled, True),
             "settings disable overlay": self._bind_method_params(self._settings_cmds.set_overlay_enabled, False),
             "settings lock overlay": self._bind_method_params(self._settings_cmds.set_overlay_locked, True),
@@ -98,20 +99,28 @@ class CommandManager:
     
     
     def _setup_core_instances(self) -> None:
+        self._shared_cmd_context: dict = {
+            "tracking_active": False
+        }
+        
         self._hk_manager: HotkeyManager = HotkeyManager()
         self._counter: Counter = Counter(self._overlay)
         self._timer: Timer = Timer(self._overlay)
+        self._save_file: SaveFile = SaveFile()
         self._key_listener: KeyListener = KeyListener(
             hk_manager=self._hk_manager,
             counter=self._counter,
             timer=self._timer,
-            overlay=self._overlay
+            overlay=self._overlay,
+            shared_cmd_context=self._shared_cmd_context,
+            enable_tracking_commands=lambda: self._enable_dynamic_commands(self._dynamic_commands),
+            disable_tracking_commands=lambda: self._disable_dynamic_commands(self._dynamic_commands)
         )
-        self._save_file: SaveFile = SaveFile()
     
     
     def _setup_command_instances(self) -> None:
         core_instances: dict = {
+            "shared_cmd_context": {},
             "console": self._console,
             "overlay": self._overlay,
             "theme_manager": self._theme_manager,
@@ -135,16 +144,6 @@ class CommandManager:
         self._intercept_next_input: bool = False
         self._last_command_executed: str = ""
         self._active_category: BaseInterceptCommand | None = None
-    
-    
-    def _setup_dynamic_commands(self) -> None:
-        self._key_listener.link_callbacks(
-            enable_commands_method=lambda: self._enable_dynamic_commands(self._dynamic_commands),
-            disable_commands_method=lambda: self._disable_dynamic_commands(self._dynamic_commands)
-        )
-        
-        # should be available at launch
-        self._enable_dynamic_commands(self._dynamic_commands)
     
     
     @staticmethod

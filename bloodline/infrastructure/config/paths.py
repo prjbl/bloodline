@@ -90,8 +90,9 @@ class SystemFiles:
         provide_local=True,
         provide_docs=True
     )
+    HOTKEYS: _PathDef = _PathDef("hotkeys.json")
+    SETTINGS: _PathDef = _PathDef("settings.json")
+    STATS: _PathDef = _PathDef("stats.sqlite")
+    THEME: _PathDef = _PathDef("theme.json")
     UPDATE_STATE: _PathDef = _PathDef("update_state.json")
     WINDOW_STATE: _PathDef = _PathDef("window_state.json")
-    THEME: _PathDef = _PathDef("theme.json")
-    STATS: _PathDef = _PathDef("stats.sqlite")
-    HOTKEYS: _PathDef = _PathDef("hotkeys.json")

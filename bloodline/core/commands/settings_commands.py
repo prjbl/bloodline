@@ -14,11 +14,19 @@ class SettingsCommands(BaseInterceptCommand):
     def info(self) -> None:
         self._msg_provider.invoke("This is a list of all settings commands:", "normal")
         self._msg_provider.invoke(
-            "'settings enable|disable overlay': Enabled|Disables the overlay\n"
+            "'settings enable|disable autosave': Enables|Disables tracking autosave\n"
+            "'settings enable|disable overlay': Enables|Disables the overlay\n"
             "'settings unlock|lock overlay': Enables|Disables the ability to move the overlay\n"
             "'settings import theme': Imports and changes the programs theme\n"
             "'settings preview theme': Displays the current color theme", "list"
         )
+    
+    
+    def set_autosave_enabled(self, enabled: bool) -> None:
+        if not self._settings_manager.set_autosave_enabled(enabled):
+            self._msg_provider.invoke(f"Autosave is already {"enabled" if enabled else "disabled"}", "invalid")
+            return
+        self._msg_provider.invoke(f"Autosave has been {"enabled" if enabled else "disabled"}", "normal")
     
     
     def set_overlay_enabled(self, enabled: bool) -> None:

@@ -38,7 +38,7 @@ class SaveFile:
             FOREIGN KEY (gameId) REFERENCES Game (id) ON DELETE CASCADE
         );"""
     
-    _UNKNOWN_GAME_TITLE: str = "Unknown Game"
+    UNKNOWN_GAME_TITLE: str = "Unknown Game"
     _UNKNOWN_BOSS_NAME: str = "Unknown Boss"
     
     
@@ -117,13 +117,13 @@ class SaveFile:
             self._db_handler.ensure_backup()
     
     
-    def add_unknown(self) -> None:
+    def add_unknown(self) -> str:
         sql: str = """
             SELECT b.name FROM Boss b
                 JOIN Game g ON b.gameId = g.id
                 WHERE b.name LIKE (?) || '%' AND g.title = (?)"""
         
-        list_of_unknown_bosses: List[tuple] = self._db_handler.fetch(sql, SaveFile._UNKNOWN_BOSS_NAME, SaveFile._UNKNOWN_GAME_TITLE)
+        list_of_unknown_bosses: List[tuple] = self._db_handler.fetch(sql, SaveFile._UNKNOWN_BOSS_NAME, SaveFile.UNKNOWN_GAME_TITLE)
         unknown_boss_nums: List[int] = self._get_unknown_boss_nums(list_of_unknown_bosses)
         
         boss_name_exists: bool = True
@@ -135,16 +135,17 @@ class SaveFile:
             if iterator in unknown_boss_nums:
                 continue
             
-            boss_name_exists = False
-            self.add_boss(f"{SaveFile._UNKNOWN_BOSS_NAME} {iterator}", SaveFile._UNKNOWN_GAME_TITLE)
+            boss_name: str = f"{SaveFile._UNKNOWN_BOSS_NAME} {iterator}"
+            self.add_boss(boss_name, SaveFile.UNKNOWN_GAME_TITLE)
+            return boss_name
     
     
     def identify_boss(self, unknown_boss_num: str, new_boss_name: str, new_game_title: str) -> None:
-        if not self._get_game_exists(SaveFile._UNKNOWN_GAME_TITLE):
-            self._msg_provider.invoke(f"The game \"{SaveFile._UNKNOWN_GAME_TITLE}\" you selected to identify a boss from does not exist in the save file so far", "invalid")
+        if not self._get_game_exists(SaveFile.UNKNOWN_GAME_TITLE):
+            self._msg_provider.invoke(f"The game \"{SaveFile.UNKNOWN_GAME_TITLE}\" you selected to identify a boss from does not exist in the save file so far", "invalid")
             return
-        elif not self.get_boss_exists(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE):
-            self._msg_provider.invoke(f"The boss \"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}\" ({SaveFile._UNKNOWN_GAME_TITLE}) you selected to identify does not exist in the save file so far", "invalid")
+        elif not self.get_boss_exists(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile.UNKNOWN_GAME_TITLE):
+            self._msg_provider.invoke(f"The boss \"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}\" ({SaveFile.UNKNOWN_GAME_TITLE}) you selected to identify does not exist in the save file so far", "invalid")
             return
         elif not self._get_game_exists(new_game_title):
             self._add_game(new_game_title)
@@ -152,9 +153,9 @@ class SaveFile:
             self._msg_provider.invoke(f"The boss \"{self._get_cased_boss_name(new_boss_name, new_game_title)}\" ({self.get_cased_game_title(new_game_title)}) already exists in the save file", "invalid")
             return
         
-        if not self._rename_boss_operation(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile._UNKNOWN_GAME_TITLE, new_boss_name, ensure_backup=False):
+        if not self._rename_boss_operation(f"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}", SaveFile.UNKNOWN_GAME_TITLE, new_boss_name, ensure_backup=False):
             return
-        if not self._move_boss_operation(new_boss_name, SaveFile._UNKNOWN_GAME_TITLE, new_game_title):
+        if not self._move_boss_operation(new_boss_name, SaveFile.UNKNOWN_GAME_TITLE, new_game_title):
             return
         
         self._msg_provider.invoke(f"The boss \"{SaveFile._UNKNOWN_BOSS_NAME} {unknown_boss_num}\" was identified as \"{new_boss_name}\" ({self.get_cased_game_title(new_game_title)})", "success")

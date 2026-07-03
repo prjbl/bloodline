@@ -7,12 +7,14 @@ from ..hotkey_manager import HotkeyManager
 from ..key_listener import KeyListener
 from ..save_file import SaveFile
 from ..timer import Timer
-from infrastructure import MessageHub
+from infrastructure import MessageHub, SettingsManager
 from infrastructure.interfaces import IConsole, IOverlay, IThemeManager, IWindowManager
 
 class BaseCommand:
     
     def __init__(self, instances: dict):
+        self._shared_context: dict = instances["shared_cmd_context"]
+        
         self._console: IConsole = instances["console"]
         self._overlay: IOverlay = instances["overlay"]
         self._theme_manager: IThemeManager = instances["theme_manager"]
@@ -24,9 +26,7 @@ class BaseCommand:
         self._save_file: SaveFile = instances["save_file"]
         
         self._msg_provider: MessageHub = MessageHub()
-        
-        self._shared_context: dict = {}
-        self._key_listener.link_context(self._shared_context)
+        self._settings_manager: SettingsManager = SettingsManager()
 
 
 class BaseInterceptCommand(BaseCommand):

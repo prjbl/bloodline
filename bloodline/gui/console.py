@@ -4,7 +4,7 @@ from logging import getLogger
 from tkinter import Tk, Frame, Label, Entry, StringVar, Event
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
-from typing import List, Callable, override
+from typing import Any, List, Callable, override
 
 from .overlay import Overlay
 from .shell_mechanics import ShellMechanics
@@ -54,6 +54,11 @@ class Application(IConsole):
         "----------------------------\n"
         f"{datetime.now().time().strftime('%H:%M:%S')}{_PREFIX} Use 'help' to get started"
     )
+    
+    
+    @override
+    def add_mainloop_task(self, delay: int, task: Any) -> None:
+        self._root.after(delay, task)
     
     
     @override
@@ -160,7 +165,7 @@ class Application(IConsole):
         ]
         
         for index, config in enumerate(widget_configs):
-            self._root.after(update_delay + (update_delay * index), config)
+            self.add_mainloop_task(update_delay + (update_delay * index), config)
     
     
     def _setup_font(self) -> None:

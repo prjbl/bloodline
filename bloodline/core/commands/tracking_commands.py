@@ -17,7 +17,9 @@ class TrackingCommands(BaseInterceptCommand):
     
     
     def new(self) -> None:
-        self._save_file.add_unknown()
+        self._shared_context["boss_name"] = self._save_file.add_unknown()
+        self._shared_context["game_title"] = self._save_file.UNKNOWN_GAME_TITLE
+        
         self._overlay.create_instance()
         self._counter.set_count_already_required(None)
         self._timer.set_time_already_required(None)
@@ -41,6 +43,9 @@ class TrackingCommands(BaseInterceptCommand):
         if not self._save_file.get_boss_exists(boss_name, game_title):
             self._msg_provider.invoke(f"There is no boss \"{boss_name}\" of the game \"{game_title}\" in the save file so far", "invalid")
             return False
+        
+        self._shared_context["boss_name"] = boss_name
+        self._shared_context["game_title"] = game_title
         
         self._overlay.create_instance()
         self._counter.set_count_already_required(self._save_file.get_boss_deaths(boss_name, game_title))

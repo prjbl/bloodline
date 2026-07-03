@@ -10,7 +10,7 @@ from schemas.definitions import WindowModel
 class WindowManager(IWindowManager):
     
     _instance: WindowManager | None = None
-    _sys_json_handler: SystemJsonHandler | None = None
+    _sys_json_handler: SystemJsonHandler
     
     def __new__(cls):
         if cls._instance is None:
