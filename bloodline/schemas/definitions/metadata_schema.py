@@ -1,27 +1,16 @@
 from pydantic import Field, field_validator
-from pydantic_core.core_schema import FieldValidationInfo
 
 from ..shared_models import AllowModel
-from ..validation_pattern import ValidationPattern
 from infrastructure.config import MetadataSchema
 
 class MetadataModel(AllowModel):
     signature: str = Field(default=MetadataSchema.SIGNATURE.default, alias=MetadataSchema.SIGNATURE.alias)
-    version: str = Field(default=MetadataSchema.VERSION.default, alias=MetadataSchema.VERSION.alias)
     schema_version: int = Field(default=0, alias=MetadataSchema.SCHEMA_VERSION.alias)
     
     @field_validator("signature")
     @classmethod
     def _enforce_correct_signature(cls, signature: str) -> str:
         return MetadataSchema.SIGNATURE.default
-    
-    
-    @field_validator("version")
-    @classmethod
-    def _validate_version_pattern(cls, version: str, info: FieldValidationInfo) -> str:
-        if not ValidationPattern.validate_version_pattern(version):
-            return cls.model_fields[info.field_name].default
-        return version
     
     
     @field_validator("schema_version")

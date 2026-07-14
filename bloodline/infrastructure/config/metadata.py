@@ -22,7 +22,6 @@ class Metadata:
 
 
 class MetadataSchema:
-    VERSION: FieldDef = FieldDef("version", Metadata.VERSION)
     SIGNATURE: FieldDef = FieldDef("signature", Metadata.URL_REPO)
     SCHEMA_VERSION: FieldDef = FieldDef("schema_version", 1)
     

@@ -33,7 +33,7 @@ class MigrationPipeline:
         
         # current version
         LegacyData(
-            version=MetadataSchema.VERSION.default,
+            version=Metadata.VERSION,
             schema_version=MetadataSchema.SCHEMA_VERSION.default,
             migration_method=lambda: (),
             roaming_dirs=Directory.ROAMING_DATA_PATH.relative_to(Path(user_data_dir(roaming=True))),
@@ -203,7 +203,6 @@ class MigrationPipeline:
             )
             
             data: dict = meta_handler.data
-            data[MetadataSchema.VERSION.alias] = next_legacy_data.version
             data[MetadataSchema.SCHEMA_VERSION.alias] = next_legacy_data.schema_version
             
             meta_handler.set_data(data)
