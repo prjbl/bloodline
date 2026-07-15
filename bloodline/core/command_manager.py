@@ -27,10 +27,8 @@ class CommandManager:
         self._setup_command_instances()
         self._setup_input_vars()
         
-        self._dynamic_commands: dict = self._get_dynamic_commands() # has to be called first to be able to unpack them into commands
-        self._commands: dict = { **self._get_base_commands(), **self._dynamic_commands } # only changed when dynamic/cancel commands are added/deleted to/from itself
+        self._commands: dict = { **self._get_base_commands(), **self._get_dynamic_commands() } # only changed when dynamic/cancel commands are added/deleted to/from itself
         self._cancel_commands: dict = {"cancel": self._cancel}
-        
         self._list_of_commands: List[str] = list(self._commands.keys()) # only changed when commands are added/deleted from _commands
     
     
@@ -65,6 +63,7 @@ class CommandManager:
             "stats list games -s deaths -o asc": self._bind_method_params(self._stats_cmds.list_games_by, "deaths", "asc"),
             "stats list games -s time -o desc": self._bind_method_params(self._stats_cmds.list_games_by, "requiredTime", "desc"),
             "stats list games -s time -o asc": self._bind_method_params(self._stats_cmds.list_games_by, "requiredTime", "asc"),
+            "stats save": self._stats_cmds.save,
             "stats merge": self._stats_cmds.merge,
             "stats export": self._bind_method_params(self._stats_cmds.export_by, "id", "asc"),
             "keybinds": self._keybind_cmds.info,
@@ -83,10 +82,11 @@ class CommandManager:
     
     
     def _get_dynamic_commands(self) -> dict:
-        return {
+        self._dynamic_tracking_commands: dict = {
             "tracking new": self._tracking_cmds.new,
-            "tracking continue": self._tracking_cmds.carry_on,
-            "stats save": self._stats_cmds.save,
+            "tracking continue": self._tracking_cmds.carry_on
+        }
+        self._dynamic_keybind_commands: dict = {
             f"keybinds config {HotkeyNames.COUNTER_INC}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_INC),
             f"keybinds config {HotkeyNames.COUNTER_DEC}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_DEC),
             f"keybinds config {HotkeyNames.COUNTER_RESET}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.COUNTER_RESET),
@@ -96,6 +96,7 @@ class CommandManager:
             f"keybinds config {HotkeyNames.TIMER_RESET}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.TIMER_RESET),
             f"keybinds config {HotkeyNames.LISTENER_END}": self._bind_method_params(self._keybind_cmds.config, HotkeyNames.LISTENER_END)
         }
+        return { **self._dynamic_tracking_commands, **self._dynamic_keybind_commands }
     
     
     def _setup_core_instances(self) -> None:
@@ -113,8 +114,8 @@ class CommandManager:
             timer=self._timer,
             overlay=self._overlay,
             shared_cmd_context=self._shared_cmd_context,
-            enable_tracking_commands=lambda: self._enable_dynamic_commands(self._dynamic_commands),
-            disable_tracking_commands=lambda: self._disable_dynamic_commands(self._dynamic_commands)
+            enable_thread_commands=lambda: self._enable_dynamic_commands({ **self._dynamic_tracking_commands, **self._dynamic_keybind_commands }),
+            disable_thread_commands=lambda: self._disable_dynamic_commands({ **self._dynamic_tracking_commands, **self._dynamic_keybind_commands })
         )
     
     

@@ -20,16 +20,16 @@ class KeyListener:
         timer: Timer,
         overlay: IOverlay,
         shared_cmd_context: dict,
-        enable_tracking_commands: Callable[[], None],
-        disable_tracking_commands: Callable[[], None]
+        enable_thread_commands: Callable[[], None],
+        disable_thread_commands: Callable[[], None]
     ):
         self._hk_manager: HotkeyManager = hk_manager
         self._counter: Counter = counter
         self._timer: Timer = timer
         self._overlay: IOverlay = overlay
         self._shared_cmd_context: dict = shared_cmd_context
-        self._enable_tracking_commands: Callable[[], None] = enable_tracking_commands
-        self._disable_tracking_commands: Callable[[], None] = disable_tracking_commands
+        self._enable_thread_commands: Callable[[], None] = enable_thread_commands
+        self._disable_thread_commands: Callable[[], None] = disable_thread_commands
         
         self._msg_provider: MessageHub = MessageHub()
         self._settings_manager: SettingsManager = SettingsManager()
@@ -51,14 +51,14 @@ class KeyListener:
     
     
     def _on_key_listener(self) -> None:
-        self._disable_tracking_commands()
+        self._disable_thread_commands()
         self._shared_cmd_context["tracking_active"] = True
         self._on_start_listener(on_press_method=self._on_press)
         
         self._overlay.destroy_instance()
         self._timer.check_timer_stopped()
         self._shared_cmd_context["tracking_active"] = False
-        self._enable_tracking_commands()
+        self._enable_thread_commands()
         
         if self._settings_manager.get_autosave():
             self._autosave_stats()
