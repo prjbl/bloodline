@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List
 
-from platformdirs import user_data_dir, user_documents_dir
+from platformdirs import user_config_dir, user_data_dir, user_state_dir, user_documents_dir
 
 @dataclass(frozen=True)
 class LegacyData:
@@ -14,9 +14,11 @@ class LegacyData:
     roaming_dirs: str
     docs_dirs: str
     local_dirs: str | None = None
+    state_dirs: str | None = None
     backup_roaming: bool = True
     backup_docs: bool = False
     backup_local: bool = False
+    backup_state: bool = False
     metadata: str | None = None
     alt_signature: List[str] | None = None
     
@@ -27,7 +29,7 @@ class LegacyData:
     
     @property
     def roaming_data_path(self) -> Path:
-        return Path(user_data_dir(roaming=True)) / self.roaming_dirs
+        return Path(user_config_dir(roaming=True)) / self.roaming_dirs
     
     
     @property
@@ -35,6 +37,13 @@ class LegacyData:
         if self.local_dirs is None:
             return None
         return Path(user_data_dir(roaming=False)) / self.local_dirs
+    
+    
+    @property
+    def state_data_path(self) -> Path | None:
+        if self.state_dirs is None:
+            return None
+        return Path(user_state_dir()) / self.state_dirs
     
     
     @property

@@ -1,8 +1,63 @@
 from pathlib import Path
 
-from platformdirs import user_data_dir, user_documents_dir
+from platformdirs import user_config_dir, user_data_dir, user_state_dir, user_documents_dir
 
 from .metadata import Metadata
+
+class Directory:
+    _BACKUP_DIR: str = "backups"
+    _ARCHIVE_DIR: str = "_archive"
+    _LOGS_DIR: str = "logs"
+    _EXPORT_DIR: str = "exports"
+    
+    # Windows: AppData/Roaming/
+    # Linux: ~/.config/
+    ROAMING_DATA_PATH: Path = Path(user_config_dir(roaming=True)) / Metadata.DIR_AUTHOR / Metadata.DIR_APP_NAME
+    
+    # Windows: AppData/Local/
+    # Linux: ~/.local/share/
+    LOCAL_DATA_PATH: Path = Path(user_data_dir(roaming=False)) / Metadata.DIR_AUTHOR / Metadata.DIR_APP_NAME
+    BACKUP_PATH: Path = LOCAL_DATA_PATH / _BACKUP_DIR
+    ARCHIVE_PATH: Path = LOCAL_DATA_PATH / _ARCHIVE_DIR
+    
+    # Linux: ~/.local/state/
+    STATE_DATA_PATH: Path = Path(user_state_dir()) / Metadata.DIR_AUTHOR / Metadata.DIR_APP_NAME
+    
+    # Windows: AppData/Local/
+    # Linux: ~/.local/state/
+    LOGS_PATH: Path = STATE_DATA_PATH / _LOGS_DIR if Metadata.OS_IS_LINUX else LOCAL_DATA_PATH / _LOGS_DIR
+    
+    # Windows & Linux: User documents
+    DOCS_DATA_PATH: Path = Path(user_documents_dir()) / Metadata.DIR_AUTHOR / Metadata.DIR_APP_NAME
+    EXPORT_PATH: Path = DOCS_DATA_PATH / _EXPORT_DIR
+    
+    
+    @classmethod
+    def setup_all_dirs(cls) -> None:
+        dirs: set = {
+            cls.ROAMING_DATA_PATH,
+            cls.LOCAL_DATA_PATH,
+            cls.BACKUP_PATH,
+            cls.LOGS_PATH,
+            cls.DOCS_DATA_PATH
+        }
+        
+        if Metadata.OS_IS_LINUX:
+            dirs.add(cls.STATE_DATA_PATH)
+        
+        for dir in dirs:
+            dir.mkdir(parents=True, exist_ok=True)
+    
+    
+    @classmethod
+    def create_archive_dir(cls) -> None:
+        cls.ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
+    
+    
+    @classmethod
+    def create_export_dir(cls) -> None:
+        cls.EXPORT_PATH.mkdir(parents=True, exist_ok=True)
+
 
 class _PathDef:
     
@@ -37,50 +92,6 @@ class _PathDef:
     @property
     def docs_file_path(self) -> Path | None:
         return self._docs_file_path
-
-
-class Directory:
-    _BACKUP_DIR: str = "backups"
-    _ARCHIVE_DIR: str = "_archive"
-    _LOGS_DIR: str = "logs"
-    _EXPORT_DIR: str = "exports"
-    
-    # Roaming
-    ROAMING_DATA_PATH: Path = Path(user_data_dir(roaming=True)) / Metadata.AUTHOR / Metadata.APP_NAME
-    
-    # Local
-    LOCAL_DATA_PATH: Path = Path(user_data_dir(roaming=False)) / Metadata.AUTHOR / Metadata.APP_NAME
-    BACKUP_PATH: Path = LOCAL_DATA_PATH / _BACKUP_DIR
-    ARCHIVE_PATH: Path = LOCAL_DATA_PATH / _ARCHIVE_DIR
-    LOGS_PATH: Path = LOCAL_DATA_PATH / _LOGS_DIR
-    
-    # User documents
-    DOCS_DATA_PATH: Path = Path(user_documents_dir()) / Metadata.AUTHOR / Metadata.APP_NAME
-    EXPORT_PATH: Path = DOCS_DATA_PATH / _EXPORT_DIR
-    
-    
-    @classmethod
-    def setup_all_dirs(cls) -> None:
-        dirs: set = {
-            cls.ROAMING_DATA_PATH,
-            cls.LOCAL_DATA_PATH,
-            cls.BACKUP_PATH,
-            cls.LOGS_PATH,
-            cls.DOCS_DATA_PATH
-        }
-        
-        for dir in dirs:
-            dir.mkdir(parents=True, exist_ok=True)
-    
-    
-    @classmethod
-    def create_archive_dir(cls) -> None:
-        cls.ARCHIVE_PATH.mkdir(parents=True, exist_ok=True)
-    
-    
-    @classmethod
-    def create_export_dir(cls) -> None:
-        cls.EXPORT_PATH.mkdir(parents=True, exist_ok=True)
 
 
 class SystemFiles:

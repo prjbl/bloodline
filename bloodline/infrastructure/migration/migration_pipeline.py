@@ -3,7 +3,7 @@ from pathlib import Path
 from shutil import make_archive, copytree, rmtree
 from typing import List, Tuple
 
-from platformdirs import user_data_dir, user_documents_dir
+from platformdirs import user_config_dir, user_data_dir, user_state_dir, user_documents_dir
 
 from .legacy_data import LegacyData
 from .version_changes import VersionChanges
@@ -36,11 +36,13 @@ class MigrationPipeline:
             version=Metadata.VERSION,
             schema_version=MetadataSchema.SCHEMA_VERSION.default,
             migration_method=lambda: (),
-            roaming_dirs=Directory.ROAMING_DATA_PATH.relative_to(Path(user_data_dir(roaming=True))),
+            roaming_dirs=Directory.ROAMING_DATA_PATH.relative_to(Path(user_config_dir(roaming=True))),
             local_dirs=Directory.LOCAL_DATA_PATH.relative_to(Path(user_data_dir(roaming=False))),
+            state_dirs=Directory.STATE_DATA_PATH.relative_to(Path(user_state_dir())) if Metadata.OS_IS_LINUX else None,
             docs_dirs=Directory.DOCS_DATA_PATH.relative_to(Path(user_documents_dir())),
             backup_roaming=False,
             backup_local=False,
+            backup_state=False,
             backup_docs=False,
             metadata=SystemFiles.BLOODLINE_METADATA.file_name
         )

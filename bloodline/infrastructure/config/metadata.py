@@ -1,11 +1,19 @@
 from datetime import datetime
+from platform import system
 
 from .field_definition import FieldDef
 
 class Metadata:
+    # both vars needed for explicit checks
+    OS_IS_WINDOWS: bool = system() == "Windows"
+    OS_IS_LINUX: bool = system() == "Linux"
+    
     APP_NAME: str = "Bloodline"
     AUTHOR: str = "NME"
     VERSION: str = "0.9.1-beta"
+    
+    DIR_APP_NAME: str = APP_NAME if OS_IS_WINDOWS else APP_NAME.lower()
+    DIR_AUTHOR: str = AUTHOR if OS_IS_WINDOWS else AUTHOR.lower()
     
     _GITHUB_USER: str = "prjbl"
     _REPO_NAME: str = "bloodline"
