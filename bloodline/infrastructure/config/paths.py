@@ -66,6 +66,7 @@ class _PathDef:
         self._main_file_path: Path = Directory.ROAMING_DATA_PATH / file_name
         self._backup_file_path: Path | None = Directory.BACKUP_PATH / f"{file_name}.bak" if has_backup else None
         self._local_file_path: Path | None = Directory.LOCAL_DATA_PATH / file_name if provide_local else None
+        self._state_file_path: Path | None = Directory.STATE_DATA_PATH / file_name if Metadata.OS_IS_LINUX else None
         self._docs_file_path: Path | None = Directory.DOCS_DATA_PATH / file_name if provide_docs else None
     
     
@@ -87,6 +88,11 @@ class _PathDef:
     @property
     def local_file_path(self) -> Path | None:
         return self._local_file_path
+    
+    
+    @property
+    def state_file_path(self) -> Path | None:
+        return self._state_file_path
     
     
     @property

@@ -49,23 +49,25 @@ class MigrationPipeline:
     ]
     
     
-    @classmethod
-    def setup_meta_files(cls) -> None:
+    @staticmethod
+    def setup_meta_files() -> None:
         """
         Handler are only generated to ensure file existence and validation
         """
-        roaming_meta_handler: SystemJsonHandler = SystemJsonHandler(
-            main_file_path=SystemFiles.BLOODLINE_METADATA.main_file_path,
-            validation_model=MetadataModel()
-        )
-        local_meta_handler: SystemJsonHandler = SystemJsonHandler(
-            main_file_path=SystemFiles.BLOODLINE_METADATA.local_file_path,
-            validation_model=MetadataModel()
-        )
-        docs_meta_handler: SystemJsonHandler = SystemJsonHandler(
-            main_file_path=SystemFiles.BLOODLINE_METADATA.docs_file_path,
-            validation_model=MetadataModel()
-        )
+        file_paths: List[Path] = [
+            SystemFiles.BLOODLINE_METADATA.main_file_path,
+            SystemFiles.BLOODLINE_METADATA.local_file_path,
+            SystemFiles.BLOODLINE_METADATA.docs_file_path
+        ]
+        
+        if Metadata.OS_IS_LINUX:
+            file_paths.append(SystemFiles.BLOODLINE_METADATA.state_file_path)
+        
+        for path in file_paths:
+            SystemJsonHandler(
+                main_file_path=path,
+                validation_model=MetadataModel()
+            )
     
     
     @classmethod
@@ -187,6 +189,9 @@ class MigrationPipeline:
     
     @classmethod
     def _update_schema_version(cls, next_legacy_data: LegacyData) -> None:
+        if next_legacy_data.metadata is None:
+            return
+        
         data_paths: List[Path] = [
             next_legacy_data.roaming_data_path,
             next_legacy_data.docs_data_path
@@ -195,8 +200,8 @@ class MigrationPipeline:
         if next_legacy_data.local_data_path is not None:
             data_paths.append(next_legacy_data.local_data_path)
         
-        if next_legacy_data.metadata is None:
-            return
+        if next_legacy_data.state_data_path is not None:
+            data_paths.append(next_legacy_data.state_data_path)
         
         for path in data_paths:
             meta_handler: SystemJsonHandler = SystemJsonHandler(
