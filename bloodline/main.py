@@ -1,3 +1,5 @@
+#!/bin/bash
+
 from logging import getLogger
 
 from gui import Application
