@@ -109,6 +109,7 @@ class Application(IConsole):
         self._input_entry: Entry = Entry(
             master=self._input_section,
             relief="flat",
+            highlightthickness=0,
             textvariable=self._entry_var
         )
         self._input_entry.pack(
@@ -121,6 +122,7 @@ class Application(IConsole):
         self._console: ScrolledText = ScrolledText(
             master=self._root,
             relief="flat",
+            highlightthickness=0,
             wrap="word",
             state="disabled"
         )
@@ -237,7 +239,7 @@ class Application(IConsole):
         
         self._input_entry.bind("<Return>", lambda event: self._cmd_manager.process_input(self._input_entry.get().strip()))
         
-        self._input_entry.bind("<Tab>", lambda event: self._shell_mechanics.auto_complete(self._input_entry))
+        self._input_entry.bind("<Tab>", self._on_tab)
         self._input_entry.bind("<Up>", lambda event: self._shell_mechanics.get_last_input(self._input_entry))
         self._input_entry.bind("<Down>", lambda event: self._shell_mechanics.get_prev_input(self._input_entry))
     
@@ -263,6 +265,11 @@ class Application(IConsole):
     def _on_focus_out(self, event: Event) -> None:
         entry_var_input: str = self._entry_var.get() + Application._CURSOR_UNFOCUSED
         self._entry_var.set(entry_var_input)
+    
+    
+    def _on_tab(self, event: Event) -> str:
+        self._shell_mechanics.auto_complete(self._input_entry)
+        return "break" # signals tk the event is completed and the default tab behaviour should not be executed
     
     
     def _on_entry_change(self, *args: tuple) -> None:
