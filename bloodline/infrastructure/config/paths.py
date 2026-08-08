@@ -31,6 +31,9 @@ class Directory:
     DOCS_DATA_PATH: Path = Path(user_documents_dir()) / Metadata.DIR_AUTHOR / Metadata.DIR_APP_NAME
     EXPORT_PATH: Path = DOCS_DATA_PATH / _EXPORT_DIR
     
+    # Absolute icon path
+    ICON_PATH: Path = Path(__file__).resolve().parents[3] / "assets" / "icon.png"
+    
     
     @classmethod
     def setup_all_dirs(cls) -> None:

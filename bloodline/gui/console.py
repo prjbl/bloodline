@@ -1,7 +1,8 @@
 from datetime import datetime
 from inspect import signature, Signature
 from logging import getLogger
-from tkinter import Tk, Frame, Label, Entry, StringVar, Event
+from PIL import Image, ImageFile, ImageTk
+from tkinter import Tk, Frame, Label, Entry, StringVar, Event, PhotoImage
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
 from typing import Any, List, Callable, override
@@ -12,7 +13,7 @@ from .theme_manager import ThemeManager
 from .window_manager import WindowManager
 from core import CommandManager
 from infrastructure import MessageHub
-from infrastructure.config import Metadata, WindowKeys, ThemeKeys
+from infrastructure.config import Directory, Metadata, WindowKeys, ThemeKeys
 from infrastructure.interfaces import IConsole
 from services import UpdateService, WebManager
 
@@ -85,7 +86,13 @@ class Application(IConsole):
             self._root.state("zoomed")
         else:
             self._root.geometry(self._root_props[WindowKeys.GEOMETRY])
+        
         self._root.title(Metadata.APP_NAME)
+        
+        if Directory.ICON_PATH.exists():
+            raw_image: ImageFile = Image.open(Directory.ICON_PATH)
+            icon: PhotoImage = ImageTk.PhotoImage(raw_image.resize((32, 32), Image.Resampling.LANCZOS))
+            self._root.wm_iconphoto(False, icon)
     
     
     def _setup_entry_callback(self) -> None:
