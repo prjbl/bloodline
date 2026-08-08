@@ -31,8 +31,10 @@ class Directory:
     DOCS_DATA_PATH: Path = Path(user_documents_dir()) / Metadata.DIR_AUTHOR / Metadata.DIR_APP_NAME
     EXPORT_PATH: Path = DOCS_DATA_PATH / _EXPORT_DIR
     
-    # Absolute icon path
-    ICON_PATH: Path = Path(__file__).resolve().parents[3] / "assets" / "icon.png"
+    # Absolute icon paths
+    _ASSETS_PATH: Path = Path(__file__).resolve().parents[3] / "assets"
+    ICON_PATH_ICO: Path = _ASSETS_PATH / "icon.ico"
+    ICON_PATH_PNG: Path = _ASSETS_PATH / "icon.png"
     
     
     @classmethod

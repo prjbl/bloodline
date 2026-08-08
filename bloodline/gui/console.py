@@ -89,8 +89,12 @@ class Application(IConsole):
         
         self._root.title(Metadata.APP_NAME)
         
-        if Directory.ICON_PATH.exists():
-            raw_image: ImageFile = Image.open(Directory.ICON_PATH)
+        if Directory.ICON_PATH_ICO.exists():
+            self._root.iconbitmap(Directory.ICON_PATH_ICO)
+            return
+        
+        if Directory.ICON_PATH_PNG.exists():
+            raw_image: ImageFile = Image.open(Directory.ICON_PATH_PNG)
             icon: PhotoImage = ImageTk.PhotoImage(raw_image.resize((32, 32), Image.Resampling.LANCZOS))
             self._root.wm_iconphoto(False, icon)
     
