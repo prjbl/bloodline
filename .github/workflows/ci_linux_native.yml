@@ -1,0 +1,70 @@
+name: CI Linux Native
+
+on:
+    release:
+        types: [published]
+
+permissions:
+    contents: write
+
+env:
+    BINARY_NAME: bloodline
+    EXEC: ${BINARY_NAME}
+
+jobs:
+    build-and-upload-project:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
+            with:
+                fetch-depth: 0
+        
+          - name: Set app version to env
+            run: echo "APP_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+            env:
+                TAG: ${{ github.event.release.tag_name }}
+        
+          - name: Setup Python
+            uses: actions/setup-python@v5
+            with:
+                python-version: "3.13"
+                cache: "pip"
+
+          - name: Install dependencies
+            run: |
+                pip install -U pyinstaller
+                pip install -U resvg_py
+                pip install -U pillow
+                pip install -r requirements.txt
+        
+          - name: Install nFPM
+            run: |
+                echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list
+                sudo apt update
+                sudo apt install nfpm
+          
+          - name: Convert SVG to PNG
+            run: python .github/scripts/convert_icon.py assets/icon.svg assets/icon.png png
+          
+          - name: Set .desktop values
+            run: sed -i "s/{EXEC}/${BINARY_NAME}/g" setup/linux/de.nme.Bloodline.desktop
+        
+          - name: Build binary
+            run: python -m PyInstaller --onefile --name ${BINARY_NAME} --add-data "assets/icon.png:assets" src/main.py
+        
+          - name: Build packages
+            run: |
+                nfpm pkg --config setup/linux/nfpm.yml --packager rpm --target dist/
+                nfpm pkg --config setup/linux/nfpm.yml --packager deb --target dist/
+                nfpm pkg --config setup/linux/nfpm.yml --packager archlinux --target dist/
+        
+          - name: Upload packages to release
+            uses: softprops/action-gh-release@v2
+            with:
+                files: |
+                    dist/*.rpm
+                    dist/*.deb
+                    dist/*.pkg.tar.zst
+            env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

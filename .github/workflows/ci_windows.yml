@@ -1,0 +1,56 @@
+name: CI Windows
+
+on:
+    release:
+        types: [published]
+
+permissions:
+    contents: write
+
+jobs:
+    build-and-upload-project:
+        runs-on: windows-latest
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
+            with:
+                fetch-depth: 0
+        
+          - name: Set app version to env
+            run: |
+                $tag = "${{ github.event.release.tag_name }}"
+                $version = $tag -replace "^v", ""
+                echo "APP_VERSION=$version" >> $env:GITHUB_ENV
+        
+          - name: Setup Python
+            uses: actions/setup-python@v5
+            with:
+                python-version: "3.13"
+                cache: "pip"
+
+          - name: Install dependencies
+            run: |
+                pip install -U pyinstaller
+                pip install -U resvg_py
+                pip install -U pillow
+                pip install -r requirements.txt
+        
+          - name: Convert SVG to ICO
+            run: python .github/scripts/convert_icon.py assets/icon.svg assets/icon.ico ico
+        
+          - name: Build EXE file
+            run: python -m PyInstaller --onefile --noconsole --name "Bloodline" --icon "assets/icon.ico" --add-data "assets/icon.ico;assets" --paths src "src/main.py"
+        
+          - name: Build installer
+            uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+            with:
+                path: setup/windows/setup.iss
+                options: >-
+                    /DMyAppVersion=${{ env.APP_VERSION }}
+        
+          - name: Upload installer to release
+            uses: softprops/action-gh-release@v2
+            with:
+                files: dist/*_setup.exe
+            env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

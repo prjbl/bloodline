@@ -1,0 +1,24 @@
+name: bloodline
+arch: amd64
+platform: linux
+version: "${APP_VERSION}"
+maintainer: NME <257981950+prjbl@users.noreply.github.com>
+description: Track and analyze game boss encounters
+homepage: https://github.com/prjbl/bloodline
+license: GPL-3.0-or-later
+
+contents:
+  - src: dist/bloodline
+    dst: /usr/bin/bloodline
+    file_info:
+        mode: 0755
+  
+  - src: setup/linux/de.nme.Bloodline.desktop
+    dst: /usr/share/applications/de.nme.Bloodline.desktop
+    file_info:
+        mode: 0644
+  
+  - src: assets/icon.svg
+    dst: /usr/share/icons/hicolor/scalable/apps/de.nme.Bloodline.svg
+    file_info:
+        mode: 0644
