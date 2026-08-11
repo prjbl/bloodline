@@ -10,7 +10,7 @@ class Metadata:
     
     APP_NAME: str = "Bloodline"
     AUTHOR: str = "NME"
-    VERSION: str = "0.9.1-beta"
+    VERSION: str = "1.0.0"
     
     DIR_APP_NAME: str = APP_NAME if _OS_IS_WINDOWS else APP_NAME.lower()
     DIR_AUTHOR: str = AUTHOR if _OS_IS_WINDOWS else AUTHOR.lower()
