@@ -51,7 +51,12 @@ jobs:
             run: sed -i "s/{EXEC}/${BINARY_NAME}/g" setup/linux/de.nme.Bloodline.desktop
         
           - name: Build binary
-            run: python -m PyInstaller --onefile --name ${BINARY_NAME} --add-data "assets/icon.png:assets" src/main.py
+            run: |
+                python -m PyInstaller \
+                    --onefile \
+                    --name ${BINARY_NAME} \
+                    --add-data "assets/icon.png:assets" \
+                    "src/main.py"
         
           - name: Build packages
             run: |

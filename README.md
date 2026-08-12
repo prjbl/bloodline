@@ -1,26 +1,51 @@
-# 🩸 Bloodline (Beta)
+# 🩸 Bloodline
 
-A small and minimalist **TUI** (Text-based User Interface) designed to track and analyze boss encounters in souls games.  
-Record deaths and encounter times using global hotkeys and evaluate your performance statistically.
-
-> [!IMPORTANT]
-> ⚠️ **Seeker of Errors:** This project is currently in its *Beta-Phase*.  
-> As with any treacherous journey, bugs may hide in the shadows. Your Feedback is a valuable soul - please share it!
+A small *TUI* (Text-based User Interface) designed to track and analyze boss encounters in games.  
+Record deaths and elapsed time using global hotkeys and evaluate your performance statistically.
 
 ---
 
 ## 📖 Table of Contents
 
-- [💎 Key Features](#-key-features)
-- [📊 Workflow & Analysis](#-workflow--analysis)
 - [📥 Download](#-download)
+- [🚀 Quick Start](#-quick-start)
+- [💎 Key Features](#-key-features)
 - [💡 Technical Notes](#-technical-notes)
 - [📟 Commands](#-commands)
-- [⌨️ Default Keybinds](#️-default-keybinds)
 - [🐛 Submitting Issues](#-submitting-issues)
-- [🔗 Dependencies](#-dependencies)
-- [🛡️ Compatibility & Security](#️-compatibility--security)
-- [📜 License & Usage](#-license--usage)
+- [🛡️ Compatibility \& Security](#️-compatibility--security)
+- [📜 License \& Usage](#-license--usage)
+
+---
+
+## 📥 Download
+
+### Releases
+You can always find the latest version on the [Releases](https://github.com/prjbl/bloodline/releases) page.
+
+> [!IMPORTANT]
+> Before your first startup, please make sure to check out the [💡 Technical Notes](#-technical-notes) and [🛡️ Compatibility \& Security](#️-compatibility--security) sections for important details regarding the program's behavior and limitations.
+
+Bloodline is available for:
+
+- 🖥 **Windows:** Standard Installer (`.exe`)
+
+- 🐧 **Linux:**
+  - **Debian-based:** Ubuntu, Mint, etc. (`.deb`)
+  - **RHEL-based:** Fedora, CentOS, etc. (`.rpm`)
+  - **Arch-based:** Manjaro, CachyOS, etc. (`.pkg.tar.zst`)
+
+### Templates
+Templates for game presets and custom themes are available for download in the [templates directory](./templates). Just adapt the values to fit your needs.
+
+---
+
+## 🚀 Quick Start
+
+1. **Setup:** Import a game preset or manually create a new game and boss entry.
+2. **Track:** Start the tracking session and log time and deaths as you play.
+3. **Save:** Save the tracked data to your local save file.
+4. **Analyze:** View your data listed and filtered according to your needs.
 
 ---
 
@@ -29,6 +54,8 @@ Record deaths and encounter times using global hotkeys and evaluate your perform
 - **Console Experience:** Runs exclusively through commands, featuring input history and auto-completion.
 
 - **Global Hotkey Tracking:** Document time and deaths while the game is running in the foreground.
+
+- **Game Overlay:** Keep track of your stats live on top of the game.
 
 - **Import & Export of Stats:** Import game presets as `.json` and export game data via `.csv` files.
 
@@ -40,53 +67,30 @@ Record deaths and encounter times using global hotkeys and evaluate your perform
 
 ---
 
-## 📊 Workflow & Analysis
-
-The program allows you to precisely evaluate your stored data. A typical workflow could look as follows:
-
-1. **Setup:** Add a specific boss and game to your local save file.
-2. **Track:** Monitor time and deaths during a fight.
-3. **Save:** Save the tracked data to your save file.
-4. **Analyze:** View your data listed and filtered according to your needs.
-
----
-
-## 📥 Download
-
-### Releases
-You can always find the latest versions on the [Releases](https://github.com/prjbl/bloodline/releases) page.  
-Currently Bloodline is only available for **Windows** as a standalone file. Linux support is planned as a universal `.flatpak` package for the future.
-
-### Preset & Theme Templates
-Examples for both the preset and theme files can be found in the [templates directory](./templates) of this repository.
-
----
-
 ## 💡 Technical Notes
 
-### Version Check
-Bloodline performs an automatic version check via the GitHub API on the program's startup, provided the last check was at least one hour ago. Depending on your internet connection and the API's response time, the startup may be delayed by a few seconds. To ensure a short startup process, the maximum wait time (timeout) is limited to 5s.
+### User Directory
+All exported files are stored in your system's *Documents* folder.
 
 ### Font Selection
-> [!NOTE]
-> The default theme uses the [DM Mono](https://fonts.google.com/specimen/DM+Mono) font. If this font is not installed, a warning will appear at startup. You can either install the font or use a custom [theme template](./templates/theme_template.json) to select a different font already available on your system.  
-> **Tip:** Always use a *monospaced* font for the best visual experience.
+Bloodline uses the [DM Mono](https://fonts.google.com/specimen/DM+Mono) font by default. If not installed, a warning will appear at startup. You can either install the font or use a custom font via the [theme template](./templates/theme_template.json).
+
+> [!TIP]
+> Always use a *monospaced* font for the best visual experience.
 
 ### Overlay Functionality
-The functionality of the overlay is only guaranteed for games running in Windowed or Borderless Windowed mode. For games running in Fullscreen mode, the overlay will be overwritten by the game because it relies on a simple "topmost" function. This scenario occurs because the Graphics API takes control and prevents the DWM (Desktop Window Manager) from keeping windows on top.
+The overlay requires the game to run in *Windowed* or *Borderless Windowed* mode. For games running in *Fullscreen* mode, the game will render over the overlay.
 
-### User Directory
-All files exported by the program will be stored in the documents directory of the current user.
+### Keybinds Config
+Hotkeys support both single keys and combinations using *Shift L* or *Shift R*. Since the combination accesses a key's shift value, this only works with keys that have a shift variant.
 
 ---
 
 ## 📟 Commands
 
-Bloodline uses a nested command structure divided into categories. Besides the classic pattern, some commands feature a modular approach, allowing you to customize the results dynamically.
+All interactions within the application are handled through category-based commands. Some commands additionally feature a modular approach, allowing you to customize the results dynamically.
 
-<details>
-<summary><strong>Syntax Legend</strong></summary>
-
+### Syntax Legend
 | Symbol | Meaning |
 | :--- | :--- |
 | `\|` | Represents an "OR" choice |
@@ -99,93 +103,33 @@ Bloodline uses a nested command structure divided into categories. Besides the c
 | `-s deaths\|time` | Sorts selected data by deaths / time |
 | `-o desc\|asc` | Orders the sorted data descending / ascending |
 
-</details>
-
-### General Pattern
-All commands are built using the following pattern:
-
-```
-Category Action [-Scope-Filter arg1] [-Sort-Filter arg2 -Order-Filter arg3]
-```
-
-**Practical Example**  
-To better understand the pattern, the following command is split into its individual parts to show each snippet's corresponding component:
-
-| Category | Action | Scope | Sort | Order |
-| :--- | :--- | :--- | :--- | :--- |
-| `stats` | `list bosses` | `-a` | `-s deaths` | `-o asc` |
-
-### Dynamic Commands
+### Canceling Actions
 During an active input request, the `cancel` command can be used to abort the current process.
-
----
-
-## ⌨️ Default Keybinds
-
-Keybinds can be set using the `Shift L` / `Shift R` modifiers.
-
-<details>
-<summary><strong>Standard Hotkeys & Keybinds</strong></summary>
-
-| Action | Keybind |
-| :--- | :--- |
-| **Counter Increase** | `+` |
-| **Counter Decrease** | `-` |
-| **Counter Reset** | `/` |
-| **Timer Start** | `)` / `Shift` + `9` |
-| **Timer Pause & Resume** | `=` / `Shift` + `0` |
-| **Timer Stop** | `?` / `Shift` + `ß` |
-| **Timer Reset** | `*` / `Shift` + `+` |
-| **Key Listener End** | `°` / `Shift` + `^` |
-
-</details>
 
 ---
 
 ## 🐛 Submitting Issues
 
-Since the project is currently in its Beta-Phase, reporting bugs is all the more important to improve the user experience. If you encounter any bug, crash, or strange behavior, please let me know!
+If you encounter any bug, crash, or strange behavior, please let me know! Just create a [New Issue](https://github.com/prjbl/bloodline/issues/new) with a brief summary of the problem and attach the affected log files.
 
-### How to Report a Bug
-Check the [Issues](https://github.com/prjbl/bloodline/issues) page first to see if the bug has already been reported. If that's not the case, report the bug via the *"New issue"* button.  
-Please include the following information in your report to make it as easy as possible to understand and fix the problem:
-
-1. **Clear Title:** Make it easier for others who experience the same bug to find it.
-2. **Short Description:** Explain in a brief summary what the problem is.
-3. **Reproducible? (optional):** Steps on how to reproduce the bug.
-4. **Log Files:** Affected log files attached to the issue.
-
-On Windows, the log files can be found under: `%LOCALAPPDATA%\NME\Bloodline\logs`.
-
----
-
-## 🔗 Dependencies
-
-Bloodline is *built with Python 3.13* and relies on the following external libraries:
-
-| Library | Description of Use |
-| :--- | :--- |
-| [platformdirs](https://pypi.org/project/platformdirs/) | Provides system paths for local data |
-| [pydantic](https://pypi.org/project/pydantic/) | Handles data validation for external files |
-| [pynput](https://pypi.org/project/pynput/) | Manages global hotkey listeners |
-| [requests](https://pypi.org/project/requests/) | Retrieves external API data |
-
-To set up a development environment, install the required packages via the [requirements.txt](requirements.txt) file by running the following command in your terminal or powershell: `pip install -r requirements.txt`.
+### Log File Paths
+- **Windows:** `%LOCALAPPDATA%\NME\Bloodline\logs`
+- **Linux:** `~/.local/state/nme/bloodline/logs`
 
 ---
 
 ## 🛡️ Compatibility & Security
 
-Bloodline has been tested with the anti-cheat software [Easy Anti-Cheat](https://www.easy.ac/) and [BattlEye](https://www.battleye.com/) without any issues. However, it remains possible that other anti-cheat solutions may flag the software.
+Testing Bloodline with the anti-cheat software [Easy Anti-Cheat](https://www.easy.ac/) and [BattlEye](https://www.battleye.com/) hasn't shown any issues. However, it remains possible that other anti-cheat solutions may flag the software.
 
-Additionally, since the program utilizes global hotkeys via the pynput library, some antivirus programs may trigger a warning due to the nature of keyboard hooks.
+Additionally, since the program utilizes global hotkeys, some antivirus programs may trigger a warning due to the nature of keyboard hooks.
 
 ---
 
 ## 📜 License & Usage
 
-As this project is primarily intended to provide easy access for users and friends, no official open-source license is currently attached. Standard copyright law applies with the following express permissions:
+Bloodline is released under the [GNU General Public License v3.0](LICENSE).
 
-- **Private Use:** You are free to use the [source code](./bloodline) and [Releases](https://github.com/prjbl/bloodline/releases) for personal, non-commercial purposes.
+You are free to use, modify and redistribute the code. However, any distributed modifications must be published under the same license.
 
-- **Commercial Use:** Commercial use of the code or the resulting application is not permitted without prior written consent.
+The software is provided without any warranty.

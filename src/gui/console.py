@@ -1,7 +1,9 @@
 from datetime import datetime
 from inspect import signature, Signature
 from logging import getLogger
-from PIL import Image, ImageFile, ImageTk
+from pathlib import Path
+from PIL import Image, ImageTk
+import sys
 from tkinter import Tk, Frame, Label, Entry, StringVar, Event, PhotoImage
 from tkinter.font import Font, families, nametofont
 from tkinter.scrolledtext import ScrolledText
@@ -89,13 +91,15 @@ class Application(IConsole):
         
         self._root.title(Metadata.APP_NAME)
         
-        if Directory.ICON_PATH_ICO.exists():
-            self._root.iconbitmap(Directory.ICON_PATH_ICO)
+        ico_path: Path = self._get_resource_path(Directory.RELATIVE_ICON_PATH_ICO)
+        png_path: Path = self._get_resource_path(Directory.RELATIVE_ICON_PATH_PNG)
+                
+        if ico_path is not None:
+            self._root.iconbitmap(ico_path)
             return
-        
-        if Directory.ICON_PATH_PNG.exists():
-            raw_image: ImageFile = Image.open(Directory.ICON_PATH_PNG)
-            icon: PhotoImage = ImageTk.PhotoImage(raw_image.resize((32, 32), Image.Resampling.LANCZOS))
+                
+        if png_path is not None:
+            icon: PhotoImage = ImageTk.PhotoImage(Image.open(png_path))
             self._root.wm_iconphoto(False, icon)
     
     
@@ -312,6 +316,16 @@ class Application(IConsole):
     
     
     # helper methods below
+    
+    @staticmethod
+    def _get_resource_path(relative_path: Path) -> Path | None:
+        # _MEIPASS only exists when compiling the program with PyInstaller
+        if not hasattr(sys, "_MEIPASS"):
+            return None
+        
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        return Path(sys._MEIPASS) / relative_path
+    
     
     @staticmethod
     def _execute_insert_method(insert_method: Callable[[str, str | None], None], text: str, optional_arg: str | None) -> None:

@@ -32,9 +32,9 @@ class Directory:
     EXPORT_PATH: Path = DOCS_DATA_PATH / _EXPORT_DIR
     
     # Absolute icon paths
-    _ASSETS_PATH: Path = Path(__file__).resolve().parents[3] / "assets"
-    ICON_PATH_ICO: Path = _ASSETS_PATH / "icon.ico"
-    ICON_PATH_PNG: Path = _ASSETS_PATH / "icon.png"
+    _ASSETS_DIR: str = "assets"
+    RELATIVE_ICON_PATH_ICO: Path = Path(_ASSETS_DIR) / "icon.ico"
+    RELATIVE_ICON_PATH_PNG: Path = Path(_ASSETS_DIR) / "icon.png"
     
     
     @classmethod
