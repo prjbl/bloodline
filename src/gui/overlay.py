@@ -13,6 +13,7 @@ class Overlay(IOverlay):
         self._theme_manager: ThemeManager = ThemeManager()
         self._window_manager: WindowManager = WindowManager()
         
+        self._toplevel: Toplevel | None = None
         self._setup_config_vars()
     
     
@@ -33,13 +34,16 @@ class Overlay(IOverlay):
     
     @override
     def display_lock_animation(self, animation_time: int, lock_state: bool) -> None:
+        if self._toplevel is None:
+            return
+        
         self._toplevel.config(highlightbackground=self._colors[ThemeKeys.ERROR] if lock_state else self._colors[ThemeKeys.SUCCESS])
         self.add_mainloop_task(animation_time, lambda: self._toplevel.config(highlightbackground=self._colors[ThemeKeys.BACKGROUND]))
     
     
     @override
     def create_instance(self) -> None:
-        self._toplevel: Toplevel = Toplevel()
+        self._toplevel = Toplevel()
         
         if not self._toplevel_props[WindowKeys.ENABLED]:
             self.hide()
@@ -59,6 +63,7 @@ class Overlay(IOverlay):
         self._window_manager.set_toplevel_props(f"+{self._toplevel.winfo_rootx() - self._difference_width}+{self._toplevel.winfo_rooty()}")
         self._difference_width = 0
         self._toplevel.destroy()
+        self._toplevel = None
     
     
     @override

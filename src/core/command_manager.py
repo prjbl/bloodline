@@ -121,7 +121,7 @@ class CommandManager:
     
     def _setup_command_instances(self) -> None:
         core_instances: dict = {
-            "shared_cmd_context": {},
+            "shared_cmd_context": self._shared_cmd_context,
             "console": self._console,
             "overlay": self._overlay,
             "theme_manager": self._theme_manager,
