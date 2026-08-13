@@ -1,11 +1,9 @@
 [Desktop Entry]
 Type=Application
-Version=1.5
 Name=Bloodline
 Comment=Track and analyze game boss encounters
 Exec={EXEC}
 Icon=de.nme.Bloodline
-License=GNU General Public v3.0
 Terminal=false
 Categories=Utility;
 StartupNotify=true
