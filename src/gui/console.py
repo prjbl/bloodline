@@ -322,9 +322,13 @@ class Application(IConsole):
         # _MEIPASS only exists when compiling the program with PyInstaller
         if not hasattr(sys, "_MEIPASS"):
             return None
-        
+            
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        return Path(sys._MEIPASS) / relative_path
+        resource_path: Path = Path(sys._MEIPASS) / relative_path
+            
+        if not resource_path.exists():
+            return None
+        return resource_path
     
     
     @staticmethod
