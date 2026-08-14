@@ -78,17 +78,23 @@ class Timer:
             self._msg_provider.invoke("The timer must first be stopped for the reset to work", "invalid")
             return
         
-        if hard_reset:
-            self._time_already_required = None
-        elif self.get_is_none():
+        if self.get_is_none() and self._time_already_required is None:
             return
+        
+        send_msg: bool = not self.get_is_none() or self._time_already_required > 0
         
         self._start_time, self._end_time = None, None
         self._pause_time = 0.0
         self._total_time = 0
         self._timer_active, self._timer_paused = False, False
         
-        if not hard_reset: # second hard reset check because values have to be reset before executing the following code
+        if hard_reset:
+            self._time_already_required = None
+            return
+        
+        self._time_already_required = 0
+        
+        if send_msg:
             self._msg_provider.invoke("The timer has been reset", "normal")
             self._overlay.update_timer_label(SharedFormatter.format_time(self._total_time))
     
